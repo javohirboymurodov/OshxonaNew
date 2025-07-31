@@ -1,0 +1,137 @@
+{
+  "name": "oshxona-professional-bot",
+  "version": "1.0.0",
+  "description": "Professional restaurant ordering Telegram bot with advanced features",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "api": "nodemon api/server.js",
+    "dev:all": "concurrently \"npm run dev\" \"npm run api\"",
+    "dev:debug": "nodemon --inspect index.js",
+    "admin:dev": "cd oshxona-admin && npm run dev",
+    "user:dev": "cd user-frontend && npm run dev",
+    "dev:full": "concurrently \"npm run dev\" \"npm run api\" \"npm run admin:dev\" \"npm run user:dev\"",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "db:seed": "node scripts/seed.js",
+    "db:reset": "node scripts/reset.js",
+    "db:backup": "node scripts/backup.js",
+    "db:restore": "node scripts/restore.js",
+    "admin:create": "node scripts/createAdmin.js",
+    "stats:generate": "node scripts/generateStats.js",
+    "logs:clean": "node scripts/cleanLogs.js",
+    "webhook:set": "node scripts/setWebhook.js",
+    "webhook:delete": "node scripts/deleteWebhook.js",
+    "pm2:start": "pm2 start ecosystem.config.js",
+    "pm2:stop": "pm2 stop oshxona-bot",
+    "pm2:restart": "pm2 restart oshxona-bot",
+    "pm2:logs": "pm2 logs oshxona-bot",
+    "build": "npm run lint && npm run test",
+    "deploy": "npm run build && pm2 restart oshxona-bot",
+    "setup": "npm run superadmin:create && npm run db:seed",
+    "superadmin:create": "node scripts/createSuperAdmin.js",
+    "db:seed:clear": "node scripts/seed.js --clear"
+  },
+  "keywords": [
+    "telegram",
+    "bot",
+    "restaurant",
+    "ordering",
+    "food",
+    "delivery",
+    "nodejs",
+    "mongodb",
+    "professional"
+  ],
+  "author": {
+    "name": "Your Name",
+    "email": "your.email@example.com",
+    "url": "https://github.com/yourusername"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "dependencies": {
+    "axios": "^1.6.2",
+    "bcryptjs": "^2.4.3",
+    "cloudinary": "^1.41.3",
+    "compression": "^1.7.4",
+    "concurrently": "^8.2.2",
+    "connect-mongo": "^5.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "excel4node": "^1.8.2",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
+    "express-session": "^1.17.3",
+    "helmet": "^7.1.0",
+    "joi": "^17.12.0",
+    "jsonwebtoken": "^9.0.2",
+    "moment": "^2.29.4",
+    "mongoose": "^8.0.3",
+    "multer": "^1.4.5-lts.1",
+    "multer-storage-cloudinary": "^4.0.0",
+    "node-cron": "^3.0.3",
+    "pdfkit": "^0.14.0",
+    "qrcode": "^1.5.3",
+    "sharp": "^0.32.6",
+    "socket.io": "^4.7.5",
+    "telegraf": "^4.15.6",
+    "uuid": "^9.0.1",
+    "validator": "^13.11.0",
+    "winston": "^3.11.0",
+    "winston-daily-rotate-file": "^4.7.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "eslint": "^8.55.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-node": "^11.1.0",
+    "husky": "^8.0.3",
+    "jest": "^29.7.0",
+    "lint-staged": "^15.2.0",
+    "nodemon": "^3.0.2",
+    "prettier": "^3.1.1",
+    "supertest": "^6.3.3"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "collectCoverageFrom": [
+      "**/*.js",
+      "!node_modules/**",
+      "!coverage/**",
+      "!logs/**",
+      "!scripts/**"
+    ],
+    "testMatch": [
+      "**/__tests__/**/*.js",
+      "**/?(*.)+(spec|test).js"
+    ]
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.js": [
+      "eslint --fix",
+      "prettier --write"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/oshxona-professional-bot.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/oshxona-professional-bot/issues"
+  },
+  "homepage": "https://github.com/yourusername/oshxona-professional-bot#readme"
+}

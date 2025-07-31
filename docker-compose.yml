@@ -1,0 +1,108 @@
+version: '3.8'
+
+services:
+  # Bot service
+  oshxona-bot:
+    build: .
+    container_name: oshxona-bot
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://mongo:27017/oshxona
+      - REDIS_URL=redis://redis:6379
+    env_file:
+      - .env.production
+    depends_on:
+      - mongo
+      - redis
+    volumes:
+      - ./logs:/usr/src/app/logs
+      - ./uploads:/usr/src/app/uploads
+      - ./backups:/usr/src/app/backups
+    networks:
+      - oshxona-network
+    healthcheck:
+      test: ["CMD", "node", "scripts/healthcheck.js"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # MongoDB service
+  mongo:
+    image: mongo:6.0
+    container_name: oshxona-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: oshxona
+    volumes:
+      - mongo-data:/data/db
+      - mongo-config:/data/configdb
+      - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - oshxona-network
+    command: mongod --auth --logpath /dev/stdout
+
+  # Redis service
+  redis:
+    image: redis:7-alpine
+    container_name: oshxona-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - oshxona-network
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+
+  # Nginx reverse proxy
+  nginx:
+    image: nginx:alpine
+    container_name: oshxona-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./static:/var/www/static:ro
+    depends_on:
+      - oshxona-bot
+    networks:
+      - oshxona-network
+
+  # Admin panel (ixtiyoriy)
+  admin-panel:
+    build: ./admin-panel
+    container_name: oshxona-admin
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      - REACT_APP_API_URL=http://oshxona-bot:3000
+      - MONGODB_URI=mongodb://mongo:27017/oshxona
+    depends_on:
+      - oshxona-bot
+      - mongo
+    networks:
+      - oshxona-network
+
+volumes:
+  mongo-data:
+    driver: local
+  mongo-config:
+    driver: local
+  redis-data:
+    driver: local
+
+networks:
+  oshxona-network:
+    driver: bridge
