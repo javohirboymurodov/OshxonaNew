@@ -24,7 +24,7 @@ router.get('/', async (req, res) => {
     // Build filter
     const filter = {};
     
-    if (category) filter.category = category;
+    if (category) filter.categoryId = category;
     if (branch) filter.branch = branch;
     if (isActive !== undefined) filter.isActive = isActive === 'true';
     
@@ -37,7 +37,7 @@ router.get('/', async (req, res) => {
     }
 
     const products = await Product.find(filter)
-      .populate('category', 'name nameUz nameRu')
+      .populate('categoryId', 'name nameUz nameRu')
       .populate('branch', 'name code')
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -71,7 +71,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const product = await Product.findById(req.params.id)
-      .populate('category', 'name nameUz nameRu')
+      .populate('categoryId', 'name nameUz nameRu')
       .populate('branch', 'name code');
 
     if (!product) {
@@ -165,7 +165,7 @@ router.post('/', authenticateToken, requireRole(['superadmin', 'admin']), upload
     await product.save();
 
     const populatedProduct = await Product.findById(product._id)
-      .populate('category', 'name nameUz nameRu')
+      .populate('categoryId', 'name nameUz nameRu')
       .populate('branch', 'name code');
 
     res.status(201).json({
@@ -217,7 +217,7 @@ router.put('/:id', authenticateToken, requireRole(['superadmin', 'admin']), uplo
       req.params.id,
       updateData,
       { new: true, runValidators: true }
-    ).populate('category', 'name nameUz nameRu')
+    ).populate('categoryId', 'name nameUz nameRu')
      .populate('branch', 'name code');
 
     res.json({

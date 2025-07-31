@@ -83,11 +83,16 @@ router.get('/dashboard', async (req, res) => {
 router.get('/products', async (req, res) => {
   try {
     const { page = 1, limit = 20, category, search } = req.query;
-    const branchId = req.user.branch;
+    const branchId = req.user.role === 'superadmin' ? null : req.user.branch;
 
-    let query = { branch: branchId };
+    let query = {};
     
-    if (category) query.category = category;
+    // SuperAdmin barcha mahsulotlarni ko'radi, admin faqat o'z filialini
+    if (branchId) {
+      query.branch = branchId;
+    }
+    
+    if (category) query.categoryId = category;
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
@@ -96,7 +101,7 @@ router.get('/products', async (req, res) => {
     }
 
     const products = await Product.find(query)
-      .populate('category', 'name')
+      .populate('categoryId', 'name nameRu nameEn')
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .sort({ createdAt: -1 });
@@ -106,9 +111,10 @@ router.get('/products', async (req, res) => {
     res.json({
       success: true,
       data: {
-        products,
+        items: products,
         pagination: {
           current: page,
+          pageSize: limit,
           pages: Math.ceil(total / limit),
           total
         }
@@ -127,14 +133,18 @@ router.get('/products', async (req, res) => {
 // Create product
 router.post('/products', async (req, res) => {
   try {
-    const branchId = req.user.branch;
-    const productData = { ...req.body, branch: branchId };
+    const branchId = req.user.role === 'superadmin' ? req.body.branch : req.user.branch;
+    const productData = { ...req.body };
+    
+    if (branchId) {
+      productData.branch = branchId;
+    }
 
     const product = new Product(productData);
     await product.save();
 
     const savedProduct = await Product.findById(product._id)
-      .populate('category', 'name');
+      .populate('categoryId', 'name');
 
     res.status(201).json({
       success: true,
@@ -155,13 +165,18 @@ router.post('/products', async (req, res) => {
 router.put('/products/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const branchId = req.user.branch;
+    const branchId = req.user.role === 'superadmin' ? null : req.user.branch;
+
+    let query = { _id: id };
+    if (branchId) {
+      query.branch = branchId;
+    }
 
     const product = await Product.findOneAndUpdate(
-      { _id: id, branch: branchId },
+      query,
       req.body,
       { new: true, runValidators: true }
-    ).populate('category', 'name');
+    ).populate('categoryId', 'name');
 
     if (!product) {
       return res.status(404).json({
@@ -218,9 +233,8 @@ router.delete('/products/:id', async (req, res) => {
   }
 });
 
-// ==============================================
+
 // 📋 CATEGORY MANAGEMENT
-// ==============================================
 
 // Get categories
 router.get('/categories', async (req, res) => {

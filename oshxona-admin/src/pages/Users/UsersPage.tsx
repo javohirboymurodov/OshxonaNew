@@ -133,11 +133,12 @@ const UsersPage: React.FC = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setUsers(data.users || []);
+        console.log('Users API response:', data);
+        setUsers(data.data?.users || data.users || []);
         setPagination({
           current: page,
           pageSize,
-          total: data.total || 0,
+          total: data.data?.pagination?.total || data.total || 0,
         });
       } else {
         message.error('Foydalanuvchilarni yuklashda xatolik!');
@@ -145,78 +146,6 @@ const UsersPage: React.FC = () => {
     } catch (error) {
       console.error('Error fetching users:', error);
       message.error('Foydalanuvchilarni yuklashda xatolik!');
-      
-      // Mock data for demo
-      const mockUsers: User[] = [
-        {
-          _id: '1',
-          firstName: 'Admin',
-          lastName: 'User',
-          email: 'admin@oshxona.uz',
-          phone: '+998901234567',
-          telegramId: 123456789,
-          role: 'admin',
-          isActive: true,
-          isBlocked: false,
-          lastSeen: new Date().toISOString(),
-          totalOrders: 0,
-          totalSpent: 0,
-          createdAt: dayjs().subtract(6, 'months').toISOString(),
-          updatedAt: new Date().toISOString()
-        },
-        {
-          _id: '2',
-          firstName: 'Alisher',
-          lastName: 'Karimov',
-          phone: '+998909876543',
-          telegramId: 987654321,
-          role: 'user',
-          isActive: true,
-          isBlocked: false,
-          lastSeen: dayjs().subtract(2, 'hours').toISOString(),
-          totalOrders: 15,
-          totalSpent: 750000,
-          createdAt: dayjs().subtract(3, 'months').toISOString(),
-          updatedAt: dayjs().subtract(2, 'hours').toISOString()
-        },
-        {
-          _id: '3',
-          firstName: 'Malika',
-          lastName: 'Tosheva',
-          email: 'malika@example.com',
-          phone: '+998951234567',
-          telegramId: 555666777,
-          role: 'courier',
-          isActive: true,
-          isBlocked: false,
-          lastSeen: dayjs().subtract(1, 'day').toISOString(),
-          totalOrders: 0,
-          totalSpent: 0,
-          createdAt: dayjs().subtract(2, 'months').toISOString(),
-          updatedAt: dayjs().subtract(1, 'day').toISOString()
-        },
-        {
-          _id: '4',
-          firstName: 'Blocked',
-          lastName: 'User',
-          phone: '+998977777777',
-          telegramId: 111222333,
-          role: 'user',
-          isActive: false,
-          isBlocked: true,
-          lastSeen: dayjs().subtract(1, 'week').toISOString(),
-          totalOrders: 3,
-          totalSpent: 125000,
-          createdAt: dayjs().subtract(1, 'month').toISOString(),
-          updatedAt: dayjs().subtract(1, 'week').toISOString()
-        }
-      ];
-      setUsers(mockUsers);
-      setPagination({
-        current: 1,
-        pageSize: 15,
-        total: mockUsers.length,
-      });
     } finally {
       setLoading(false);
     }

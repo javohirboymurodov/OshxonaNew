@@ -53,6 +53,7 @@ const CategoriesPage: React.FC = () => {
       const response = await apiService.getCategories();
       setCategories(response.items || []);
     } catch (error) {
+      console.error('Categories fetch error:', error);
       message.error('Kategoriyalarni yuklashda xatolik!');
     } finally {
       setLoading(false);

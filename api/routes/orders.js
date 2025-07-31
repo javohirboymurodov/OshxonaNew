@@ -8,9 +8,9 @@ const router = express.Router();
 // Apply authentication
 router.use(authenticateToken);
 
-// ==============================================
+
 // 📋 ORDER MANAGEMENT
-// ==============================================
+
 
 // Get orders for admin's branch
 router.get('/', requireAdmin, async (req, res) => {
@@ -40,7 +40,7 @@ router.get('/', requireAdmin, async (req, res) => {
     const orders = await Order.find(query)
       .populate('user', 'firstName lastName phone')
       // .populate('courier', 'firstName lastName phone courierInfo.vehicleType')
-      .populate('brach', 'name address')
+      .populate('branch', 'name address')
       .populate('items.product', 'name price')
       .limit(limit * 1)
       .skip((page - 1) * limit)

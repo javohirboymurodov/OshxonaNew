@@ -1,13 +1,13 @@
 // src/services/api.ts
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { ApiResponse, LoginResponse, PaginatedResponse } from '@/types';
+import { ApiResponse, LoginResponse } from '@/types';
 
 class ApiService {
   private api: AxiosInstance;
 
   constructor() {
     this.api = axios.create({
-      baseURL: '/api',
+      baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api',
       timeout: 10000,
       headers: {
         'Content-Type': 'application/json',
@@ -59,13 +59,14 @@ class ApiService {
   }
 
   // User methods
-  async getUsers(page = 1, limit = 10, role?: string) {
+  async getUsers(page = 1, limit = 15, filters?: any) {
     let url = `/admin/users?page=${page}&limit=${limit}`;
-    if (role && role !== 'all') {
-      url += `&role=${role}`;
-    }
-    const response: AxiosResponse<ApiResponse<PaginatedResponse<User>>> = await this.api.get(url);
-    return response.data.data!;
+    if (filters?.search) url += `&search=${filters.search}`;
+    if (filters?.role && filters.role !== 'all') url += `&role=${filters.role}`;
+    if (filters?.status) url += `&status=${filters.status}`;
+    
+    const response = await this.api.get(url);
+    return response.data.data;
   }
 
   async getUserStats() {
@@ -90,6 +91,16 @@ class ApiService {
 
   async toggleUserStatus(id: string) {
     const response = await this.api.patch(`/admin/users/${id}/toggle-status`);
+    return response.data;
+  }
+
+  async blockUser(id: string) {
+    const response = await this.api.patch(`/admin/users/${id}/block`);
+    return response.data;
+  }
+
+  async unblockUser(id: string) {
+    const response = await this.api.patch(`/admin/users/${id}/unblock`);
     return response.data;
   }
 

@@ -65,7 +65,8 @@ const ProductsPage: React.FC = () => {
     description: '',
     price: 0,
     categoryId: '',
-    isActive: true
+    isActive: true,
+    imageFileId: ''
   });
 
   useEffect(() => {
@@ -75,6 +76,7 @@ const ProductsPage: React.FC = () => {
 
   const fetchProducts = async () => {
     try {
+      setLoading(true);
       const response = await fetch('/api/admin/products', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -82,8 +84,10 @@ const ProductsPage: React.FC = () => {
       });
       if (response.ok) {
         const data = await response.json();
-        // ⬇️ To'g'ri joydan mahsulotlarni oling
-        setProducts(data.data?.items || []);
+        console.log('Products API response:', data);
+        setProducts(data.data?.items || data.data || []);
+      } else {
+        setError('Mahsulotlarni yuklashda xatolik');
       }
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -102,7 +106,8 @@ const ProductsPage: React.FC = () => {
       });
       if (response.ok) {
         const data = await response.json();
-        setCategories(data.categories || []);
+        console.log('Categories API response:', data);
+        setCategories(data.data?.items || data.data?.categories || []);
       }
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -146,7 +151,7 @@ const ProductsPage: React.FC = () => {
       name: product.name,
       description: product.description,
       price: product.price,
-      categoryId: product.category._id || '',
+      categoryId: product.category?._id || '',
       isActive: product.isActive
     });
     setOpen(true);

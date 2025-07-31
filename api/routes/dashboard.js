@@ -14,7 +14,7 @@ router.use(requireAdmin);
 router.get('/analytics/sales', async (req, res) => {
   try {
     const { period = '7d' } = req.query; // 7d, 30d, 3m, 1y
-    const branchId = req.user.branch;
+    const branchId = req.user.role === 'superadmin' ? null : req.user.branch;
 
     let dateRange;
     const now = new Date();
@@ -36,15 +36,15 @@ router.get('/analytics/sales', async (req, res) => {
         dateRange = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     }
 
+    const baseFilter = {
+      status: 'delivered',
+      createdAt: { $gte: dateRange }
+    };
+    if (branchId) baseFilter.branch = branchId;
+
     // Sales by day
     const salesByDay = await Order.aggregate([
-      {
-        $match: {
-          branch: branchId,
-          status: 'completed',
-          createdAt: { $gte: dateRange }
-        }
-      },
+      { $match: baseFilter },
       {
         $group: {
           _id: {
@@ -52,7 +52,7 @@ router.get('/analytics/sales', async (req, res) => {
             month: { $month: '$createdAt' },
             year: { $year: '$createdAt' }
           },
-          totalSales: { $sum: '$totalPrice' },
+          totalSales: { $sum: '$totalAmount' },
           orderCount: { $sum: 1 }
         }
       },
@@ -60,8 +60,9 @@ router.get('/analytics/sales', async (req, res) => {
     ]);
 
     // Top products
+    const topProductsFilter = { ...baseFilter };
     const topProducts = await Order.aggregate([
-      { $match: { branch: branchId, status: 'completed', createdAt: { $gte: dateRange } } },
+      { $match: topProductsFilter },
       { $unwind: '$items' },
       {
         $group: {
@@ -102,9 +103,14 @@ router.get('/analytics/sales', async (req, res) => {
 // Order statistics
 router.get('/analytics/orders', async (req, res) => {
   try {
-    const branchId = req.user.branch;
+    const branchId = req.user.role === 'superadmin' ? null : req.user.branch;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+
+    const baseFilter = branchId ? { branch: branchId } : {};
+    const todayFilter = { ...baseFilter, createdAt: { $gte: today } };
+    const weeklyFilter = { ...baseFilter, createdAt: { $gte: new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000) } };
+    const monthlyFilter = { ...baseFilter, createdAt: { $gte: new Date(today.getFullYear(), today.getMonth(), 1) } };
 
     const [
       todayOrders,
@@ -114,34 +120,24 @@ router.get('/analytics/orders', async (req, res) => {
       ordersByStatus,
       ordersByType
     ] = await Promise.all([
-      Order.countDocuments({ 
-        branch: branchId, 
-        createdAt: { $gte: today } 
-      }),
+      Order.countDocuments(todayFilter),
       Order.aggregate([
         { 
           $match: { 
-            branch: branchId, 
-            createdAt: { $gte: today },
-            status: 'completed'
+            ...todayFilter,
+            status: 'delivered'
           } 
         },
-        { $group: { _id: null, total: { $sum: '$totalPrice' } } }
+        { $group: { _id: null, total: { $sum: '$totalAmount' } } }
       ]),
-      Order.countDocuments({
-        branch: branchId,
-        createdAt: { $gte: new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000) }
-      }),
-      Order.countDocuments({
-        branch: branchId,
-        createdAt: { $gte: new Date(today.getFullYear(), today.getMonth(), 1) }
-      }),
+      Order.countDocuments(weeklyFilter),
+      Order.countDocuments(monthlyFilter),
       Order.aggregate([
-        { $match: { branch: branchId } },
+        { $match: baseFilter },
         { $group: { _id: '$status', count: { $sum: 1 } } }
       ]),
       Order.aggregate([
-        { $match: { branch: branchId } },
+        { $match: baseFilter },
         { $group: { _id: '$orderType', count: { $sum: 1 } } }
       ])
     ]);
@@ -170,10 +166,14 @@ router.get('/analytics/orders', async (req, res) => {
 // Yo'q bo'lgan route qo'shish
 router.get('/stats', async (req, res) => {
   try {
-    const branchId = req.user.branch;
+    // SuperAdmin barcha ma'lumotlarni ko'rishi mumkin, oddiy admin faqat o'z filialini
+    const branchId = req.user.role === 'superadmin' ? null : req.user.branch;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    // Base filter for queries
+    const baseFilter = branchId ? { branch: branchId } : {};
+    
     const [
       totalOrders,
       todayOrders,
@@ -183,44 +183,44 @@ router.get('/stats', async (req, res) => {
       totalProducts,
       ordersByStatus
     ] = await Promise.all([
-      Order.countDocuments({ branch: branchId }),
+      Order.countDocuments(baseFilter),
       Order.countDocuments({ 
-        branch: branchId, 
+        ...baseFilter,
         createdAt: { $gte: today } 
       }),
       Order.aggregate([
         { 
           $match: { 
-            branch: branchId, 
-            status: 'completed' 
+            ...baseFilter,
+            status: 'delivered' 
           } 
         },
         { 
           $group: { 
             _id: null, 
-            total: { $sum: '$totalPrice' } 
+            total: { $sum: '$totalAmount' } 
           } 
         }
       ]),
       Order.aggregate([
         { 
           $match: { 
-            branch: branchId, 
-            status: 'completed',
+            ...baseFilter,
+            status: 'delivered',
             createdAt: { $gte: today }
           } 
         },
         { 
           $group: { 
             _id: null, 
-            total: { $sum: '$totalPrice' } 
+            total: { $sum: '$totalAmount' } 
           } 
         }
       ]),
       User.countDocuments({ role: 'user' }),
-      Product.countDocuments({ branch: branchId, isActive: true }),
+      Product.countDocuments({ isActive: true }),
       Order.aggregate([
-        { $match: { branch: branchId } },
+        { $match: baseFilter },
         { 
           $group: { 
             _id: '$status', 

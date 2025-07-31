@@ -10,9 +10,7 @@ const SocketManager = require('../config/socketConfig');
 // Express app yaratish
 const app = express();
 
-// ========================================
 // 🛡️ MIDDLEWARES
-// ========================================
 
 app.use(helmet());
 app.use(cors({
@@ -44,6 +42,7 @@ app.use('/api/auth', require('./routes/auth'));
 
 // Admin routes
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/admin/users', require('./routes/users'));
 
 // SuperAdmin routes
 app.use('/api/superadmin', require('./routes/superadmin'));

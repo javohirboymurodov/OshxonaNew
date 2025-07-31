@@ -18,9 +18,12 @@ const orderSchema = new mongoose.Schema({
   orderId: { 
     type: String, 
     required: true, 
-    unique: true  // index: true ni olib tashlash
+    unique: true
   },
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  
+  // BRANCH maydonini qo'shdik
+  branch: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch', required: true },
   
   // Order items
   items: [orderItemSchema],
@@ -112,8 +115,9 @@ const orderSchema = new mongoose.Schema({
   suppressReservedKeysWarning: true
 });
 
-// Faqat kerakli indexlar
+// Indexlar
 orderSchema.index({ user: 1 });
+orderSchema.index({ branch: 1 }); // Branch index qo'shdik
 orderSchema.index({ status: 1 });
 orderSchema.index({ createdAt: 1 });
 orderSchema.index({ orderType: 1 });
@@ -126,5 +130,4 @@ orderSchema.pre('save', function(next) {
   next();
 });
 
-// Overwrite xatosini oldini olish
 module.exports = mongoose.models.Order || mongoose.model('Order', orderSchema);

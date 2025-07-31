@@ -61,7 +61,7 @@ router.get('/', async (req, res) => {
     const categoriesWithCount = await Promise.all(
       categories.map(async (category) => {
         const productCount = await Product.countDocuments({
-          category: category._id,
+          categoryId: category._id,
           isActive: true
         });
         
@@ -75,7 +75,7 @@ router.get('/', async (req, res) => {
     res.json({
       success: true,
       data: {
-        categories: categoriesWithCount,
+        items: categoriesWithCount,
         pagination: {
           current: parseInt(page),
           pageSize: parseInt(limit),
