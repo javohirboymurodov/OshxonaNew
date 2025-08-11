@@ -6,8 +6,10 @@ class ApiService {
   private api: AxiosInstance;
 
   constructor() {
+    // Prefer window.location.origin for dev if no env provided
+    const fallbackBase = (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5000') + '/api';
     this.api = axios.create({
-      baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api',
+      baseURL: import.meta.env.VITE_API_BASE_URL || fallbackBase,
       timeout: 10000,
       headers: {
         'Content-Type': 'application/json',
@@ -59,12 +61,11 @@ class ApiService {
   }
 
   // User methods
-  async getUsers(page = 1, limit = 15, filters?: any) {
+  async getUsers(page = 1, limit = 15, filters?: { search?: string; role?: string; status?: string }) {
     let url = `/admin/users?page=${page}&limit=${limit}`;
-    if (filters?.search) url += `&search=${filters.search}`;
+    if (filters?.search) url += `&search=${encodeURIComponent(filters.search)}`;
     if (filters?.role && filters.role !== 'all') url += `&role=${filters.role}`;
     if (filters?.status) url += `&status=${filters.status}`;
-    
     const response = await this.api.get(url);
     return response.data.data;
   }
@@ -148,8 +149,10 @@ class ApiService {
   }
 
   // Category methods
-  async getCategories(page = 1, limit = 10) {
-    const response = await this.api.get(`/categories?page=${page}&limit=${limit}`);
+  async getCategories(page = 1, limit = 10, search?: string) {
+    let url = `/categories?page=${page}&limit=${limit}`;
+    if (search && search.trim()) url += `&search=${encodeURIComponent(search.trim())}`;
+    const response = await this.api.get(url);
     return response.data.data;
   }
 
@@ -178,60 +181,120 @@ class ApiService {
     return response.data;
   }
 
+  async toggleCategoryVisibility(id: string) {
+    const response = await this.api.patch(`/categories/${id}/toggle-visibility`);
+    return response.data;
+  }
+
   async reorderCategories(categoryIds: string[]) {
     const response = await this.api.post('/categories/reorder', { categoryIds });
     return response.data;
   }
 
   // Order methods
-  async getOrders(page = 1, limit = 15, status?: string) {
-    let url = `/admin/orders?page=${page}&limit=${limit}`;
-    if (status && status !== 'all') {
-      url += `&status=${status}`;
+  async getOrders(
+    page = 1,
+    limit = 15,
+    filters?: {
+      status?: string;
+      orderType?: string;
+      dateFrom?: string;
+      dateTo?: string;
+      search?: string;
+      courier?: 'assigned' | 'unassigned';
     }
+  ) {
+    let url = `/orders?page=${page}&limit=${limit}`;
+    if (filters?.status && filters.status !== 'all') url += `&status=${filters.status}`;
+    if (filters?.orderType && filters.orderType !== 'all') url += `&orderType=${filters.orderType}`;
+    if (filters?.dateFrom) url += `&dateFrom=${encodeURIComponent(filters.dateFrom)}`;
+    if (filters?.dateTo) url += `&dateTo=${encodeURIComponent(filters.dateTo)}`;
+    if (filters?.search) url += `&search=${encodeURIComponent(filters.search)}`;
+    if (filters?.courier) url += `&courier=${filters.courier}`;
     const response = await this.api.get(url);
     return response.data.data;
   }
 
   async getOrderStats() {
-    const response = await this.api.get('/admin/orders/stats');
+    const response = await this.api.get('/orders/stats');
     return response.data.data;
   }
 
   async getOrderById(id: string) {
-    const response = await this.api.get(`/admin/orders/${id}`);
+    const response = await this.api.get(`/orders/${id}`);
     return response.data.data;
   }
 
   async updateOrderStatus(id: string, status: string) {
-    const response = await this.api.patch(`/admin/orders/${id}/status`, { status });
+    const response = await this.api.patch(`/orders/${id}/status`, { status });
     return response.data;
   }
 
   async assignCourier(orderId: string, courierId: string) {
-    const response = await this.api.patch(`/admin/orders/${orderId}/assign-courier`, { courierId });
+    const response = await this.api.patch(`/orders/${orderId}/assign-courier`, { courierId });
     return response.data;
+  }
+
+  // Couriers (admin)
+  async getCouriers(status?: 'online'|'offline'|'available') {
+    let url = '/couriers';
+    if (status) url += `?status=${status}`;
+    const response = await this.api.get(url);
+    return response.data.data;
+  }
+
+  async getAvailableCouriersForOrder() {
+    const response = await this.api.get('/couriers/available/for-order');
+    return response.data.data;
   }
 
   // Branch methods
   async getBranches() {
-    const response = await this.api.get('/admin/branches');
+    const response = await this.api.get('/superadmin/branches');
     return response.data.data;
   }
 
   async createBranch(branchData: any) {
-    const response = await this.api.post('/admin/branches', branchData);
+    const response = await this.api.post('/superadmin/branches', branchData);
     return response.data;
   }
 
   async updateBranch(id: string, branchData: any) {
-    const response = await this.api.put(`/admin/branches/${id}`, branchData);
+    const response = await this.api.put(`/superadmin/branches/${id}`, branchData);
     return response.data;
   }
 
   async deleteBranch(id: string) {
-    const response = await this.api.delete(`/admin/branches/${id}`);
+    const response = await this.api.delete(`/superadmin/branches/${id}`);
     return response.data;
+  }
+
+  // Tables
+  async getTables(params?: { page?: number; limit?: number; search?: string }) {
+    const qp = new URLSearchParams();
+    if (params?.page) qp.set('page', String(params.page));
+    if (params?.limit) qp.set('limit', String(params.limit));
+    if (params?.search) qp.set('search', String(params.search));
+    const response = await this.api.get(`/tables${qp.toString() ? `?${qp.toString()}` : ''}`);
+    return response.data.data;
+  }
+  async createTable(payload: { number: number; capacity?: number; location?: string; branch?: string }) {
+    const response = await this.api.post('/tables', payload);
+    return response.data.data;
+  }
+  async updateTable(id: string, payload: Partial<{ number: number; capacity: number; location: string; isActive: boolean }>) {
+    const response = await this.api.patch(`/tables/${id}`, payload);
+    return response.data.data;
+  }
+  async deleteTable(id: string) {
+    const response = await this.api.delete(`/tables/${id}`);
+    return response.data.data;
+  }
+  getTableQrPdfUrl(id: string) {
+    const base = (this.api.defaults.baseURL || '').replace(/\/api$/, '');
+    const token = localStorage.getItem('token') || '';
+    const qp = token ? `?token=${encodeURIComponent(token)}` : '';
+    return `${base}/api/tables/${id}/qr-pdf${qp}`;
   }
 
   // Settings methods

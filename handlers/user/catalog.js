@@ -1,17 +1,15 @@
 const mongoose = require('mongoose');
+const fs = require('fs');
+const path = require('path');
 const { Category, Product } = require('../../models');
 const { backToMainKeyboard, categoriesKeyboard, quantityKeyboard } = require('../../keyboards/userKeyboards');
-const { CacheHelper } = require('../../services/cacheService');
 
 async function showCategories(ctx) {
   try {
-    // Cache'dan kategoriyalarni olish
-    const categories = await CacheHelper.getCategories(async () => {
-      return await Category.find({ 
-        isActive: true, 
-        isVisible: true 
-      }).sort({ sortOrder: 1 });
-    });
+    const categories = await Category.find({ 
+      isActive: true, 
+      isVisible: true 
+    }).sort({ sortOrder: 1 });
 
     if (categories.length === 0) {
       return await ctx.reply('🤷‍♂️ Hozircha kategoriyalar mavjud emas', {
@@ -60,21 +58,17 @@ async function showCategoryProducts(ctx) {
       return await ctx.answerCbQuery('Noto\'g\'ri kategoriya!');
     }
     
-    // Cache'dan kategoriya va mahsulotlarni olish
     const category = await Category.findById(categoryId);
     if (!category) {
       console.log('Category not found:', categoryId);
       return await ctx.answerCbQuery('Kategoriya topilmadi!');
     }
 
-    // Cache'dan mahsulotlarni olish
-    const products = await CacheHelper.getCategoryProducts(categoryId, async (catId) => {
-      return await Product.find({
-        categoryId: catId,
-        isActive: true,
-        isAvailable: true
-      }).sort({ sortOrder: 1, createdAt: -1 });
-    });
+    const products = await Product.find({
+      categoryId: categoryId,
+      isActive: true,
+      isAvailable: true
+    }).sort({ sortOrder: 1, createdAt: -1 });
 
     let message = `${category.emoji || '📂'} **${category.name}**\n\n`;
     const keyboard = [];
@@ -157,16 +151,55 @@ async function showProductDetails(ctx) {
       message += `🆕 **Yangi mahsulot!**\n`;
     }
 
-    // Agar mahsulotda rasm bo'lsa, rasmli xabar yuborish
+    // Rasm yuborish: Telegram file_id mavjud bo'lsa, o'shani; aks holda URL/path dan foydalanamiz
+    const baseUrl = process.env.FILE_BASE_URL || 'http://localhost:5000';
+    let pickImagePath = product.image || product.imagePath || (product.images && product.images[0]);
+    // Agar image '/uploads/..' emas, faqat fayl nomi bo'lsa, '/uploads' bilan to'ldiramiz
+    if (pickImagePath && !pickImagePath.startsWith('http') && !pickImagePath.startsWith('/')) {
+      pickImagePath = `/uploads/${pickImagePath}`;
+    }
+
+    try {
+      await ctx.deleteMessage(); // Eski xabarni o'chirish (agar edit mumkin bo'lmasa, try/catch)
+    } catch {}
+
     if (product.imageFileId) {
-      await ctx.deleteMessage(); // Eski xabarni o'chirish
       await ctx.replyWithPhoto(product.imageFileId, {
         caption: message,
         parse_mode: 'Markdown',
         reply_markup: quantityKeyboard(product._id, 1).reply_markup
       });
+    } else if (pickImagePath) {
+      const imageUrl = pickImagePath.startsWith('http')
+        ? pickImagePath
+        : `${baseUrl}${pickImagePath.startsWith('/') ? '' : '/'}${pickImagePath}`;
+      try {
+        await ctx.replyWithPhoto(imageUrl, {
+          caption: message,
+          parse_mode: 'Markdown',
+          reply_markup: quantityKeyboard(product._id, 1).reply_markup
+        });
+      } catch (e) {
+        console.warn('Image URL failed, falling back to file if exists:', imageUrl);
+        try {
+          const localPath = pickImagePath.startsWith('/') ? pickImagePath : `/${pickImagePath}`;
+          if (fs.existsSync(path.join(process.cwd(), localPath))) {
+            await ctx.replyWithPhoto({ source: path.join(process.cwd(), localPath) }, {
+              caption: message,
+              parse_mode: 'Markdown',
+              reply_markup: quantityKeyboard(product._id, 1).reply_markup
+            });
+            return;
+          }
+        } catch {}
+        // Agar rasmni yuborib bo'lmasa, matn bilan davom etamiz
+        await ctx.reply(message, {
+          parse_mode: 'Markdown',
+          reply_markup: quantityKeyboard(product._id, 1).reply_markup
+        });
+      }
     } else {
-      // Agar rasm bo'lmasa, oddiy matn xabar
+      // Rasm umuman bo'lmasa, matnli javob
       await ctx.editMessageText(message, {
         parse_mode: 'Markdown',
         reply_markup: quantityKeyboard(product._id, 1).reply_markup
@@ -176,6 +209,59 @@ async function showProductDetails(ctx) {
   } catch (error) {
     console.error('Show product details error:', error);
     await ctx.answerCbQuery('Mahsulot tafsilotlarini ko\'rsatishda xatolik!');
+  }
+}
+
+// Faqat mahsulot tafsilotidagi miqdor tugmalarini (➖/➕) yangilash
+// Callback: change_qty_<productId>_<qty>
+async function changeProductQuantity(ctx) {
+  try {
+    const parts = ctx.callbackQuery.data.split('_');
+    const productId = parts[2];
+    let qty = parseInt(parts[3], 10);
+    if (!Number.isFinite(qty)) qty = 1;
+    if (qty < 0) {
+      // 0 dan past bo'lsa — kategoriyalarga qaytaramiz va xabar beramiz
+      await ctx.answerCbQuery('🗑️ Mahsulot olib tashlandi');
+      // mahsulot qaysi kategoriyaga tegishli ekanini topib, ro\'yxatga qaytarish
+      try {
+        const prod = await Product.findById(productId).select('categoryId');
+        if (prod && prod.categoryId) {
+          ctx.callbackQuery.data = `category_${prod.categoryId.toString()}`;
+          return await showCategoryProducts(ctx);
+        }
+      } catch (e) {
+        // ignore
+      }
+      // Fallback: kategoriyalar ro'yxatiga qaytish
+      return await showCategories(ctx);
+    }
+    if (qty > 50) qty = 50; // xavfsiz limit
+
+    // Mahsulot mavjudligini tekshiramiz (xavfsizlik uchun)
+    if (!productId || !productId.match(/^[0-9a-fA-F]{24}$/)) {
+      return await ctx.answerCbQuery('Noto\'g\'ri mahsulot ID!');
+    }
+    const product = await Product.findById(productId).select('_id');
+    if (!product) {
+      return await ctx.answerCbQuery('Mahsulot topilmadi!');
+    }
+
+    // Matn/caption o'zgartirmaymiz, faqat klaviaturani yangilaymiz
+    if (typeof ctx.editMessageReplyMarkup === 'function') {
+      await ctx.editMessageReplyMarkup(quantityKeyboard(productId, qty).reply_markup);
+    } else {
+      // Fallback
+      await ctx.editMessageText(undefined, {
+        reply_markup: quantityKeyboard(productId, qty).reply_markup,
+        parse_mode: 'Markdown'
+      });
+    }
+
+    await ctx.answerCbQuery(`Miqdor: ${qty}`);
+  } catch (error) {
+    console.error('changeProductQuantity error:', error);
+    await ctx.answerCbQuery('❌ Miqdorni o\'zgartirishda xatolik!');
   }
 }
 
@@ -224,5 +310,6 @@ module.exports = {
   showCategories,
   showCategoryProducts,
   showProductDetails,
-  selectCategory
+  selectCategory,
+  changeProductQuantity
 };

@@ -1,0 +1,158 @@
+const express = require('express');
+const router = express.Router();
+const QRCode = require('qrcode');
+const PDFDocument = require('pdfkit');
+const path = require('path');
+const fs = require('fs');
+
+const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const { Table } = require('../../models');
+
+// Allow token via query (?token=...) for direct PDF link downloads
+router.use((req, _res, next) => {
+  if (!req.headers.authorization && req.query && req.query.token) {
+    req.headers.authorization = `Bearer ${req.query.token}`;
+  }
+  next();
+});
+
+// Auth for all table routes
+router.use(authenticateToken, requireAdmin);
+
+// GET /api/tables
+router.get('/', async (req, res) => {
+  try {
+    const { page = 1, limit = 50, search = '' } = req.query;
+    const query = {};
+    // Admin o'z filialini ko'radi, superadmin hammasini
+    if (req.user.role !== 'superadmin' && req.user.branch) {
+      query.branch = req.user.branch;
+    }
+    if (search) {
+      const num = Number(search);
+      if (!Number.isNaN(num)) query.number = num;
+    }
+    const skip = (Number(page) - 1) * Number(limit);
+    const [items, total] = await Promise.all([
+      Table.find(query).sort({ number: 1 }).skip(skip).limit(Number(limit)),
+      Table.countDocuments(query)
+    ]);
+    res.json({ success: true, data: { items, pagination: { total, page: Number(page), pageSize: Number(limit) } } });
+  } catch (e) {
+    console.error('tables list error:', e);
+    res.status(500).json({ success: false, message: 'Stollarni yuklashda xatolik' });
+  }
+});
+
+// POST /api/tables
+router.post('/', async (req, res) => {
+  try {
+    const { number, capacity = 2, location = '', branch } = req.body || {};
+    if (!number) return res.status(400).json({ success: false, message: 'Stol raqami kerak' });
+    const branchId = branch || req.user?.branch;
+    if (!branchId && req.user.role !== 'superadmin') {
+      return res.status(400).json({ success: false, message: 'Filial talab qilinadi' });
+    }
+    const exists = await Table.findOne({ number, ...(branchId ? { branch: branchId } : {}) });
+    if (exists) return res.status(409).json({ success: false, message: 'Bu stol raqami allaqachon mavjud' });
+    const qrCode = `table_${number}_b_${String(branchId)}`;
+    const table = new Table({ number, capacity, location, branch: branchId, qrCode });
+    await table.save();
+    res.json({ success: true, data: table });
+  } catch (e) {
+    console.error('tables create error:', e);
+    res.status(500).json({ success: false, message: 'Stol yaratishda xatolik' });
+  }
+});
+
+// PATCH /api/tables/:id
+router.patch('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { capacity, location, isActive } = req.body || {};
+    const updates = {};
+    if (capacity != null) updates.capacity = capacity;
+    if (location != null) updates.location = location;
+    if (isActive != null) updates.isActive = isActive;
+    const table = await Table.findByIdAndUpdate(id, { $set: updates }, { new: true });
+    if (!table) return res.status(404).json({ success: false, message: 'Stol topilmadi' });
+    res.json({ success: true, data: table });
+  } catch (e) {
+    console.error('tables update error:', e);
+    res.status(500).json({ success: false, message: 'Stolni yangilashda xatolik' });
+  }
+});
+
+// DELETE /api/tables/:id
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const table = await Table.findByIdAndDelete(id);
+    if (!table) return res.status(404).json({ success: false, message: 'Stol topilmadi' });
+    res.json({ success: true, message: 'O\'chirildi' });
+  } catch (e) {
+    console.error('tables delete error:', e);
+    res.status(500).json({ success: false, message: 'Stolni o\'chirishda xatolik' });
+  }
+});
+
+// GET /api/tables/:id/qr-pdf
+router.get('/:id/qr-pdf', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const table = await Table.findById(id);
+    if (!table) return res.status(404).json({ success: false, message: 'Stol topilmadi' });
+
+    const botUsername = process.env.BOT_USERNAME || 'your_bot';
+    // Branchga bog'lash: table + branch kombinatsiyasi
+    const startPayload = `table_${table.number}_b_${String(table.branch)}`;
+    const link = `https://t.me/${botUsername}?start=${encodeURIComponent(startPayload)}`;
+
+    const qrPngBuffer = await QRCode.toBuffer(link, { width: 600, margin: 1 });
+
+    // PDF yaratish
+    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=table_${table.number}_qr.pdf`);
+    doc.pipe(res);
+
+    // Sarlavha
+    doc.fontSize(22).font('Helvetica-Bold').text('Stol uchun QR kod', { align: 'center' });
+    doc.moveDown();
+    doc.fontSize(16).font('Helvetica').text(`Stol raqami: ${table.number}`, { align: 'center' });
+    doc.moveDown();
+
+    // QR
+    const qrTemp = path.join(__dirname, `../../temp/qr_table_${table.number}.png`);
+    fs.mkdirSync(path.dirname(qrTemp), { recursive: true });
+    fs.writeFileSync(qrTemp, qrPngBuffer);
+    const pageWidth = doc.page.width;
+    const qrSize = 300;
+    const x = (pageWidth - qrSize) / 2;
+    doc.image(qrTemp, x, doc.y, { width: qrSize, height: qrSize });
+    doc.moveDown(2);
+
+    // Link va instruktsiya
+    doc.fontSize(12).text('Quyidagi QR kodni skaner qiling yoki linkdan foydalaning:', { align: 'center' });
+    doc.moveDown(0.5);
+    doc.font('Helvetica-Oblique').fillColor('blue').text(link, { align: 'center', link });
+    doc.moveDown(2);
+    doc.fillColor('black').font('Helvetica').text('QR kodni chop etib stol ustiga yopishtiring. Mijoz shu QR orqali botni ochadi va stol raqami bilan buyurtma qiladi.', {
+      align: 'center'
+    });
+
+    doc.end();
+
+    // temp faylni tozalash (stream tugagach o'chirish tavsiya etiladi)
+    doc.on('end', () => {
+      try { fs.unlinkSync(qrTemp); } catch {}
+    });
+  } catch (e) {
+    console.error('tables qr-pdf error:', e);
+    res.status(500).json({ success: false, message: 'QR PDF yaratishda xatolik' });
+  }
+});
+
+module.exports = router;
+
+

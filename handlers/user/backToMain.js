@@ -1,4 +1,4 @@
-const { backToMainKeyboard } = require('../../keyboards/userKeyboards');
+const { backToMainKeyboard, mainMenuKeyboard } = require('../../keyboards/userKeyboards');
 const { startHandler } = require('./profile');
 
 async function backToMain(ctx) {
@@ -11,7 +11,8 @@ async function backToMain(ctx) {
       delete ctx.session.orderData;
       delete ctx.session.adminAction;
     }
-    await ctx.reply('.', { reply_markup: { remove_keyboard: true } });
+    // Telefon bo'yicha jarayon bo'lsa ham to'xtatamiz (bo'sh xabar yubormaymiz)
+    // Har safar to'liq welcome matn + main menyu ko'rsatamiz
     await startHandler(ctx);
   } catch (error) {
     console.error('Back to main error:', error);

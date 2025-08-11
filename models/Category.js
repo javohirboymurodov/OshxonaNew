@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const categorySchema = new mongoose.Schema({
   name: { type: String, required: true },
+  nameUz: String,
   nameRu: String,
   nameEn: String,
   emoji: String,

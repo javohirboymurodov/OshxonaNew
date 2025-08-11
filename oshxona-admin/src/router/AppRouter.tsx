@@ -10,10 +10,11 @@ import LoadingSpinner from '@/components/Layout/LoadingSpinner';
 // Real components
 import DashboardPage from '@/pages/Dashboard/DashboardPage';
 import CategoriesPage from '@/pages/Categories/CategoriesPage'
-import ProductsPage from '@/pages/Products/ProductsPage';
+import ProductsPage from '@/pages/Products/index';
 import OrdersPage from '@/pages/Orders/OrdersPage';
 import UsersPage from '@/pages/Users/UsersPage';
 import SettingsPage from '@/pages/Settings/SettingsPage';
+import ProfilePage from '@/pages/Profile/ProfilePage';
 
 const AppRouter: React.FC = () => {
   const { user, loading } = useAuth();
@@ -40,6 +41,7 @@ const AppRouter: React.FC = () => {
         <Route path="/orders" element={<OrdersPage />} />
         <Route path="/users" element={<UsersPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
         <Route path="/" element={<Navigate to="/dashboard" />} />
         <Route path="*" element={<Navigate to="/dashboard" />} />
       </Routes>

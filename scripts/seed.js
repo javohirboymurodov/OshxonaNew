@@ -1,254 +1,286 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
-const Database = require('../config/database');
-const { User, Branch, Category, Product, DeliveryZone, Table } = require('../models');
-
-const sampleCategories = [
-  {
-    name: 'Pizza',
-    nameUz: 'Pitsa',
-    nameRu: 'Пицца',
-    description: 'Mazali pitsalar',
-    icon: '🍕',
-    sortOrder: 1,
-    isActive: true
-  },
-  {
-    name: 'Burger',
-    nameUz: 'Burger',
-    nameRu: 'Бургер',
-    description: 'Shirin burgerlar',
-    icon: '🍔',
-    sortOrder: 2,
-    isActive: true
-  },
-  {
-    name: 'Drinks',
-    nameUz: 'Ichimliklar',
-    nameRu: 'Напитки',
-    description: 'Sovuq ichimliklar',
-    icon: '🥤',
-    sortOrder: 3,
-    isActive: true
-  },
-  {
-    name: 'Desserts',
-    nameUz: 'Shirinliklar',
-    nameRu: 'Десерты',
-    description: 'Shirin taomlar',
-    icon: '🍰',
-    sortOrder: 4,
-    isActive: true
-  }
-];
-
-const sampleProducts = [
-  // Pizza
-  {
-    name: 'Margherita',
-    nameUz: 'Margarita',
-    nameRu: 'Маргарита',
-    description: 'Pomidor, mozzarella, basilik',
-    price: 85000,
-    image: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=400',
-    category: 'Pizza',
-    isActive: true,
-    ingredients: ['Pomidor', 'Mozzarella', 'Basilik'],
-    preparationTime: 15
-  },
-  {
-    name: 'Pepperoni',
-    nameUz: 'Pepperoni',
-    nameRu: 'Пепперони',
-    description: 'Pepperoni kolbasa, mozzarella',
-    price: 95000,
-    image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400',
-    category: 'Pizza',
-    isActive: true,
-    ingredients: ['Pepperoni', 'Mozzarella', 'Pomidor'],
-    preparationTime: 15
-  },
-  // Burger
-  {
-    name: 'Classic Burger',
-    nameUz: 'Klassik Burger',
-    nameRu: 'Классический бургер',
-    description: 'Mol go\'shti, salat, pomidor',
-    price: 65000,
-    image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400',
-    category: 'Burger',
-    isActive: true,
-    ingredients: ['Mol go\'shti', 'Salat', 'Pomidor', 'Piyoz'],
-    preparationTime: 10
-  },
-  {
-    name: 'Cheese Burger',
-    nameUz: 'Cheese Burger',
-    nameRu: 'Чизбургер',
-    description: 'Mol go\'shti, cheese, salat',
-    price: 75000,
-    image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400',
-    category: 'Burger',
-    isActive: true,
-    ingredients: ['Mol go\'shti', 'Cheese', 'Salat', 'Pomidor'],
-    preparationTime: 10
-  },
-  // Drinks
-  {
-    name: 'Coca Cola',
-    nameUz: 'Koka-Kola',
-    nameRu: 'Кока-Кола',
-    description: 'Gazlangan ichimlik',
-    price: 12000,
-    image: 'https://images.unsplash.com/photo-1554866585-cd94860890b7?w=400',
-    category: 'Drinks',
-    isActive: true,
-    preparationTime: 1
-  },
-  {
-    name: 'Fresh Orange Juice',
-    nameUz: 'Yangi Apelsin Sharbati',
-    nameRu: 'Свежий апельсиновый сок',
-    description: 'Tabiiy apelsin sharbati',
-    price: 18000,
-    image: 'https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=400',
-    category: 'Drinks',
-    isActive: true,
-    preparationTime: 3
-  }
-];
-
-const sampleTables = [
-  { number: 1, capacity: 2, qrCode: 'table_001', isActive: true },
-  { number: 2, capacity: 4, qrCode: 'table_002', isActive: true },
-  { number: 3, capacity: 4, qrCode: 'table_003', isActive: true },
-  { number: 4, capacity: 6, qrCode: 'table_004', isActive: true },
-  { number: 5, capacity: 8, qrCode: 'table_005', isActive: true },
-  { number: 6, capacity: 2, qrCode: 'table_006', isActive: true },
-  { number: 7, capacity: 4, qrCode: 'table_007', isActive: true },
-  { number: 8, capacity: 4, qrCode: 'table_008', isActive: true },
-  { number: 9, capacity: 6, qrCode: 'table_009', isActive: true },
-  { number: 10, capacity: 8, qrCode: 'table_010', isActive: true }
-];
+const { Category, Product, Branch } = require('../models');
+const database = require('../config/database');
 
 async function seedDatabase() {
   try {
     console.log('🌱 Database seed jarayoni boshlandi...');
-    
-    // Database connection
-    await Database.connect();
 
-    // Get main branch
-    const mainBranch = await Branch.findOne({ code: process.env.MAIN_BRANCH_CODE });
+    // Database'ga ulanish
+    await database.connect();
+
+    // 1. Mavjud ma'lumotlarni tozalash
+    console.log("🧹 Mavjud ma'lumotlarni tozalash...");
+    await Product.deleteMany({});
+    await Category.deleteMany({});
+    await Branch.deleteMany({});
+
+    // 2. Filiallar yaratish - ko'p filial
+    console.log('🏢 Filiallar yaratilmoqda...');
+    await Branch.deleteMany({}); // Avval tozalash
     
-    if (!mainBranch) {
-      throw new Error('❌ Asosiy filial topilmadi! Avval SuperAdmin yarating.');
+    const branchesData = [
+      {
+        name: 'Asosiy filial',
+        address: {
+          street: 'Amir Temur ko\'chasi, 42',
+          city: 'Toshkent',
+          district: 'Yunusobod tumani',
+          coordinates: {
+            latitude: 41.2995,
+            longitude: 69.2401
+          }
+        },
+        phone: '+998911234568',
+        isActive: true,
+        workingHours: {
+          monday: { open: '09:00', close: '23:00', isOpen: true },
+          tuesday: { open: '09:00', close: '23:00', isOpen: true },
+          wednesday: { open: '09:00', close: '23:00', isOpen: true },
+          thursday: { open: '09:00', close: '23:00', isOpen: true },
+          friday: { open: '09:00', close: '23:00', isOpen: true },
+          saturday: { open: '09:00', close: '23:00', isOpen: true },
+          sunday: { open: '10:00', close: '22:00', isOpen: true }
+        },
+        settings: {
+          minOrderAmount: 50000,
+          deliveryFee: 15000,
+          freeDeliveryAmount: 200000,
+          maxDeliveryDistance: 15
+        }
+      },
+      {
+        name: 'Chilonzor filiali',
+        address: {
+          street: 'Bunyodkor ko\'chasi, 25',
+          city: 'Toshkent',
+          district: 'Chilonzor tumani',
+          coordinates: {
+            latitude: 41.2856,
+            longitude: 69.2034
+          }
+        },
+        phone: '+998911234569',
+        isActive: true,
+        workingHours: {
+          monday: { open: '08:00', close: '22:00', isOpen: true },
+          tuesday: { open: '08:00', close: '22:00', isOpen: true },
+          wednesday: { open: '08:00', close: '22:00', isOpen: true },
+          thursday: { open: '08:00', close: '22:00', isOpen: true },
+          friday: { open: '08:00', close: '22:00', isOpen: true },
+          saturday: { open: '09:00', close: '23:00', isOpen: true },
+          sunday: { open: '09:00', close: '23:00', isOpen: true }
+        },
+        settings: {
+          minOrderAmount: 40000,
+          deliveryFee: 12000,
+          freeDeliveryAmount: 150000,
+          maxDeliveryDistance: 12
+        }
+      },
+      {
+        name: 'Sergeli filiali',
+        address: {
+          street: 'Sergeli ko\'chasi, 78',
+          city: 'Toshkent',
+          district: 'Sergeli tumani',
+          coordinates: {
+            latitude: 41.2045,
+            longitude: 69.2223
+          }
+        },
+        phone: '+998911234570',
+        isActive: true,
+        workingHours: {
+          monday: { open: '10:00', close: '21:00', isOpen: true },
+          tuesday: { open: '10:00', close: '21:00', isOpen: true },
+          wednesday: { open: '10:00', close: '21:00', isOpen: true },
+          thursday: { open: '10:00', close: '21:00', isOpen: true },
+          friday: { open: '10:00', close: '22:00', isOpen: true },
+          saturday: { open: '10:00', close: '22:00', isOpen: true },
+          sunday: { open: '11:00', close: '21:00', isOpen: true }
+        },
+        settings: {
+          minOrderAmount: 45000,
+          deliveryFee: 18000,
+          freeDeliveryAmount: 180000,
+          maxDeliveryDistance: 10
+        }
+      },
+      {
+        name: 'Bektemir filiali',
+        address: {
+          street: 'Bektemir ko\'chasi, 156',
+          city: 'Toshkent',
+          district: 'Bektemir tumani',
+          coordinates: {
+            latitude: 41.1967,
+            longitude: 69.3342
+          }
+        },
+        phone: '+998911234571',
+        isActive: false, // Hozircha yopiq
+        workingHours: {
+          monday: { open: '09:00', close: '20:00', isOpen: false },
+          tuesday: { open: '09:00', close: '20:00', isOpen: false },
+          wednesday: { open: '09:00', close: '20:00', isOpen: false },
+          thursday: { open: '09:00', close: '20:00', isOpen: false },
+          friday: { open: '09:00', close: '20:00', isOpen: false },
+          saturday: { open: '09:00', close: '20:00', isOpen: false },
+          sunday: { open: '09:00', close: '20:00', isOpen: false }
+        },
+        settings: {
+          minOrderAmount: 50000,
+          deliveryFee: 20000,
+          freeDeliveryAmount: 250000,
+          maxDeliveryDistance: 8
+        }
+      }
+    ];
+
+    const branches = [];
+    for (const branchData of branchesData) {
+      const branch = await Branch.create(branchData);
+      branches.push(branch);
+      console.log(`✅ Filial yaratildi: ${branch.name} (${branch.isActive ? 'Faol' : 'Nofaol'})`);
     }
 
-    console.log(`🏢 Filial: ${mainBranch.name}`);
+    // Asosiy filialni olish (mahsulotlar uchun)
+    const mainBranch = branches.find(b => b.name === 'Asosiy filial');
 
-    // Clear existing data (optional)
-    const clearData = process.argv.includes('--clear');
-    if (clearData) {
-      console.log('🗑️ Mavjud ma\'lumotlar tozalanmoqda...');
-      await Category.deleteMany({ branch: mainBranch._id });
-      await Product.deleteMany({ branch: mainBranch._id });
-      await Table.deleteMany({ branch: mainBranch._id });
-      console.log('✅ Eski ma\'lumotlar tozalandi');
-    }
-
-    // Seed Categories
+    // 3. Kategoriyalar yaratish - nameUz qo'shilgan
     console.log('📂 Kategoriyalar yaratilmoqda...');
-    const createdCategories = [];
-    
-    for (const categoryData of sampleCategories) {
-      const existingCategory = await Category.findOne({ 
-        name: categoryData.name, 
-        branch: mainBranch._id 
-      });
-
-      if (!existingCategory) {
-        const category = new Category({
-          ...categoryData,
-          branch: mainBranch._id
-        });
-        await category.save();
-        createdCategories.push(category);
-        console.log(`✅ Kategoriya yaratildi: ${category.name}`);
-      } else {
-        createdCategories.push(existingCategory);
-        console.log(`⚠️ Kategoriya mavjud: ${existingCategory.name}`);
+    const categoriesData = [
+      { 
+        name: 'Pizza', 
+        nameUz: 'Pitsa',
+        nameRu: 'Пицца', 
+        nameEn: 'Pizza', 
+        emoji: '🍕', 
+        description: 'Mazali pitsalar',
+        sortOrder: 1,
+        stats: {
+          totalProducts: 1,
+          activeProducts: 2,
+          totalOrders: 5,
+          totalViews: 10,
+          totalRevenue: 0,
+          popularityScore: 0
+        }
+      },
+      { 
+        name: 'Burger', 
+        nameUz: 'Burger', // <--- BU MAYDON QO'SHILDI
+        nameRu: 'Бургер', 
+        nameEn: 'Burger', 
+        emoji: '🍔', 
+        description: 'Yangi burgerlar',
+        sortOrder: 2,
+        stats: {
+          totalProducts: 0,
+          activeProducts: 0,
+          totalOrders: 0,
+          totalViews: 0,
+          totalRevenue: 0,
+          popularityScore: 0
+        }
+      },
+      { 
+        name: 'Ichimliklar', 
+        nameUz: 'Ichimliklar', // <--- BU MAYDON QO'SHILDI
+        nameRu: 'Напитки', 
+        nameEn: 'Drinks', 
+        emoji: '🥤', 
+        description: 'Sovuq ichimliklar',
+        sortOrder: 3,
+        stats: {
+          totalProducts: 0,
+          activeProducts: 0,
+          totalOrders: 0,
+          totalViews: 0,
+          totalRevenue: 0,
+          popularityScore: 0
+        }
+      },
+      { 
+        name: 'Desertlar', 
+        nameUz: 'Desertlar', // <--- BU MAYDON QO'SHILDI
+        nameRu: 'Десерты', 
+        nameEn: 'Desserts', 
+        emoji: '🍰', 
+        description: 'Shirin desertlar',
+        sortOrder: 4,
+        stats: {
+          totalProducts: 0,
+          activeProducts: 0,
+          totalOrders: 0,
+          totalViews: 0,
+          totalRevenue: 0,
+          popularityScore: 0
+        }
       }
+    ];
+
+    const categories = [];
+    for (const catData of categoriesData) {
+      const category = await Category.create(catData);
+      categories.push(category);
+      console.log('✅ Kategoriya yaratildi:', category.name);
     }
 
-    // Seed Products
+    // 4. Mahsulotlar yaratish
     console.log('🍕 Mahsulotlar yaratilmoqda...');
-    let createdProductsCount = 0;
 
-    for (const productData of sampleProducts) {
-      const category = createdCategories.find(cat => cat.name === productData.category);
-      
-      if (!category) {
-        console.log(`❌ Kategoriya topilmadi: ${productData.category}`);
-        continue;
+    const pizzaCat = categories.find(c => c.name === 'Pizza');
+    const burgerCat = categories.find(c => c.name === 'Burger');
+    const drinksCat = categories.find(c => c.name === 'Ichimliklar');
+    const dessertsCat = categories.find(c => c.name === 'Desertlar');
+
+    const productsData = [
+      {
+        name: 'Pepperoni Pizza',
+        description: 'Mazali pepperoni va pishloq bilan',
+        price: 55000,
+        categoryId: pizzaCat._id,
+      },
+      {
+        name: 'Cheeseburger',
+        description: 'Mazali go\'sht va pishloq bilan',
+        price: 35000,
+        categoryId: burgerCat._id,
+      },
+      {
+        name: 'Coca Cola',
+        description: 'Sovuq gazli ichimlik',
+        price: 10000,
+        categoryId: drinksCat._id,
+      },
+      {
+        name: 'Tiramisu',
+        description: 'Italiyancha mashhur desert',
+        price: 25000,
+        categoryId: dessertsCat._id,
       }
+    ];
 
-      const existingProduct = await Product.findOne({ 
-        name: productData.name, 
-        branch: mainBranch._id 
-      });
-
-      if (!existingProduct) {
-        const product = new Product({
-          ...productData,
-          category: category._id,
-          branch: mainBranch._id
-        });
-        await product.save();
-        createdProductsCount++;
-        console.log(`✅ Mahsulot yaratildi: ${product.name} - ${product.price.toLocaleString()} so'm`);
-      } else {
-        console.log(`⚠️ Mahsulot mavjud: ${existingProduct.name}`);
-      }
+    for (const prodData of productsData) {
+      const product = await Product.create(prodData);
+      console.log('✅ Mahsulot yaratildi:', product.name);
     }
 
-    // Seed Tables
-    console.log('🪑 Stollar yaratilmoqda...');
-    let createdTablesCount = 0;
-
-    for (const tableData of sampleTables) {
-      const existingTable = await Table.findOne({ 
-        number: tableData.number, 
-        branch: mainBranch._id 
-      });
-
-      if (!existingTable) {
-        const table = new Table({
-          ...tableData,
-          branch: mainBranch._id
-        });
-        await table.save();
-        createdTablesCount++;
-        console.log(`✅ Stol yaratildi: #${table.number} (${table.capacity} kishi)`);
-      } else {
-        console.log(`⚠️ Stol mavjud: #${existingTable.number}`);
-      }
-    }
-
-    console.log('\n🎉 Seed jarayoni muvaffaqiyatli tugadi!');
-    console.log('=====================================');
-    console.log(`📂 Kategoriyalar: ${createdCategories.length}`);
-    console.log(`🍕 Mahsulotlar: ${createdProductsCount} yangi yaratildi`);
-    console.log(`🪑 Stollar: ${createdTablesCount} yangi yaratildi`);
-    console.log(`🏢 Filial: ${mainBranch.name}`);
-    console.log('=====================================');
-
+    console.log('🌱 Seed jarayoni muvaffaqiyatli tugadi!');
+    console.log(`📊 Yaratildi: ${branches.length} filial, ${categories.length} kategoriya, ${productsData.length} mahsulot`);
+    
+    // Database connectionni yopish
+    await database.disconnect();
+    process.exit(0);
   } catch (error) {
     console.error('❌ Seed jarayonida xatolik:', error);
-  } finally {
-    await Database.disconnect();
-    process.exit(0);
+    await database.disconnect();
+    process.exit(1);
   }
 }
 
+// Seed jarayonini ishga tushirish
 seedDatabase();

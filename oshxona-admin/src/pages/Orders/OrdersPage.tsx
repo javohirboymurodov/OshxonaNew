@@ -1,117 +1,52 @@
 // src/pages/Orders/OrdersPage.tsx
-import React, { useState, useEffect } from 'react';
-import {
-  Table,
-  Button,
-  Space,
-  Tag,
-  Modal,
-  Card,
-  Row,
-  Col,
-  Typography,
-  Select,
-  DatePicker,
-  Statistic,
-  Timeline,
-  Descriptions,
-  message,
-  Input,
-  Drawer,
-  Avatar,
-  List,
-  Popconfirm,
-  Badge
-} from 'antd';
-import {
-  EyeOutlined,
-  EditOutlined,
-  ClockCircleOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined,
-  TruckOutlined,
-  ShopOutlined,
-  UserOutlined,
-  PhoneOutlined,
-  EnvironmentOutlined,
-  SearchOutlined,
-  FilterOutlined,
-  ReloadOutlined
-} from '@ant-design/icons';
-import dayjs from 'dayjs';
-import type { ColumnsType } from 'antd/es/table';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Button, Space, Card, Row, Col, Typography, Select, DatePicker, message as antdMessage, Input, Drawer } from 'antd';
+import { FilterOutlined, ReloadOutlined } from '@ant-design/icons';
+import dayjs, { type Dayjs } from 'dayjs';
+import OrdersStats from '@/components/Orders/OrdersStats';
+import OrdersTable, { type Order as TableOrder } from '@/components/Orders/OrdersTable';
+import OrderDetailsModal, { type Order as DetailsOrder } from '@/components/Orders/OrderDetailsModal';
+import AssignCourierModal from '@/components/Orders/AssignCourierModal';
+import { useAuth } from '@/hooks/useAuth';
+import { useRealTimeOrders } from '@/hooks/useSocket';
+import apiService from '@/services/api';
+import { useLocation } from 'react-router-dom';
+import '@/pages/Orders/orders-highlight.css';
 
 const { Title, Text } = Typography;
 const { Search } = Input;
 const { Option } = Select;
 const { RangePicker } = DatePicker;
 
-interface OrderItem {
-  product: {
-    _id: string;
-    name: string;
-    price: number;
-    image?: string;
-  };
-  quantity: number;
-  price: number;
-  total: number;
-}
+type Order = TableOrder & Partial<DetailsOrder>;
 
-interface Order {
-  _id: string;
-  orderNumber: string;
-  user: {
-    _id: string;
-    firstName: string;
-    lastName: string;
-    telegramId?: number;
-    phone?: string;
-  };
-  branch: {
-    _id: string;
-    name: string;
-    address: string;
-  };
-  items: OrderItem[];
-  totalAmount: number;
-  status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
-  orderType: 'delivery' | 'pickup' | 'dine_in';
-  paymentMethod: 'cash' | 'card' | 'online';
-  deliveryAddress?: string;
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface OrderStats {
+interface OrderStatsShape {
   pending: number;
   confirmed: number;
   preparing: number;
   ready: number;
   delivered: number;
   cancelled: number;
-  totalRevenue: number;
-  averageOrderValue: number;
 }
 
+const defaultStats: OrderStatsShape = {
+  pending: 0,
+  confirmed: 0,
+  preparing: 0,
+  ready: 0,
+  delivered: 0,
+  cancelled: 0,
+};
+
 const OrdersPage: React.FC = () => {
+  const [messageApi, contextHolder] = antdMessage.useMessage();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [detailsVisible, setDetailsVisible] = useState(false);
-  const [statusUpdateVisible, setStatusUpdateVisible] = useState(false);
+  const [assignModalVisible, setAssignModalVisible] = useState(false);
   const [filtersVisible, setFiltersVisible] = useState(false);
-  const [stats, setStats] = useState<OrderStats>({
-    pending: 0,
-    confirmed: 0,
-    preparing: 0,
-    ready: 0,
-    delivered: 0,
-    cancelled: 0,
-    totalRevenue: 0,
-    averageOrderValue: 0
-  });
+  const [stats, setStats] = useState<OrderStatsShape>(defaultStats);
 
   const [pagination, setPagination] = useState({
     current: 1,
@@ -119,458 +54,198 @@ const OrdersPage: React.FC = () => {
     total: 0,
   });
 
-  const [filters, setFilters] = useState({
+  interface Filters {
+    search: string;
+    status: string;
+    orderType: string;
+    paymentMethod: string;
+    dateRange: [Dayjs | null, Dayjs | null] | null;
+    courier?: 'assigned' | 'unassigned' | '';
+  }
+  const [filters, setFilters] = useState<Filters>({
     search: '',
     status: '',
     orderType: '',
     paymentMethod: '',
-    dateRange: null as any,
+    dateRange: null as [Dayjs | null, Dayjs | null] | null,
+    courier: ''
   });
 
-  // Fetch orders
+  const { user } = useAuth();
+  const location = useLocation();
+  const branchId = (() => {
+    const maybe = (user as unknown) as { branch?: { _id?: string } } | null;
+    return maybe?.branch?._id || 'default';
+  })();
+  const token = localStorage.getItem('token') || '';
+  const { newOrders, orderUpdates, connected } = useRealTimeOrders(token, branchId);
+  const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
+
+  type OrdersListResponse = {
+    orders?: Array<Order & { orderId?: string; total?: number }>;
+    pagination?: { total?: number; current?: number; pageSize?: number };
+    data?: { orders?: Array<Order & { orderId?: string; total?: number }>; pagination?: { total?: number; current?: number; pageSize?: number } };
+  };
+
   const fetchOrders = async (page = 1, pageSize = 15) => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: pageSize.toString(),
-        ...(filters.search && { search: filters.search }),
-        ...(filters.status && { status: filters.status }),
-        ...(filters.orderType && { orderType: filters.orderType }),
-        ...(filters.paymentMethod && { paymentMethod: filters.paymentMethod }),
-        ...(filters.dateRange && {
-          startDate: filters.dateRange[0].toISOString(),
-          endDate: filters.dateRange[1].toISOString(),
-        }),
+      const data: OrdersListResponse = await apiService.getOrders(page, pageSize, {
+        status: filters.status || undefined,
+        orderType: filters.orderType || undefined,
+        search: filters.search || undefined,
+        courier: filters.courier || undefined,
+        ...(filters.dateRange && filters.dateRange[0] && filters.dateRange[1]
+          ? {
+              dateFrom: dayjs(filters.dateRange[0]).toDate().toISOString(),
+              dateTo: dayjs(filters.dateRange[1]).toDate().toISOString(),
+            }
+          : {}),
       });
 
-      const response = await fetch(`/api/admin/orders?${params}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
+      const rawOrders: Array<Order & { orderId?: string; total?: number; orderNumber?: string; totalAmount?: number }> = (data?.orders || data?.data?.orders || []) as Array<Order & { orderId?: string; total?: number; orderNumber?: string; totalAmount?: number }>;
+      const normalized: Order[] = rawOrders.map((o) => ({
+        ...o,
+        orderNumber: o.orderNumber || o.orderId || '',
+        totalAmount: o.totalAmount ?? o.total,
+      }));
+      const pag = data?.pagination || data?.data?.pagination || {};
 
-      if (response.ok) {
-        const data = await response.json();
-        setOrders(data.orders || []);
-        setPagination({
-          current: page,
-          pageSize,
-          total: data.total || 0,
-        });
-      } else {
-        message.error('Buyurtmalarni yuklashda xatolik!');
-      }
+      setOrders(normalized);
+      setPagination({ current: page, pageSize, total: Number(pag.total || normalized.length || 0) });
     } catch (error) {
       console.error('Error fetching orders:', error);
-      message.error('Buyurtmalarni yuklashda xatolik!');
-      
-      // Mock data for demo
-      const mockOrders: Order[] = [
-        {
-          _id: '1',
-          orderNumber: 'ORD-001',
-          user: {
-            _id: '1',
-            firstName: 'Alisher',
-            lastName: 'Karimov',
-            telegramId: 123456789,
-            phone: '+998901234567'
-          },
-          branch: {
-            _id: '1',
-            name: 'Toshkent filiali',
-            address: 'Toshkent shahar, Amir Temur ko\'chasi'
-          },
-          items: [
-            {
-              product: { _id: '1', name: 'Osh', price: 25000 },
-              quantity: 2,
-              price: 25000,
-              total: 50000
-            },
-            {
-              product: { _id: '2', name: 'Manti', price: 12000 },
-              quantity: 1,
-              price: 12000,
-              total: 12000
-            }
-          ],
-          totalAmount: 62000,
-          status: 'preparing',
-          orderType: 'delivery',
-          paymentMethod: 'cash',
-          deliveryAddress: 'Toshkent, Yunusobod tumani',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        },
-        {
-          _id: '2',
-          orderNumber: 'ORD-002',
-          user: {
-            _id: '2',
-            firstName: 'Malika',
-            lastName: 'Tosheva',
-            telegramId: 987654321,
-            phone: '+998909876543'
-          },
-          branch: {
-            _id: '1',
-            name: 'Toshkent filiali',
-            address: 'Toshkent shahar, Amir Temur ko\'chasi'
-          },
-          items: [
-            {
-              product: { _id: '3', name: 'Lag\'mon', price: 22000 },
-              quantity: 1,
-              price: 22000,
-              total: 22000
-            }
-          ],
-          totalAmount: 22000,
-          status: 'delivered',
-          orderType: 'pickup',
-          paymentMethod: 'card',
-          createdAt: dayjs().subtract(1, 'hour').toISOString(),
-          updatedAt: dayjs().subtract(30, 'minutes').toISOString()
-        }
-      ];
-      setOrders(mockOrders);
-      setPagination({
-        current: 1,
-        pageSize: 15,
-        total: mockOrders.length,
-      });
+      messageApi.error('Buyurtmalarni yuklashda xatolik!');
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch order stats
   const fetchOrderStats = async () => {
     try {
-      const response = await fetch('/api/admin/orders/stats', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setStats(data.stats);
+      const data = (await apiService.getOrderStats()) as { stats?: Partial<OrderStatsShape> } | Partial<OrderStatsShape> | undefined;
+      let s: Partial<OrderStatsShape> = {};
+      if (data && typeof data === 'object' && 'stats' in (data as Record<string, unknown>)) {
+        s = ((data as { stats?: Partial<OrderStatsShape> }).stats) ?? {};
       } else {
-        // Mock stats
-        setStats({
-          pending: 8,
-          confirmed: 15,
-          preparing: 12,
-          ready: 6,
-          delivered: 180,
-          cancelled: 5,
-          totalRevenue: 5640000,
-          averageOrderValue: 45600
-        });
+        s = (data as Partial<OrderStatsShape>) ?? {};
       }
+      setStats({
+        pending: Number(s.pending) || 0,
+        confirmed: Number(s.confirmed) || 0,
+        preparing: Number(s.preparing) || 0,
+        ready: Number(s.ready) || 0,
+        delivered: Number(s.delivered) || 0,
+        cancelled: Number(s.cancelled) || 0,
+      });
     } catch (error) {
       console.error('Stats fetch error:', error);
-      // Mock stats
-      setStats({
-        pending: 8,
-        confirmed: 15,
-        preparing: 12,
-        ready: 6,
-        delivered: 180,
-        cancelled: 5,
-        totalRevenue: 5640000,
-        averageOrderValue: 45600
-      });
+      setStats(defaultStats);
     }
   };
 
   useEffect(() => {
-    fetchOrders();
+    fetchOrders(1, pagination.pageSize);
     fetchOrderStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
-  // Status configurations
-  const getStatusConfig = (status: string) => {
-    const configs = {
-      pending: { color: 'orange', text: 'Kutilmoqda', icon: <ClockCircleOutlined /> },
-      confirmed: { color: 'blue', text: 'Tasdiqlangan', icon: <CheckCircleOutlined /> },
-      preparing: { color: 'purple', text: 'Tayyorlanmoqda', icon: <ClockCircleOutlined /> },
-      ready: { color: 'cyan', text: 'Tayyor', icon: <CheckCircleOutlined /> },
-      delivered: { color: 'green', text: 'Yetkazilgan', icon: <TruckOutlined /> },
-      cancelled: { color: 'red', text: 'Bekor qilingan', icon: <CloseCircleOutlined /> },
-    };
-    return configs[status as keyof typeof configs] || configs.pending;
-  };
+  // Bell popoverdan focusOrderId kelsa: topib highlight + modalni ochish
+  useEffect(() => {
+    const state = location.state as { focusOrderId?: string } | null;
+    if (!state?.focusOrderId) return;
+    const order = orders.find(o => o._id === state.focusOrderId || o.orderNumber === state.focusOrderId);
+    if (order) {
+      setSelectedOrder(order);
+      setDetailsVisible(true);
+      // highlight uchun qisqa scroll/hilite class qo'shish mumkin — hozir modal ochish yetarli
+    }
+    // location.state ni tozalash uchun tarixni almashtirish (optional)
+    window.history.replaceState({}, document.title);
+  }, [location.state, orders]);
 
-  const getOrderTypeConfig = (type: string) => {
-    const configs = {
-      delivery: { color: 'blue', text: 'Yetkazib berish', icon: <TruckOutlined /> },
-      pickup: { color: 'green', text: 'Olib ketish', icon: <ShopOutlined /> },
-      dine_in: { color: 'purple', text: 'Zalda iste\'mol', icon: <UserOutlined /> },
-    };
-    return configs[type as keyof typeof configs] || configs.delivery;
-  };
+  // Real-time dine_in_arrived kelganda avtomatik ochish uchun fokus ID ni tayyorlab qo'yamiz
+  useEffect(() => {
+    if (!orderUpdates || orderUpdates.length === 0) return;
+    const last = orderUpdates[0] as unknown as { event?: string; orderId?: string };
+    if (last && last.event === 'dine_in_arrived' && last.orderId) {
+      const id = String(last.orderId);
+      setPendingFocusId(id);
+      try { localStorage.setItem('ackOrderId', id); } catch { /* ignore */ }
+    }
+  }, [orderUpdates]);
 
-  const getPaymentMethodText = (method: string) => {
-    const texts = { cash: 'Naqd', card: 'Karta', online: 'Online' };
-    return texts[method as keyof typeof texts] || method;
-  };
+  // Fokus ID bo'lsa va ro'yxat yangilangan bo'lsa, moddalni ochamiz
+  useEffect(() => {
+    if (!pendingFocusId || orders.length === 0) return;
+    const order = orders.find(o => o._id === pendingFocusId || o.orderNumber === pendingFocusId);
+    if (order) {
+      setSelectedOrder(order);
+      setDetailsVisible(true);
+      setPendingFocusId(null);
+    }
+  }, [pendingFocusId, orders]);
 
-  // Table columns
-  const columns: ColumnsType<Order> = [
-    {
-      title: 'Buyurtma raqami',
-      dataIndex: 'orderNumber',
-      key: 'orderNumber',
-      render: (text: string) => (
-        <Text strong style={{ color: '#1890ff' }}>{text}</Text>
-      ),
-    },
-    {
-      title: 'Mijoz',
-      key: 'customer',
-      render: (record: Order) => (
-        <div>
-          <div>{record.user.firstName} {record.user.lastName}</div>
-          <Text type="secondary" style={{ fontSize: '12px' }}>
-            {record.user.phone || 'Telefon yo\'q'}
-          </Text>
-        </div>
-      ),
-    },
-    {
-      title: 'Turi',
-      dataIndex: 'orderType',
-      key: 'orderType',
-      render: (type: string) => {
-        const config = getOrderTypeConfig(type);
-        return (
-          <Tag color={config.color} icon={config.icon}>
-            {config.text}
-          </Tag>
-        );
-      },
-    },
-    {
-      title: 'Holat',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status: string) => {
-        const config = getStatusConfig(status);
-        return (
-          <Badge dot color={config.color}>
-            <Tag color={config.color} icon={config.icon}>
-              {config.text}
-            </Tag>
-          </Badge>
-        );
-      },
-    },
-    {
-      title: 'Summa',
-      dataIndex: 'totalAmount',
-      key: 'totalAmount',
-      render: (amount: number) => (
-        <Text strong>{amount.toLocaleString()} so'm</Text>
-      ),
-    },
-    {
-      title: 'To\'lov',
-      dataIndex: 'paymentMethod',
-      key: 'paymentMethod',
-      render: (method: string) => {
-        const colors = { cash: 'green', card: 'blue', online: 'purple' };
-        return (
-          <Tag color={colors[method as keyof typeof colors]}>
-            {getPaymentMethodText(method)}
-          </Tag>
-        );
-      },
-    },
-    {
-      title: 'Sana',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      render: (date: string) => (
-        <div>
-          <div>{dayjs(date).format('DD.MM.YYYY')}</div>
-          <Text type="secondary" style={{ fontSize: '12px' }}>
-            {dayjs(date).format('HH:mm')}
-          </Text>
-        </div>
-      ),
-    },
-    {
-      title: 'Amallar',
-      key: 'actions',
-      width: 120,
-      render: (_: any, record: Order) => (
-        <Space size="small">
-          <Button
-            type="link"
-            size="small"
-            icon={<EyeOutlined />}
-            onClick={() => showOrderDetails(record)}
-          />
-          <Button
-            type="link"
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => updateOrderStatus(record)}
-            disabled={record.status === 'delivered' || record.status === 'cancelled'}
-          />
-        </Space>
-      ),
-    },
-  ];
+  useEffect(() => {
+    if (!connected) return;
+    fetchOrders(pagination.current, pagination.pageSize);
+    fetchOrderStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [newOrders, orderUpdates, connected]);
 
-  // Handlers
-  const showOrderDetails = (order: Order) => {
-    setSelectedOrder(order);
+  const getPaymentMethodText = useMemo(
+    () => (method: string) => {
+      const texts = { cash: 'Naqd', card: 'Karta', online: 'Online' } as const;
+      return (texts as Record<string, string>)[method] || method;
+    },
+    []
+  );
+  const getOrderTypeText = useMemo(
+    () => (type: string) => ({ delivery: 'Yetkazib berish', pickup: 'Olib ketish', dine_in: 'Avvaldan buyurtma', table: 'Stoldan (QR)' } as Record<string, string>)[type] || type,
+    []
+  );
+
+  const showOrderDetails = (order: TableOrder) => {
+    setSelectedOrder(order as unknown as Order);
     setDetailsVisible(true);
-  };
-
-  const updateOrderStatus = (order: Order) => {
-    setSelectedOrder(order);
-    setStatusUpdateVisible(true);
-  };
-
-  const handleStatusUpdate = async (newStatus: string) => {
-    if (!selectedOrder) return;
-
-    try {
-      const response = await fetch(`/api/admin/orders/${selectedOrder._id}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ status: newStatus })
-      });
-
-      if (response.ok) {
-        message.success('Buyurtma holati yangilandi!');
-        setStatusUpdateVisible(false);
-        fetchOrders(pagination.current, pagination.pageSize);
-        fetchOrderStats();
-      } else {
-        message.error('Holatni yangilashda xatolik!');
-      }
-    } catch (error) {
-      console.error('Error updating status:', error);
-      message.error('Holatni yangilashda xatolik!');
+    // Belldagi notificationni kamaytirish uchun localStorage orqali ack yuboramiz
+    const ackId = (order as unknown as { _id?: string; orderNumber?: string })._id || (order as unknown as { _id?: string; orderNumber?: string }).orderNumber;
+    if (ackId) {
+      try { localStorage.setItem('ackOrderId', String(ackId)); } catch { /* ignore */ }
     }
   };
 
-  const getNextStatuses = (currentStatus: string) => {
-    const statusFlow = {
-      pending: ['confirmed', 'cancelled'],
-      confirmed: ['preparing', 'cancelled'],
-      preparing: ['ready', 'cancelled'],
-      ready: ['delivered'],
-      delivered: [],
-      cancelled: []
-    };
-    return statusFlow[currentStatus as keyof typeof statusFlow] || [];
+  // Bell popoverdan kirilganda newOrders ichidagi eng so'nggi buyurtmani ochish
+  useEffect(() => {
+    if (!connected || !detailsVisible) return;
+  }, [connected, detailsVisible]);
+
+  // Deprecated: full-screen status update modal removed in favor of quick actions
+
+  const openAssignCourier = (order: TableOrder) => {
+    setSelectedOrder(order as unknown as Order);
+    setAssignModalVisible(true);
   };
+
+  // quick status change handles update inline; legacy handler removed
 
   return (
     <div>
-      {/* Header */}
+      {contextHolder}
       <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
         <Col>
           <Title level={2}>Buyurtmalar Boshqaruvi</Title>
         </Col>
         <Col>
           <Space>
-            <Button
-              icon={<FilterOutlined />}
-              onClick={() => setFiltersVisible(true)}
-            >
-              Filtrlar
-            </Button>
-            <Button
-              type="primary"
-              icon={<ReloadOutlined />}
-              onClick={() => {
-                fetchOrders(pagination.current, pagination.pageSize);
-                fetchOrderStats();
-              }}
-            >
-              Yangilash
-            </Button>
+            <Button icon={<FilterOutlined />} onClick={() => setFiltersVisible(true)}>Filtrlar</Button>
+            <Button type="primary" icon={<ReloadOutlined />} onClick={() => { fetchOrders(pagination.current, pagination.pageSize); fetchOrderStats(); }}>Yangilash</Button>
           </Space>
         </Col>
       </Row>
 
-      {/* Statistics */}
-      <Row gutter={16} style={{ marginBottom: 24 }}>
-        <Col xs={12} sm={8} lg={4}>
-          <Card>
-            <Statistic
-              title="Kutilayotgan"
-              value={stats.pending}
-              valueStyle={{ color: '#faad14' }}
-              prefix={<ClockCircleOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col xs={12} sm={8} lg={4}>
-          <Card>
-            <Statistic
-              title="Tasdiqlangan"
-              value={stats.confirmed}
-              valueStyle={{ color: '#1890ff' }}
-              prefix={<CheckCircleOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col xs={12} sm={8} lg={4}>
-          <Card>
-            <Statistic
-              title="Tayyorlanmoqda"
-              value={stats.preparing}
-              valueStyle={{ color: '#722ed1' }}
-              prefix={<ClockCircleOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col xs={12} sm={8} lg={4}>
-          <Card>
-            <Statistic
-              title="Tayyor"
-              value={stats.ready}
-              valueStyle={{ color: '#13c2c2' }}
-              prefix={<CheckCircleOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col xs={12} sm={8} lg={4}>
-          <Card>
-            <Statistic
-              title="Yetkazilgan"
-              value={stats.delivered}
-              valueStyle={{ color: '#52c41a' }}
-              prefix={<TruckOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col xs={12} sm={8} lg={4}>
-          <Card>
-            <Statistic
-              title="Bekor qilingan"
-              value={stats.cancelled}
-              valueStyle={{ color: '#ff4d4f' }}
-              prefix={<CloseCircleOutlined />}
-            />
-          </Card>
-        </Col>
-      </Row>
+      <OrdersStats stats={stats} />
 
-      {/* Quick Filters */}
       <Card style={{ marginBottom: 24 }}>
         <Row gutter={16} align="middle">
           <Col xs={24} sm={8} lg={6}>
@@ -607,192 +282,63 @@ const OrdersPage: React.FC = () => {
             >
               <Option value="delivery">Yetkazib berish</Option>
               <Option value="pickup">Olib ketish</Option>
-              <Option value="dine_in">Zalda iste'mol</Option>
+              <Option value="dine_in">Avvaldan buyurtma</Option>
+              <Option value="table">Stoldan (QR)</Option>
             </Select>
+          </Col>
+          <Col xs={24} sm={8} lg={4}>
+            <Select
+              placeholder="Kuryer"
+              allowClear
+              value={filters.courier || undefined}
+              onChange={(value) => setFilters({ ...filters, courier: (value || '') as Filters['courier'] })}
+              style={{ width: '100%' }}
+              options={[
+                { value: 'assigned', label: 'Tayinlangan' },
+                { value: 'unassigned', label: 'Tayinlanmagan' },
+              ]}
+            />
           </Col>
         </Row>
       </Card>
 
-      {/* Orders Table */}
       <Card>
-        <Table
-          columns={columns}
-          dataSource={orders}
-          rowKey="_id"
+        <OrdersTable
+          data={orders}
           loading={loading}
-          pagination={{
-            ...pagination,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) =>
-              `${range[0]}-${range[1]} / ${total} ta buyurtma`,
+          pagination={pagination}
+          onChangePage={(p, ps) => fetchOrders(p, ps)}
+          onShowDetails={showOrderDetails}
+          onQuickStatusChange={async (order, newStatus) => {
+            try {
+              await apiService.updateOrderStatus(order._id, newStatus);
+              messageApi.success('Holat yangilandi');
+              fetchOrders(pagination.current, pagination.pageSize);
+              fetchOrderStats();
+            } catch {
+              messageApi.error('Holatni yangilashda xatolik');
+            }
           }}
-          onChange={(paginationConfig) => {
-            fetchOrders(paginationConfig.current, paginationConfig.pageSize);
-          }}
-          scroll={{ x: 1000 }}
-          size="middle"
+          onAssignCourier={openAssignCourier}
+          highlightId={(location.state as { focusOrderId?: string } | null)?.focusOrderId}
         />
       </Card>
 
-      {/* Order Details Modal */}
-      <Modal
-        title={`Buyurtma tafsilotlari - ${selectedOrder?.orderNumber}`}
-        open={detailsVisible}
-        onCancel={() => setDetailsVisible(false)}
-        footer={null}
-        width={800}
-      >
-        {selectedOrder && (
-          <div>
-            <Row gutter={24}>
-              <Col span={12}>
-                <Card title="Mijoz ma'lumotlari" size="small">
-                  <Descriptions column={1} size="small">
-                    <Descriptions.Item label="Ism">
-                      {selectedOrder.user.firstName} {selectedOrder.user.lastName}
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Telefon">
-                      <PhoneOutlined /> {selectedOrder.user.phone || 'Ko\'rsatilmagan'}
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Telegram">
-                      @{selectedOrder.user.telegramId}
-                    </Descriptions.Item>
-                    {selectedOrder.deliveryAddress && (
-                      <Descriptions.Item label="Manzil">
-                        <EnvironmentOutlined /> {selectedOrder.deliveryAddress}
-                      </Descriptions.Item>
-                    )}
-                  </Descriptions>
-                </Card>
-              </Col>
-              <Col span={12}>
-                <Card title="Buyurtma ma'lumotlari" size="small">
-                  <Descriptions column={1} size="small">
-                    <Descriptions.Item label="Raqam">
-                      {selectedOrder.orderNumber}
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Turi">
-                      {getOrderTypeConfig(selectedOrder.orderType).text}
-                    </Descriptions.Item>
-                    <Descriptions.Item label="To'lov">
-                      {getPaymentMethodText(selectedOrder.paymentMethod)}
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Jami summa">
-                      <Text strong>{selectedOrder.totalAmount.toLocaleString()} so'm</Text>
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Yaratilgan">
-                      {dayjs(selectedOrder.createdAt).format('DD.MM.YYYY HH:mm')}
-                    </Descriptions.Item>
-                  </Descriptions>
-                </Card>
-              </Col>
-            </Row>
+      <OrderDetailsModal open={detailsVisible} order={selectedOrder as unknown as DetailsOrder | null} onClose={() => setDetailsVisible(false)} getOrderTypeText={getOrderTypeText} getPaymentText={getPaymentMethodText} />
 
-            <Card title="Buyurtma tarkibi" style={{ marginTop: 16 }}>
-              <Table
-                dataSource={selectedOrder.items}
-                columns={[
-                  {
-                    title: 'Mahsulot',
-                    dataIndex: ['product', 'name'],
-                    key: 'product',
-                  },
-                  {
-                    title: 'Miqdor',
-                    dataIndex: 'quantity',
-                    key: 'quantity',
-                  },
-                  {
-                    title: 'Narx',
-                    dataIndex: 'price',
-                    key: 'price',
-                    render: (price: number) => `${price.toLocaleString()} so'm`,
-                  },
-                  {
-                    title: 'Jami',
-                    dataIndex: 'total',
-                    key: 'total',
-                    render: (total: number) => (
-                      <Text strong>{total.toLocaleString()} so'm</Text>
-                    ),
-                  },
-                ]}
-                pagination={false}
-                size="small"
-              />
-            </Card>
+      {/* Legacy modal removed */}
 
-            {/* Status History */}
-            <Card title="Holat tarixi" style={{ marginTop: 16 }}>
-              <Timeline>
-                <Timeline.Item color="green">
-                  <div>
-                    <div>Buyurtma yaratildi</div>
-                    <Text type="secondary">
-                      {dayjs(selectedOrder.createdAt).format('DD.MM.YYYY HH:mm')}
-                    </Text>
-                  </div>
-                </Timeline.Item>
-                {selectedOrder.status !== 'pending' && (
-                  <Timeline.Item color="blue">
-                    <div>
-                      <div>Holat: {getStatusConfig(selectedOrder.status).text}</div>
-                      <Text type="secondary">
-                        {dayjs(selectedOrder.updatedAt).format('DD.MM.YYYY HH:mm')}
-                      </Text>
-                    </div>
-                  </Timeline.Item>
-                )}
-              </Timeline>
-            </Card>
-          </div>
-        )}
-      </Modal>
+      <AssignCourierModal
+        open={assignModalVisible}
+        orderId={selectedOrder?._id || null}
+        onClose={() => setAssignModalVisible(false)}
+        onAssigned={() => {
+          messageApi.success('Kuryer tayinlandi');
+          fetchOrders(pagination.current, pagination.pageSize);
+        }}
+      />
 
-      {/* Status Update Modal */}
-      <Modal
-        title="Buyurtma holatini yangilash"
-        open={statusUpdateVisible}
-        onCancel={() => setStatusUpdateVisible(false)}
-        footer={null}
-      >
-        {selectedOrder && (
-          <div>
-            <div style={{ marginBottom: 16 }}>
-              <Text>Joriy holat: </Text>
-              <Tag color={getStatusConfig(selectedOrder.status).color}>
-                {getStatusConfig(selectedOrder.status).text}
-              </Tag>
-            </div>
-            
-            <div>
-              <Text strong>Yangi holatni tanlang:</Text>
-              <div style={{ marginTop: 12 }}>
-                {getNextStatuses(selectedOrder.status).map(status => (
-                  <Button
-                    key={status}
-                    type="primary"
-                    style={{ marginRight: 8, marginBottom: 8 }}
-                    onClick={() => handleStatusUpdate(status)}
-                  >
-                    {getStatusConfig(status).text}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-      </Modal>
-
-      {/* Advanced Filters Drawer */}
-      <Drawer
-        title="Qo'shimcha filtrlar"
-        placement="right"
-        onClose={() => setFiltersVisible(false)}
-        open={filtersVisible}
-        width={400}
-      >
+      <Drawer title="Qo'shimcha filtrlar" placement="right" onClose={() => setFiltersVisible(false)} open={filtersVisible} width={400}>
         <Space direction="vertical" style={{ width: '100%' }}>
           <div>
             <Text strong>Sana oralig'i:</Text>
@@ -802,7 +348,6 @@ const OrdersPage: React.FC = () => {
               onChange={(dates) => setFilters({ ...filters, dateRange: dates })}
             />
           </div>
-          
           <div>
             <Text strong>To'lov usuli:</Text>
             <Select
@@ -818,14 +363,7 @@ const OrdersPage: React.FC = () => {
             </Select>
           </div>
 
-          <Button
-            type="primary"
-            block
-            onClick={() => {
-              setFiltersVisible(false);
-              fetchOrders();
-            }}
-          >
+          <Button type="primary" block onClick={() => { setFiltersVisible(false); fetchOrders(1, pagination.pageSize); }}>
             Filtrlarni qo'llash
           </Button>
         </Space>

@@ -6,6 +6,7 @@ export interface User {
   email: string;
   role: 'superadmin' | 'admin' | 'courier' | 'user';
   telegramId?: number;
+  branch?: Branch | string | null;
   isActive: boolean;
   isBlocked: boolean;
   createdAt: Date;
@@ -74,6 +75,11 @@ export interface Order {
   status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
   orderType: 'delivery' | 'pickup' | 'dine_in';
   paymentMethod: 'cash' | 'card' | 'online';
+  deliveryInfo?: {
+    address?: string;
+    location?: { latitude: number; longitude: number };
+    estimatedTime?: string | Date;
+  };
   createdAt: Date;
 }
 

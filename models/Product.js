@@ -14,21 +14,11 @@ const productSchema = new mongoose.Schema({
   originalPrice: Number,
   preparationTime: { type: Number, default: 15 },
   
-  // Images (Cloudinary integration)
-  image: String, // Main image URL
-  imagePublicId: String, // Cloudinary public ID for deletion
-  images: [String], // Multiple images array
+  // Images
+  image: String,
+  images: [String],
   imageFileId: String, // Telegram file ID for storing image on Telegram servers
   imagePath: String,   // Local file path if we store locally
-  
-  // Image metadata (Cloudinary)
-  imageMetadata: {
-    width: Number,
-    height: Number,
-    format: String,
-    size: Number,
-    uploadedAt: Date
-  },
   
   // Product options
   ingredients: [String],

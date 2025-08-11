@@ -1,13 +1,17 @@
 // api/routes/products.js
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 const { Product, Category, Branch } = require('../../models');
 const { authenticateToken, requireRole, requireAdmin } = require('../middleware/auth');
+
+// Local upload config'dan import qilish
 const { 
-  CloudinaryService, 
   uploadSingle, 
   uploadMultiple, 
   handleUploadError 
-} = require('../../config/cloudinaryConfig');
+} = require('../../config/localUploadConfig');
+
 const { CacheHelper } = require('../../services/cacheService');
 
 const router = express.Router();
@@ -37,7 +41,7 @@ router.get('/', async (req, res) => {
     }
 
     const products = await Product.find(filter)
-      .populate('categoryId', 'name nameUz nameRu')
+      .populate('categoryId', 'name nameUz nameRu emoji')
       .populate('branch', 'name code')
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -71,7 +75,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const product = await Product.findById(req.params.id)
-      .populate('categoryId', 'name nameUz nameRu')
+      .populate('categoryId', 'name nameUz nameRu emoji')
       .populate('branch', 'name code');
 
     if (!product) {
@@ -95,8 +99,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// POST /api/products - Create new product
-// POST /api/products - Create new product with Cloudinary upload
+// POST /api/products - Create new product with local upload
 router.post('/', authenticateToken, requireRole(['superadmin', 'admin']), uploadSingle, handleUploadError, async (req, res) => {
   try {
     const {
@@ -105,24 +108,25 @@ router.post('/', authenticateToken, requireRole(['superadmin', 'admin']), upload
       nameRu,
       description,
       price,
-      category,
+      categoryId, // Bu admin.js bilan mos kelishi kerak
       branch,
       ingredients,
       preparationTime
     } = req.body;
 
+    console.log('Products route - received data:', req.body);
+    console.log('Products route - received file:', req.file);
+
     // Validation
-    if (!name || !price || !category || !branch) {
+    if (!name || !price || !categoryId) {
       return res.status(400).json({
         success: false,
-        message: 'Majburiy maydonlar: name, price, category, branch'
+        message: 'Majburiy maydonlar: name, price, categoryId'
       });
     }
 
-    // Check if category and branch exist
-    const categoryExists = await Category.findById(category);
-    const branchExists = await Branch.findById(branch);
-
+    // Check if category exists
+    const categoryExists = await Category.findById(categoryId);
     if (!categoryExists) {
       return res.status(400).json({
         success: false,
@@ -130,22 +134,14 @@ router.post('/', authenticateToken, requireRole(['superadmin', 'admin']), upload
       });
     }
 
-    if (!branchExists) {
-      return res.status(400).json({
-        success: false,
-        message: 'Filial topilmadi!'
-      });
-    }
-
-    // Cloudinary upload
-    let imageData = null;
+    // Local image upload handling
+    let imageUrl = null;
+    let imageFileName = null;
+    
     if (req.file) {
-      console.log('📸 Uploading image to Cloudinary...', req.file.originalname);
-      imageData = {
-        url: req.file.path, // Cloudinary URL
-        publicId: req.file.filename, // Cloudinary public ID
-        originalName: req.file.originalname
-      };
+      console.log('📸 Local image uploaded:', req.file.filename);
+      imageUrl = `/uploads/${req.file.filename}`;
+      imageFileName = req.file.filename;
     }
 
     const product = new Product({
@@ -154,18 +150,18 @@ router.post('/', authenticateToken, requireRole(['superadmin', 'admin']), upload
       nameRu: nameRu || name,
       description,
       price: parseFloat(price),
-      category,
+      categoryId, // To'g'ri field nomi
       branch,
       ingredients: ingredients ? ingredients.split(',').map(i => i.trim()) : [],
       preparationTime: parseInt(preparationTime) || 15,
-      image: imageData ? imageData.url : undefined,
-      imagePublicId: imageData ? imageData.publicId : undefined
+      image: imageUrl,
+      imageFileName: imageFileName
     });
 
     await product.save();
 
     const populatedProduct = await Product.findById(product._id)
-      .populate('categoryId', 'name nameUz nameRu')
+      .populate('categoryId', 'name nameUz nameRu emoji')
       .populate('branch', 'name code');
 
     res.status(201).json({
@@ -183,12 +179,15 @@ router.post('/', authenticateToken, requireRole(['superadmin', 'admin']), upload
   }
 });
 
-// PUT /api/products/:id - Update product
+// PUT /api/products/:id - Update product with image replacement
 router.put('/:id', authenticateToken, requireRole(['superadmin', 'admin']), uploadSingle, async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    const productId = req.params.id;
+    
+    // Avval mahsulotni topish
+    const existingProduct = await Product.findById(productId);
 
-    if (!product) {
+    if (!existingProduct) {
       return res.status(404).json({
         success: false,
         message: 'Mahsulot topilmadi!'
@@ -197,10 +196,35 @@ router.put('/:id', authenticateToken, requireRole(['superadmin', 'admin']), uplo
 
     const updateData = { ...req.body };
 
+    // Agar yangi rasm yuklangan bo'lsa
     if (req.file) {
-      updateData.image = `/uploads/products/${req.file.filename}`;
+      // Eski rasmni o'chirish
+      if (existingProduct.image || existingProduct.imageFileName) {
+        try {
+          let oldImagePath;
+          
+          if (existingProduct.imageFileName) {
+            oldImagePath = path.join(__dirname, '../../uploads', existingProduct.imageFileName);
+          } else if (existingProduct.image && existingProduct.image.startsWith('/uploads/')) {
+            const fileName = existingProduct.image.replace('/uploads/', '');
+            oldImagePath = path.join(__dirname, '../../uploads', fileName);
+          }
+
+          if (oldImagePath && fs.existsSync(oldImagePath)) {
+            fs.unlinkSync(oldImagePath);
+            console.log('✅ Eski rasm o\'chirildi:', oldImagePath);
+          }
+        } catch (deleteError) {
+          console.error('❌ Eski rasmni o\'chirishda xatolik:', deleteError);
+        }
+      }
+
+      // Yangi rasm ma'lumotlarini qo'shish
+      updateData.image = `/uploads/${req.file.filename}`;
+      updateData.imageFileName = req.file.filename;
     }
 
+    // Process arrays and numbers
     if (updateData.ingredients && typeof updateData.ingredients === 'string') {
       updateData.ingredients = updateData.ingredients.split(',').map(i => i.trim());
     }
@@ -213,11 +237,12 @@ router.put('/:id', authenticateToken, requireRole(['superadmin', 'admin']), uplo
       updateData.preparationTime = parseInt(updateData.preparationTime);
     }
 
+    // Mahsulotni yangilash
     const updatedProduct = await Product.findByIdAndUpdate(
-      req.params.id,
+      productId,
       updateData,
       { new: true, runValidators: true }
-    ).populate('categoryId', 'name nameUz nameRu')
+    ).populate('categoryId', 'name nameUz nameRu emoji')
      .populate('branch', 'name code');
 
     res.json({
@@ -235,10 +260,13 @@ router.put('/:id', authenticateToken, requireRole(['superadmin', 'admin']), uplo
   }
 });
 
-// DELETE /api/products/:id - Delete product
+// DELETE /api/products/:id - Delete product with image
 router.delete('/:id', authenticateToken, requireRole(['superadmin', 'admin']), async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    const productId = req.params.id;
+    
+    // Avval mahsulotni topish
+    const product = await Product.findById(productId);
 
     if (!product) {
       return res.status(404).json({
@@ -247,11 +275,40 @@ router.delete('/:id', authenticateToken, requireRole(['superadmin', 'admin']), a
       });
     }
 
-    await Product.findByIdAndDelete(req.params.id);
+    // Agar mahsulotda rasm bo'lsa, uni o'chirish
+    if (product.image || product.imageFileName) {
+      try {
+        let imagePath;
+        
+        // Image path yaratish
+        if (product.imageFileName) {
+          imagePath = path.join(__dirname, '../../uploads', product.imageFileName);
+        } else if (product.image && product.image.startsWith('/uploads/')) {
+          const fileName = product.image.replace('/uploads/', '');
+          imagePath = path.join(__dirname, '../../uploads', fileName);
+        }
+
+        // Faylni o'chirish
+        if (imagePath && fs.existsSync(imagePath)) {
+          fs.unlinkSync(imagePath);
+          console.log('✅ Rasm o\'chirildi:', imagePath);
+        } else {
+          console.log('⚠️ Rasm fayli topilmadi:', imagePath);
+        }
+      } catch (imageError) {
+        console.error('❌ Rasmni o\'chirishda xatolik:', imageError);
+        // Rasm o'chirilmasa ham, mahsulotni o'chirishda davom etish
+      }
+    }
+
+    // Mahsulotni database'dan o'chirish
+    await Product.findByIdAndDelete(productId);
+
+    console.log(`✅ Mahsulot o'chirildi: ${product.name} (ID: ${productId})`);
 
     res.json({
       success: true,
-      message: 'Mahsulot muvaffaqiyatli o\'chirildi!'
+      message: 'Mahsulot va rasm muvaffaqiyatli o\'chirildi!'
     });
 
   } catch (error) {

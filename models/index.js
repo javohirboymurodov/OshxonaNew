@@ -8,7 +8,7 @@ const PromoCode = require('./PromoCode');
 const Table = require('./Table');
 const DeliveryZone = require('./DeliveryZone');
 const Review = require('./Review');
-const Branch= require('./Branch');
+const Branch = require('./Branch');
 
 module.exports = {
   User,
@@ -19,6 +19,6 @@ module.exports = {
   PromoCode,
   Table,
   DeliveryZone,
-  Review,
-  Branch
+  Review
+  , Branch
 };

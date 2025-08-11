@@ -14,7 +14,7 @@ const auth = async (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
-    const user = await User.findById(decoded.userId).select('-password');
+    const user = await User.findById(decoded.userId || decoded.id).select('-password');
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -30,9 +30,11 @@ const auth = async (req, res, next) => {
     }
 
     req.user = {
+      _id: user._id,
       userId: user._id,
       role: user.role,
-      email: user.email
+      email: user.email,
+      branch: user.branch || null
     };
 
     next();

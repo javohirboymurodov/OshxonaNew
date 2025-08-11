@@ -16,22 +16,25 @@ async function startHandler(ctx) {
       });
       await user.save();
     } else {
-      await user.updateLastActivity();
+      // updateLastActivity metodi yo'q bo'lishi mumkin; updatedAt ni yangilaymiz
+      user.updatedAt = new Date();
+      await user.save();
     }
     ctx.session.user = user;
-    await ctx.reply('.', { reply_markup: { remove_keyboard: true } });
+    // Keraksiz bo'sh xabar yuborilmasin (ikkita nuqta ko'rinishini oldini olamiz)
     if (!user.firstName) {
       ctx.session.waitingFor = 'first_name';
       return await ctx.reply('Ismingizni kiriting:');
     }
+    // Telefon raqami har doim bazadan olinadi; yo'q bo'lsa keyin so'raladi
     if (!user.phone) {
       return await require('./order').askForPhone(ctx);
     }
     const stats = await getWelcomeStats();
-    await ctx.reply(`
-🎉 Xush kelibsiz, ${user.firstName}!
+    const welcomeHtml = `
+🎉 <b>Xush kelibsiz, ${user.firstName || ''}!</b>
 
-🍽️ **Oshxona Professional Bot**ga xush kelibsiz!
+🍽️ <b>Oshxona Professional Bot</b>ga xush kelibsiz!
 
 Bu yerda siz:
 • 🛍️ Oson buyurtma bera olasiz
@@ -39,10 +42,11 @@ Bu yerda siz:
 • 🏃 Olib ketish imkoniyati
 • 🍽️ Restoranda ovqatlanish
 • 💳 Turli to'lov usullari
+${stats}
 
-Boshlash uchun quyidagi tugmalardan foydalaning!
-      `, {
-      parse_mode: 'Markdown',
+Boshlash uchun quyidagi tugmalardan foydalaning!`;
+
+    await ctx.replyWithHTML(welcomeHtml, {
       reply_markup: mainMenuKeyboard.reply_markup
     });
   } catch (error) {

@@ -163,6 +163,52 @@ router.get('/analytics/orders', async (req, res) => {
   }
 });
 
+// Simple chart data for dashboard (revenue or orders count)
+router.get('/chart-data', async (req, res) => {
+  try {
+    const { startDate, endDate, type = 'revenue' } = req.query;
+    const branchId = req.user.role === 'superadmin' ? null : req.user.branch;
+
+    const start = startDate ? new Date(startDate) : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const end = endDate ? new Date(endDate) : new Date();
+    end.setHours(23, 59, 59, 999);
+
+    const match = { createdAt: { $gte: start, $lte: end } };
+    if (branchId) Object.assign(match, { branch: branchId });
+
+    const projectDate = {
+      year: { $year: '$createdAt' },
+      month: { $month: '$createdAt' },
+      day: { $dayOfMonth: '$createdAt' },
+    };
+
+    const pipeline = [
+      { $match: match },
+      {
+        $group: {
+          _id: projectDate,
+          value: type === 'revenue' ? { $sum: '$total' } : { $sum: 1 }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
+    ];
+
+    const rows = await Order.aggregate(pipeline);
+
+    const data = rows.map(r => {
+      const y = r._id.year.toString().padStart(4, '0');
+      const m = r._id.month.toString().padStart(2, '0');
+      const d = r._id.day.toString().padStart(2, '0');
+      return { date: `${y}-${m}-${d}`, value: r.value };
+    });
+
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Chart data error:', error);
+    res.status(404).json({ success: false, message: 'Chart data not found' });
+  }
+});
+
 // Yo'q bo'lgan route qo'shish
 router.get('/stats', async (req, res) => {
   try {
@@ -198,7 +244,7 @@ router.get('/stats', async (req, res) => {
         { 
           $group: { 
             _id: null, 
-            total: { $sum: '$totalAmount' } 
+            total: { $sum: '$total' } // O'ZGARGAN: totalAmount -> total
           } 
         }
       ]),
@@ -213,7 +259,7 @@ router.get('/stats', async (req, res) => {
         { 
           $group: { 
             _id: null, 
-            total: { $sum: '$totalAmount' } 
+            total: { $sum: '$total' } // O'ZGARGAN: totalAmount -> total
           } 
         }
       ]),

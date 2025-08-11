@@ -1,5 +1,8 @@
 // Yaxshilangan foydalanuvchi interfeysi
+const mongoose = require('mongoose');
 const { mainMenuKeyboard } = require('../keyboards/userKeyboards');
+const { Order, Product, Cart, User } = require('../models');
+const Favorite = require('../models/Favorite');
 
 class UXImprovements {
   // Quick order - tezkor buyurtma
@@ -21,11 +24,50 @@ class UXImprovements {
           { text: `❤️ ${product.name}`, callback_data: `quick_add_${product._id}` }
         ])),
         [{ text: '🛍️ To\'liq katalog', callback_data: 'show_categories' }],
-        [{ text: '🏠 Bosh menyu', callback_data: 'back_to_main' }]
+        [{ text: '🔙 Asosiy menyu', callback_data: 'back_to_main' }]
       ]
     };
     
     return keyboard;
+  }
+
+  static async getRecentOrders(telegramId, limit = 3) {
+    try {
+      const user = await User.findOne({ telegramId });
+      if (!user) return [];
+      const orders = await Order.find({ user: user._id })
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .lean();
+      // Enrich with display name
+      return orders.map((o) => ({
+        _id: o._id,
+        orderId: o.orderId,
+        total: o.total || o.subtotal || 0,
+        name: (o.items && o.items.length > 0)
+          ? `${o.items[0].productName}${o.items.length > 1 ? ' +' + (o.items.length - 1) : ''}`
+          : `Buyurtma ${o.orderId}`
+      }));
+    } catch (e) {
+      return [];
+    }
+  }
+
+  static async getFavoriteProducts(telegramId, limit = 5) {
+    try {
+      const user = await User.findOne({ telegramId });
+      if (!user) return [];
+      const favs = await Favorite.find({ user: user._id })
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .populate('product', 'name price isActive isAvailable')
+        .lean();
+      return favs
+        .map((f) => f.product)
+        .filter(Boolean);
+    } catch (e) {
+      return [];
+    }
   }
 
   // One-click reorder
@@ -71,8 +113,8 @@ class UXImprovements {
 
   // Smart recommendations
   static async getSmartRecommendations(userId, categoryId = null) {
-    const user = await User.findById(userId).populate('orderHistory');
-    const preferences = await this.analyzeUserPreferences(user);
+    const user = await User.findById(userId).lean();
+    const preferences = { favoriteProducts: [] };
     
     // Mashina o'rganish algoritmi (sodda versiya)
     const recommendations = await Product.aggregate([
@@ -103,6 +145,38 @@ class UXImprovements {
     ]);
 
     return recommendations;
+  }
+
+  static async popularProductsKeyboard(limit = 8) {
+    const products = await Product.aggregate([
+      { $match: { isActive: true, isAvailable: true } },
+      { $addFields: { score: { $add: [
+        { $multiply: [{ $ifNull: ['$stats.orderCount', 0] }, 0.6] },
+        { $multiply: [{ $ifNull: ['$stats.viewCount', 0] }, 0.3] },
+        { $multiply: [{ $ifNull: ['$rating', 0] }, 0.1] }
+      ] } } },
+      { $sort: { score: -1 } },
+      { $limit: limit }
+    ]);
+    const keyboard = {
+      inline_keyboard: products.map(p => ([
+        { text: `${p.name} – ${Number(p.price || 0).toLocaleString()} so'm`, callback_data: `quick_add_${p._id}` }
+      ])).concat([[{ text: '🔙 Asosiy menyu', callback_data: 'back_to_main' }]])
+    };
+    return keyboard;
+  }
+
+  static async fastProductsKeyboard(limit = 8, maxMinutes = 15) {
+    const products = await Product.find({
+      isActive: true, isAvailable: true,
+      preparationTime: { $lte: maxMinutes }
+    }).sort({ preparationTime: 1, createdAt: -1 }).limit(limit).lean();
+    const keyboard = {
+      inline_keyboard: products.map(p => ([
+        { text: `${p.name} – ${Number(p.price || 0).toLocaleString()} so'm (${p.preparationTime || 10} daq)`, callback_data: `quick_add_${p._id}` }
+      ])).concat([[{ text: '🔙 Asosiy menyu', callback_data: 'back_to_main' }]])
+    };
+    return keyboard;
   }
 
   // Breadcrumb navigation

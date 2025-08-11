@@ -12,14 +12,28 @@ const app = express();
 
 // 🛡️ MIDDLEWARES
 
-app.use(helmet());
+// Helmet configuration - static files uchun CORS ruxsat berish
+app.use(helmet({
+  crossOriginResourcePolicy: { 
+    policy: "cross-origin" 
+  },
+  contentSecurityPolicy: false // Development uchun CSP o'chirish
+}));
+
+// CORS configuration - kengaytirilgan
 app.use(cors({
   origin: [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:5173', // Vite default port
     process.env.ADMIN_PANEL_URL || 'http://localhost:3000',
     process.env.USER_FRONTEND_URL || 'http://localhost:3001'
   ],
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -31,9 +45,15 @@ app.use((req, res, next) => {
   next();
 });
 
-// 📂 STATIC FILES
-
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// 📂 STATIC FILES - CORS headers bilan
+app.use('/uploads', (req, res, next) => {
+  // Manual CORS headers for static files
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+}, express.static(path.join(__dirname, '../uploads')));
 
 // 🌐 API ROUTES
 
@@ -54,6 +74,7 @@ app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/products', require('./routes/products'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/categories', require('./routes/categories'));
+app.use('/api/tables', require('./routes/tables'));
 
 // 🏥 HEALTH CHECK
 

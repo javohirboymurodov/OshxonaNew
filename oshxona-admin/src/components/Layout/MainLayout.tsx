@@ -1,5 +1,5 @@
 // src/components/Layout/MainLayout.tsx
-import React, { useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   Layout,
   Menu,
@@ -9,7 +9,9 @@ import {
   Dropdown,
   Space,
   Badge,
-  theme
+  theme,
+  List,
+  Typography
 } from 'antd';
 import {
   MenuOutlined,
@@ -24,6 +26,9 @@ import {
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { useAuth } from '@/hooks/useAuth';
+import { useRealTimeOrders } from '@/hooks/useSocket';
+import { useNavigate as useNav } from 'react-router-dom';
 
 const { Header, Sider, Content } = Layout;
 
@@ -33,6 +38,32 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useMediaQuery('(max-width: 768px)');
+  const { user } = useAuth();
+  const token = localStorage.getItem('token') || '';
+  const branchId = (user as any)?.branch?._id || 'default';
+  const { newOrders } = useRealTimeOrders(token, branchId);
+  const go = useNav();
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
+
+  // Listen external ack (e.g., order opened from table)
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'ackOrderId' && e.newValue) {
+        setDismissedIds((prev) => new Set(prev).add(e.newValue!));
+        localStorage.removeItem('ackOrderId');
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
+  const visibleOrders = useMemo(() => {
+    return newOrders.filter((o: any) => {
+      const id = String(o.id || o.orderId || '');
+      return id && !dismissedIds.has(id);
+    });
+  }, [newOrders, dismissedIds]);
   
   const {
     token: { colorBgContainer },
@@ -182,9 +213,46 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           </Space>
 
           <Space>
-            <Badge count={5}>
-              <Button type="text" icon={<BellOutlined />} />
-            </Badge>
+            <Dropdown
+              placement="bottomRight"
+              trigger={["click"]}
+              open={notifOpen}
+              onOpenChange={(open) => setNotifOpen(open)}
+              popupRender={() => (
+                <div style={{ background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', borderRadius: 8, padding: 8, width: 360 }}>
+                  <Typography.Text strong style={{ padding: '0 8px' }}>Yangi buyurtmalar</Typography.Text>
+                  <List
+                    locale={{ emptyText: 'Hozircha yangi buyurtma yo\'q' }}
+                    dataSource={visibleOrders.slice(0, 10)}
+                    renderItem={(item: any) => (
+                      <List.Item
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => {
+                          const id = String(item.id || item.orderId || '');
+                          if (id) {
+                            setDismissedIds((prev) => new Set(prev).add(id));
+                          }
+                          setNotifOpen(false);
+                          go('/orders', { state: { focusOrderId: id } });
+                        }}
+                      >
+                        <List.Item.Meta
+                          title={<span>№ {item.orderId || item.orderNumber}</span>}
+                          description={<span>{item.customer?.name || 'Mijoz'} • {(item.total || 0).toLocaleString()} so'm</span>}
+                        />
+                      </List.Item>
+                    )}
+                  />
+                  <div style={{ textAlign: 'right', padding: '4px 8px' }}>
+                    <Button type="link" size="small" onClick={() => go('/orders')}>Barchasini ko\'rish</Button>
+                  </div>
+                </div>
+              )}
+            >
+              <Badge count={visibleOrders.length} overflowCount={99} offset={[0, 4]}>
+                <Button type="text" icon={<BellOutlined />} />
+              </Badge>
+            </Dropdown>
             
             <Dropdown
               menu={{
@@ -195,7 +263,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             >
               <Space style={{ cursor: 'pointer' }}>
                 <Avatar icon={<UserOutlined />} />
-                {!isMobile && <span>Super Admin</span>}
+                {!isMobile && <span>{user?.firstName || ''} {user?.lastName || ''}</span>}
               </Space>
             </Dropdown>
           </Space>

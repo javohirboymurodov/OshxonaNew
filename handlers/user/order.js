@@ -1,6 +1,6 @@
 const { User, Product, Category, Order, Cart } = require('../../models');
+const DeliveryService = require('../../services/deliveryService');
 const { orderTypeKeyboard, paymentMethodKeyboard, orderConfirmKeyboard, mainMenuKeyboard } = require('../../keyboards/userKeyboards');
-const SocketManager = require('../../config/socketConfig');
 const Helpers = require('../../utils/helpers');
 
 async function startOrder(ctx) {
@@ -14,8 +14,15 @@ async function startOrder(ctx) {
     if (!cart || cart.items.length === 0) {
       return await ctx.answerCbQuery('❌ Savat bo\'sh!');
     }
+    // Agar QR orqali stolga biriktirilgan bo'lsa, qayta QR xabarini ko'rsatmaymiz.
+    // To'g'ridan-to'g'ri to'lov turiga (yoki telefon) o'tamiz.
     if (ctx.session.orderType === 'dine_in_qr' && ctx.session.orderData?.tableCode) {
-      await handleDineInQR(ctx, ctx.session.orderData);
+      // Telefon tekshiruvi
+      if (user.phone) {
+        await askForPaymentMethod(ctx);
+      } else {
+        await askForPhone(ctx);
+      }
       return;
     }
     const message = `\n📝 **Buyurtma berish**\n\nBuyurtma turini tanlang:`;
@@ -33,6 +40,7 @@ async function handleOrderType(ctx) {
   try {
     let orderType = ctx.callbackQuery.data.split('_')[2];
     if (orderType === 'dine') orderType = 'dine_in';
+    if (orderType === 'preorder') orderType = 'dine_in';
     if (orderType === 'dine_in') {
       await handleDineInPreorder(ctx);
     } else {
@@ -46,6 +54,17 @@ async function handleOrderType(ctx) {
 
 async function handleDineInPreorder(ctx) {
   try {
+    // Agar QR orqali kelingan bo'lsa, to'g'ridan-to'g'ri to'lovga o'tamiz
+    if (ctx.session.orderType === 'dine_in_qr' && ctx.session.orderData?.tableCode) {
+      const telegramId = ctx.from.id;
+      const user = await User.findOne({ telegramId });
+      if (user?.phone) {
+        await askForPaymentMethod(ctx);
+      } else {
+        await askForPhone(ctx);
+      }
+      return;
+    }
     ctx.session.orderType = 'dine_in';
     const { arrivalTimeKeyboard } = require('../../keyboards/userKeyboards');
     await ctx.editMessageText(
@@ -71,13 +90,18 @@ async function handleArrivalTime(ctx) {
       else if (data[2] === '1_hour_30') minutes = 90;
       else if (data[2] === '2_hours') minutes = 120;
     } else {
-      minutes = parseInt(data[2]);
+      const val = parseInt(data[2]);
+      // Agar qiymat kichik bo'lsa (masalan, 1,2,3,4,5) bu soat bo'lish ehtimoli yuqori
+      // 15/30/45 kabi qiymatlar daqiqa sifatida qabul qilinadi
+      if ([15, 30, 45].includes(val)) minutes = val;
+      else if (val > 0 && val <= 5) minutes = val * 60; // 1..5 -> soat
+      else minutes = val; // fallback
     }
     ctx.session.orderData = ctx.session.orderData || {};
     ctx.session.orderData.arrivalTime = minutes;
-    // Telefon raqami sessionda yo'q bo'lsa, bazadan tekshiramiz
+    // Telefon raqami sessionda bo'lmasa yoki eskirgan bo'lsa, bazadan yangilaymiz
     let user = ctx.session.user;
-    if (!user) {
+    if (!user || !user.phone) {
       const telegramId = ctx.from.id;
       user = await User.findOne({ telegramId });
       ctx.session.user = user;
@@ -93,8 +117,16 @@ async function handleArrivalTime(ctx) {
   }
 }
 
-async function handleDineInQR(ctx, tableCode) {
+async function handleDineInQR(ctx, tableCode, branchId) {
   try {
+    // Backward-compat: agar tableCode obyekt bo'lsa
+    if (tableCode && typeof tableCode === 'object') {
+      const maybe = tableCode;
+      const code = maybe.tableCode || maybe.number || maybe.tableNumber || '';
+      const bId = branchId || maybe.branch || undefined;
+      tableCode = code;
+      branchId = bId;
+    }
     const telegramId = ctx.from.id;
     let user = await User.findOne({ telegramId });
     if (!user) {
@@ -107,12 +139,15 @@ async function handleDineInQR(ctx, tableCode) {
       });
       await user.save();
     } else {
-      await user.updateLastActivity();
+      // Fallback: update last activity timestamp safely
+      user.updatedAt = new Date();
+      await user.save();
     }
     ctx.session.user = user;
     ctx.session.orderType = 'dine_in_qr';
     ctx.session.orderData = {
-      tableCode: tableCode
+      tableCode: tableCode,
+      ...(branchId ? { branch: branchId } : {})
     };
     await ctx.reply(`\n🍽️ **Stol ${tableCode} uchun buyurtma**\n\nSiz stol ${tableCode} uchun buyurtma berasiz.\nMahsulotlarni tanlang va buyurtma bering!\n      `, {
       parse_mode: 'Markdown',
@@ -140,9 +175,20 @@ async function startOrderFlow(ctx, orderType, orderData = {}) {
         { reply_markup: arrivalTimeKeyboard().reply_markup }
       );
     }
-    // Telefon raqami sessionda yo'q bo'lsa, bazadan tekshiramiz
+  // Dine-in QR oqimida: telefon/ to'lovga yo'naltirish
+  if (orderType === 'dine_in' || orderType === 'dine_in_qr') {
+    const telegramId = ctx.from.id;
+    const user = await User.findOne({ telegramId });
+    if (user?.phone) {
+      await askForPaymentMethod(ctx);
+    } else {
+      await askForPhone(ctx);
+    }
+    return;
+  }
+  // Telefon raqami sessionda yo'q bo'lsa yoki eskirgan bo'lsa, bazadan tekshiramiz
     let user = ctx.session.user;
-    if (!user) {
+    if (!user || !user.phone) {
       const telegramId = ctx.from.id;
       user = await User.findOne({ telegramId });
       ctx.session.user = user;
@@ -272,12 +318,34 @@ async function finalizeOrder(ctx) {
       return;
     }
     const orderType = ctx.session.orderType;
+    // 4 tur:
+    // delivery, pickup, dine_in (avvaldan), table (QR)
+    const normalizedOrderType = (orderType === 'dine_in_qr') ? 'table' : orderType;
     console.log('DEBUG: session.orderType =', orderType);
     const orderData = ctx.session.orderData || {};
     const subtotal = cart.items.reduce((sum, item) => sum + item.totalPrice, 0);
+
+    // Calculate delivery fee and ETA for delivery orders
+    let deliveryFee = 0;
+    let estimatedTimeDate = undefined;
+    if (normalizedOrderType === 'delivery' && orderData?.location && orderData.location.latitude && orderData.location.longitude) {
+      try {
+        const feeInfo = await DeliveryService.calculateDeliveryFee(orderData.location, subtotal);
+        deliveryFee = Number(feeInfo?.fee || 0);
+        const timeInfo = await DeliveryService.calculateDeliveryTime(orderData.location, cart.items);
+        const totalMinutes = Number(timeInfo?.totalTime || 0);
+        if (totalMinutes > 0) {
+          estimatedTimeDate = new Date(Date.now() + totalMinutes * 60 * 1000);
+        }
+      } catch (calcErr) {
+        console.error('Delivery calculation error:', calcErr);
+      }
+    }
+
     const order = new Order({
       orderId: 'ORD' + Date.now() + Math.random().toString(36).substr(2, 5).toUpperCase(),
       user: user._id,
+      branch: (ctx.session?.orderData?.branch) || user.branch || undefined,
       items: cart.items.map(item => ({
         product: item.product._id,
         productName: item.productName,
@@ -285,65 +353,31 @@ async function finalizeOrder(ctx) {
         price: item.price,
         totalPrice: item.totalPrice
       })),
-      orderType,
+      orderType: normalizedOrderType,
       subtotal,
-      total: subtotal,
+      deliveryFee,
+      total: subtotal + deliveryFee,
       paymentMethod: orderData.paymentMethod,
       status: 'pending',
       customerInfo: {
         name: user.firstName,
         phone: user.phone
       },
-      deliveryInfo: orderType === 'delivery' ? {
+      deliveryInfo: normalizedOrderType === 'delivery' ? {
         address: orderData.address || '',
-        location: orderData.location || undefined
+        location: orderData.location || undefined,
+        estimatedTime: estimatedTimeDate
       } : undefined,
-      dineInInfo: (orderType === 'dine_in' || orderType === 'pickup') ? {
-        arrivalTime: orderData.arrivalTime ? String(orderData.arrivalTime) : undefined
+      dineInInfo: (normalizedOrderType === 'dine_in' || normalizedOrderType === 'pickup' || normalizedOrderType === 'table') ? {
+        arrivalTime: orderData.arrivalTime ? String(orderData.arrivalTime) : undefined,
+        // QR orqali kelingan bo'lsa, stol raqamini yozib qo'yamiz
+        tableNumber: (normalizedOrderType === 'table' && ctx.session.orderData?.tableCode)
+          ? String(ctx.session.orderData.tableCode)
+          : undefined
       } : undefined
     });
     console.log('DEBUG: order.orderType =', order.orderType);
     await order.save();
-    
-    // SOCKET.IO: Adminlarga yangi buyurtma haqida xabar berish
-    try {
-      const orderForSocket = {
-        id: order._id,
-        orderId: order.orderId,
-        customer: {
-          name: user.firstName,
-          phone: user.phone,
-          telegramId: user.telegramId
-        },
-        items: order.items,
-        total: order.total,
-        orderType: order.orderType,
-        paymentMethod: order.paymentMethod,
-        status: order.status,
-        createdAt: order.createdAt,
-        deliveryInfo: order.deliveryInfo,
-        dineInInfo: order.dineInInfo
-      };
-      
-      // Asosiy filialga yuborish (kelajakda branch ID bo'yicha)
-      const branchId = user.branch || 'main';
-      SocketManager.emitNewOrder(branchId, orderForSocket);
-      
-      // Foydalanuvchiga buyurtma holati haqida xabar
-      SocketManager.emitStatusUpdate(user._id, {
-        orderId: order._id,
-        orderNumber: order.orderId,
-        status: 'pending',
-        message: 'Buyurtmangiz qabul qilindi va ko\'rib chiqilmoqda',
-        estimatedTime: order.orderType === 'delivery' ? '30-45 daqiqa' : '15-25 daqiqa'
-      });
-      
-      console.log(`📡 Socket events sent for order ${order.orderId}`);
-    } catch (socketError) {
-      console.error('Socket.IO event error:', socketError);
-      // Socket xatosi buyurtma jarayonini to'xtatmasin
-    }
-    
     cart.isActive = false;
     await cart.save();
     ctx.session.orderType = null;
@@ -360,15 +394,13 @@ async function finalizeOrder(ctx) {
     confirmMsg += `\n\nBuyurtmangiz qabul qilindi va tez orada tayyorlanadi!`;
     
     // TUZATILDI: Dine-in uchun "Keldim" tugmasi
+    // Tasdiqlash xabari hamma holatda yuboriladi
+    await ctx.replyWithHTML(confirmMsg, {
+      reply_markup: mainMenuKeyboard.reply_markup
+    });
+
+    // "Keldim" tugmasi faqat AVVALDAN BUYURTMA (dine_in) uchun
     if (order.orderType === 'dine_in') {
-      const { Markup } = require('telegraf');
-      
-      // Buyurtma ma'lumotlari bilan xabar
-      await ctx.replyWithHTML(confirmMsg, {
-        reply_markup: mainMenuKeyboard.reply_markup
-      });
-      
-      // "Keldim" tugmasi alohida xabar sifatida
       await ctx.replyWithHTML(
         '🚪 <b>Restoranga kelganingizda "Keldim" tugmasini bosing:</b>',
         {
@@ -379,10 +411,6 @@ async function finalizeOrder(ctx) {
           }
         }
       );
-    } else {
-      await ctx.replyWithHTML(confirmMsg, {
-        reply_markup: mainMenuKeyboard.reply_markup
-      });
     }
     
     await notifyAdmins(order);
@@ -395,9 +423,23 @@ async function finalizeOrder(ctx) {
 
 async function notifyAdmins(order) {
   try {
-    const admins = await User.find({ role: 'admin' });
+    const admins = await User.find({ role: { $in: ['admin', 'superadmin'] } });
     const OrderModel = require('../../models/Order');
     const populatedOrder = await OrderModel.findById(order._id).populate('user');
+    // Emit to web admin panel (Socket.IO)
+    try {
+      const SocketManager = require('../../config/socketConfig');
+      const branchId = (order.branch && order.branch.toString) ? order.branch.toString() : 'default';
+      SocketManager.emitNewOrder(branchId, {
+        id: order._id,
+        orderId: order.orderId,
+        status: order.status,
+        total: order.total,
+        customer: { name: (populatedOrder.user && populatedOrder.user.firstName) ? populatedOrder.user.firstName : 'Mijoz' }
+      });
+    } catch (emitErr) {
+      console.error('Emit new order error:', emitErr?.message || emitErr);
+    }
     for (const admin of admins) {
       try {
         const bot = global.botInstance;
@@ -424,7 +466,8 @@ async function notifyAdmins(order) {
           message += `\n⏰ **Kelish vaqti:** ${(populatedOrder.dineInInfo && populatedOrder.dineInInfo.arrivalTime) ? populatedOrder.dineInInfo.arrivalTime + ' daqiqa' : 'Kiritilmagan'}`;
         } else if (populatedOrder.orderType === 'pickup') {
           message += `\n⏰ **Olib ketish vaqti:** ${(populatedOrder.dineInInfo && populatedOrder.dineInInfo.arrivalTime) ? populatedOrder.dineInInfo.arrivalTime + ' daqiqa' : 'Kiritilmagan'}`;
-        } else if (populatedOrder.orderType === 'dine_in_qr') {
+        } else if (populatedOrder.orderType === 'dine_in_qr' || (populatedOrder.orderType === 'dine_in' && populatedOrder.dineInInfo && populatedOrder.dineInInfo.tableNumber)) {
+          // Stol buyurtmasi (QR)
           message += `\n🍽️ **Stol:** ${(populatedOrder.dineInInfo && populatedOrder.dineInInfo.tableNumber) ? populatedOrder.dineInInfo.tableNumber : ''}`;
         } else if (populatedOrder.orderType === 'delivery') {
           let manzilText = 'Kiritilmagan';
@@ -442,7 +485,22 @@ async function notifyAdmins(order) {
         }
         message += `\n💳 **To'lov:** ${Helpers.getPaymentMethodText(populatedOrder.paymentMethod, 'uz') || 'Kiritilmagan'}`;
         await bot.telegram.sendMessage(admin.telegramId, message, {
-          parse_mode: 'Markdown'
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [
+                { text: '✅ Tasdiqlash', callback_data: `admin_quick_confirmed_${populatedOrder._id}` },
+                { text: '👨‍🍳 Tayyorlash', callback_data: `admin_quick_preparing_${populatedOrder._id}` }
+              ],
+              [
+                { text: '🎯 Tayyor', callback_data: `admin_quick_ready_${populatedOrder._id}` },
+                { text: '🚚 Yetkazildi', callback_data: `admin_quick_delivered_${populatedOrder._id}` }
+              ],
+              [
+                { text: '❌ Bekor', callback_data: `admin_quick_cancelled_${populatedOrder._id}` }
+              ]
+            ]
+          }
         });
       } catch (error) {
         console.error(`Admin ${admin.telegramId} ga xabar yuborishda xatolik:`, error);
@@ -529,7 +587,7 @@ async function handleDineInTableInput(ctx) {
         msg += `🪑 **Stol raqami:** ${tableNumber}\n\n`;
         msg += `🍽️ **Buyurtmani stolga olib boring!**`;
 
-        // TUZATILDI: bot emas, ctx.telegram
+        // Adminlarga Telegram orqali xabar
         await ctx.telegram.sendMessage(admin.telegramId, msg, { 
           parse_mode: 'Markdown',
           reply_markup: {
@@ -541,6 +599,42 @@ async function handleDineInTableInput(ctx) {
       } catch (error) {
         console.error(`Admin ${admin.telegramId} ga xabar yuborishda xatolik:`, error);
       }
+    }
+
+    // Qo'shimcha: .env dagi ADMIN_ID ro'yxati bo'yicha ham xabar yuboramiz (fallback)
+    try {
+      const ids = process.env.ADMIN_ID ? process.env.ADMIN_ID.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n)) : [];
+      for (const tid of ids) {
+        try {
+          await ctx.telegram.sendMessage(tid, `\n🆕 **Yangi buyurtma!**\n\n📋 **Buyurtma №:** ${populatedOrder.orderId}\n🍽️ **Turi:** ${Helpers.getOrderTypeText(populatedOrder.orderType, 'uz')}${(populatedOrder.dineInInfo && populatedOrder.dineInInfo.tableNumber) ? ` (Stol: ${populatedOrder.dineInInfo.tableNumber})` : ''}\n💰 **Jami:** ${populatedOrder.total.toLocaleString()} so'm`, { parse_mode: 'Markdown' });
+        } catch (e) {
+          console.error('ADMIN_ID notify error:', e?.message || e);
+        }
+      }
+    } catch (e) {}
+
+    // Web admin panelga real-time event + sound new-order
+    try {
+      const SocketManager = require('../../config/socketConfig');
+      const branchId = (order.branch && order.branch.toString) ? order.branch.toString() : 'default';
+      // 1) Update event (modal fokus uchun)
+      SocketManager.emitOrderUpdate(order._id.toString(), {
+        event: 'dine_in_arrived',
+        tableNumber: tableNumber,
+        status: 'arrived',
+        orderId: order.orderId,
+        branchId
+      });
+      // 2) New-order style ping with sound
+      SocketManager.emitNewOrder(branchId, {
+        id: order._id.toString(),
+        orderId: order.orderId,
+        customer: { name: order.user?.firstName || 'Mijoz' },
+        total: order.total,
+        sound: true
+      });
+    } catch (error) {
+      console.error('Emit dine_in_arrived error:', error);
     }
 
     return true;

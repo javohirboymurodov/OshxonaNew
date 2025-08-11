@@ -1,293 +1,254 @@
 const { User, Product, Cart } = require('../../models');
-const { mainMenuKeyboard } = require('../../keyboards/userKeyboards');
+const { cartKeyboard } = require('../../keyboards/userKeyboards');
 
-// Add to cart function
-const addToCart = async (ctx) => {
+async function addToCart(ctx) {
   try {
-    await ctx.answerCbQuery('🛒 Savatga qo\'shilmoqda...');
-    
-    const match = ctx.callbackQuery.data.match(/^add_to_cart_(.+)_(\d+)$/);
-    if (!match) {
-      return await ctx.answerCbQuery('❌ Noto\'g\'ri format!');
+    const data = ctx.callbackQuery.data.split('_');
+    let productId = '';
+    let quantity = 1;
+
+    // Supported callback formats:
+    // - add_cart_<productId>_<qty>
+    // - add_to_cart_<productId>
+    if (data[0] === 'add' && data[1] === 'cart') {
+      productId = data[2];
+      quantity = parseInt(data[3], 10) || 1;
+    } else if (data[0] === 'add' && data[1] === 'to' && data[2] === 'cart') {
+      productId = data[3];
+      quantity = 1;
+    } else {
+      // Fallback: last segment as productId
+      productId = data[data.length - 1];
+      quantity = 1;
     }
 
-    const [, productId, quantity] = match;
-    const quantityNum = parseInt(quantity);
+    // Foydalanuvchini bazadan olish
+    const telegramId = ctx.from.id;
+    const user = await User.findOne({ telegramId });
+    if (!user) {
+      return await ctx.answerCbQuery('Foydalanuvchi topilmadi!');
+    }
 
-    // Get product
     const product = await Product.findById(productId);
     if (!product) {
-      return await ctx.answerCbQuery('❌ Mahsulot topilmadi!');
+      return await ctx.answerCbQuery('Mahsulot topilmadi!');
     }
 
-    // Check availability
     if (!product.isAvailable) {
-      return await ctx.answerCbQuery('❌ Mahsulot mavjud emas!');
+      return await ctx.answerCbQuery('❌ Mahsulot hozirda mavjud emas!');
     }
 
-    // Get or create user cart
-    let cart = await Cart.findOne({ user: ctx.from.id });
+    let cart = await Cart.findOne({ user: user._id, isActive: true });
+
     if (!cart) {
       cart = new Cart({
-        user: ctx.from.id,
-        items: []
+        user: user._id,
+        items: [],
+        isActive: true
       });
     }
 
-    // Check if product already in cart
-    const existingItem = cart.items.find(item => 
+    // Savatda mahsulot bor-yo'qligini tekshirish
+    const existingItemIndex = cart.items.findIndex(item => 
       item.product.toString() === productId
     );
 
-    if (existingItem) {
-      existingItem.quantity += quantityNum;
-      existingItem.totalPrice = existingItem.quantity * product.price;
+    if (existingItemIndex !== -1) {
+      cart.items[existingItemIndex].quantity += quantity;
+      cart.items[existingItemIndex].totalPrice = cart.items[existingItemIndex].quantity * cart.items[existingItemIndex].price;
     } else {
       cart.items.push({
         product: productId,
-        quantity: quantityNum,
+        productName: product.name,
+        quantity: quantity,
         price: product.price,
-        totalPrice: quantityNum * product.price
+        totalPrice: product.price * quantity
       });
     }
 
-    // Update cart total
-    cart.totalPrice = cart.items.reduce((total, item) => total + item.totalPrice, 0);
-    cart.totalItems = cart.items.reduce((total, item) => total + item.quantity, 0);
+    // Umumiy narxni hisoblash
+    cart.total = cart.items.reduce((sum, item) => sum + item.totalPrice, 0);
+    cart.updatedAt = new Date();
 
     await cart.save();
 
-    // Update session cart
-    ctx.session.cart = cart.items;
-
     await ctx.answerCbQuery(`✅ ${product.name} savatga qo'shildi!`);
 
-    // Show updated product with success message
-    const updatedText = `
-🍽️ **${product.name}**
-
-📝 ${product.description}
-💰 **Narx:** ${product.price.toLocaleString()} so'm
-
-✅ **Savatga qo'shildi!**
-    `;
-
-    const keyboard = {
-      inline_keyboard: [
-        [
-          { text: '➖', callback_data: `quantity_${productId}_${quantityNum > 1 ? quantityNum - 1 : 1}` },
-          { text: `${quantityNum} ta`, callback_data: `quantity_info_${productId}` },
-          { text: '➕', callback_data: `quantity_${productId}_${quantityNum + 1}` }
-        ],
-        [
-          { text: '🛒 Savatga qo\'shish', callback_data: `add_to_cart_${productId}_${quantityNum}` },
-          { text: '📋 Savatni ko\'rish', callback_data: 'show_cart' }
-        ],
-        [
-          { text: '🔙 Orqaga', callback_data: `category_${product.category}` },
-          { text: '🏠 Bosh sahifa', callback_data: 'main_menu' }
-        ]
-      ]
-    };
-
-    await ctx.editMessageText(updatedText, {
-      parse_mode: 'Markdown',
-      reply_markup: keyboard
-    });
+    // Savatni ko'rsatish
+    await showCart(ctx);
 
   } catch (error) {
     console.error('Add to cart error:', error);
     await ctx.answerCbQuery('❌ Savatga qo\'shishda xatolik!');
   }
-};
+}
 
-// Show cart function
-const showCart = async (ctx) => {
+async function updateQuantity(ctx) {
   try {
-    await ctx.answerCbQuery('🛒 Savat ochilmoqda...');
+    const parts = ctx.callbackQuery.data.split('_');
+    // change_qty_<productId>_<qty> yoki cart_qty_<productId>_<qty>
+    const productId = parts[2];
+    let newQty = parseInt(parts[3], 10);
+    if (!Number.isFinite(newQty)) newQty = 1;
 
-    const cart = await Cart.findOne({ user: ctx.from.id })
-      .populate('items.product', 'name price images');
-
-    if (!cart || cart.items.length === 0) {
-      return await ctx.editMessageText(
-        '🛒 **Savatdagi mahsulotlar**\n\n📭 Savatingiz bo\'sh!\n\nMahsulotlarni ko\'rish uchun kategoriyalardan birini tanlang.',
-        {
-          parse_mode: 'Markdown',
-          reply_markup: {
-            inline_keyboard: [
-              [{ text: '🛍️ Xarid qilish', callback_data: 'show_categories' }],
-              [{ text: '🏠 Bosh sahifa', callback_data: 'main_menu' }]
-            ]
-          }
-        }
-      );
+    const telegramId = ctx.from.id;
+    const user = await User.findOne({ telegramId });
+    if (!user) {
+      return await ctx.answerCbQuery('Foydalanuvchi topilmadi!');
     }
 
-    let cartText = '🛒 **Savatdagi mahsulotlar**\n\n';
-    
-    cart.items.forEach((item, index) => {
-      cartText += `${index + 1}. **${item.product.name}**\n`;
-      cartText += `   📦 Miqdori: ${item.quantity} ta\n`;
-      cartText += `   💰 Narxi: ${item.price.toLocaleString()} so'm\n`;
-      cartText += `   💵 Jami: ${item.totalPrice.toLocaleString()} so'm\n\n`;
-    });
-
-    cartText += `💰 **Umumiy summa: ${cart.totalPrice.toLocaleString()} so'm**\n`;
-    cartText += `📦 **Jami mahsulotlar: ${cart.totalItems} ta`;
-
-    const keyboard = {
-      inline_keyboard: [
-        [
-          { text: '🚀 Buyurtma berish', callback_data: 'start_order' },
-          { text: '🗑️ Savatni tozalash', callback_data: 'clear_cart' }
-        ],
-        [
-          { text: '🛍️ Xarid davom etish', callback_data: 'show_categories' },
-          { text: '🏠 Bosh sahifa', callback_data: 'main_menu' }
-        ]
-      ]
-    };
-
-    await ctx.editMessageText(cartText, {
-      parse_mode: 'Markdown',
-      reply_markup: keyboard
-    });
-
-  } catch (error) {
-    console.error('Show cart error:', error);
-    await ctx.answerCbQuery('❌ Savatni ko\'rsatishda xatolik!');
-  }
-};
-
-// Update quantity function
-const updateQuantity = async (ctx) => {
-  try {
-    const match = ctx.callbackQuery.data.match(/^quantity_(.+)_(\d+)$/);
-    if (!match) {
-      return await ctx.answerCbQuery('❌ Noto\'g\'ri format!');
+    const cart = await Cart.findOne({ user: user._id, isActive: true });
+    if (!cart) {
+      return await ctx.answerCbQuery('Savat topilmadi!');
     }
 
-    const [, productId, newQuantity] = match;
-    const quantity = parseInt(newQuantity);
-
-    if (quantity < 1) {
-      return await ctx.answerCbQuery('❌ Miqdor 1 dan kam bo\'lishi mumkin emas!');
+    const itemIndex = cart.items.findIndex((it) => it.product.toString() === productId);
+    if (itemIndex === -1) {
+      return await ctx.answerCbQuery('Mahsulot savatda topilmadi!');
     }
 
-    // Update product display with new quantity
-    const product = await Product.findById(productId);
-    if (!product) {
-      return await ctx.answerCbQuery('❌ Mahsulot topilmadi!');
+    if (newQty <= 0) {
+      cart.items.splice(itemIndex, 1);
+    } else {
+      cart.items[itemIndex].quantity = newQty;
+      cart.items[itemIndex].totalPrice = newQty * cart.items[itemIndex].price;
     }
 
-    const productText = `
-🍽️ **${product.name}**
+    cart.total = cart.items.reduce((sum, item) => sum + item.totalPrice, 0);
+    cart.updatedAt = new Date();
+    await cart.save();
 
-📝 ${product.description}
-💰 **Narx:** ${product.price.toLocaleString()} so'm
-💵 **Jami:** ${(product.price * quantity).toLocaleString()} so'm
-    `;
-
-    const keyboard = {
-      inline_keyboard: [
-        [
-          { text: '➖', callback_data: `quantity_${productId}_${Math.max(1, quantity - 1)}` },
-          { text: `${quantity} ta`, callback_data: `quantity_info_${productId}` },
-          { text: '➕', callback_data: `quantity_${productId}_${quantity + 1}` }
-        ],
-        [
-          { text: '🛒 Savatga qo\'shish', callback_data: `add_to_cart_${productId}_${quantity}` },
-          { text: '📋 Savatni ko\'rish', callback_data: 'show_cart' }
-        ],
-        [
-          { text: '🔙 Orqaga', callback_data: `category_${product.category}` },
-          { text: '🏠 Bosh sahifa', callback_data: 'main_menu' }
-        ]
-      ]
-    };
-
-    await ctx.editMessageText(productText, {
-      parse_mode: 'Markdown',
-      reply_markup: keyboard
-    });
-
-    await ctx.answerCbQuery(`Miqdor: ${quantity} ta`);
-
+    await showCart(ctx);
+    await ctx.answerCbQuery('✅ Miqdor yangilandi');
   } catch (error) {
     console.error('Update quantity error:', error);
     await ctx.answerCbQuery('❌ Miqdorni yangilashda xatolik!');
   }
-};
+}
 
-// Remove from cart function
-const removeFromCart = async (ctx) => {
+async function removeFromCart(ctx) {
   try {
-    const match = ctx.callbackQuery.data.match(/^remove_from_cart_(.+)$/);
-    if (!match) {
-      return await ctx.answerCbQuery('❌ Noto\'g\'ri format!');
+    const productId = ctx.callbackQuery.data.split('_').pop();
+    const telegramId = ctx.from.id;
+    const user = await User.findOne({ telegramId });
+    if (!user) {
+      return await ctx.answerCbQuery('Foydalanuvchi topilmadi!');
     }
 
-    const [, productId] = match;
-
-    const cart = await Cart.findOne({ user: ctx.from.id });
+    const cart = await Cart.findOne({ user: user._id, isActive: true });
     if (!cart) {
-      return await ctx.answerCbQuery('❌ Savat topilmadi!');
+      return await ctx.answerCbQuery('Savat topilmadi!');
     }
 
-    // Remove item from cart
-    cart.items = cart.items.filter(item => 
-      item.product.toString() !== productId
-    );
-
-    // Update cart totals
-    cart.totalPrice = cart.items.reduce((total, item) => total + item.totalPrice, 0);
-    cart.totalItems = cart.items.reduce((total, item) => total + item.quantity, 0);
-
+    cart.items = cart.items.filter((it) => it.product.toString() !== productId);
+    cart.total = cart.items.reduce((sum, item) => sum + item.totalPrice, 0);
+    cart.updatedAt = new Date();
     await cart.save();
 
-    await ctx.answerCbQuery('✅ Mahsulot savatdan olib tashlandi!');
-
-    // Show updated cart
     await showCart(ctx);
-
+    await ctx.answerCbQuery('🗑️ Mahsulot o\'chirildi');
   } catch (error) {
     console.error('Remove from cart error:', error);
-    await ctx.answerCbQuery('❌ Savatdan olib tashlanmadi!');
+    await ctx.answerCbQuery('❌ Mahsulotni o\'chirishda xatolik!');
   }
-};
+}
 
-// Clear cart function  
-const clearCart = async (ctx) => {
+async function showCart(ctx) {
   try {
-    await Cart.deleteOne({ user: ctx.from.id });
-    ctx.session.cart = [];
+    const telegramId = ctx.from.id;
+    const user = await User.findOne({ telegramId });
+    if (!user) {
+      return await ctx.reply('❌ Foydalanuvchi topilmadi!');
+    }
+    const cart = await Cart.findOne({ user: user._id, isActive: true })
+      .populate('items.product', 'name price isAvailable');
 
-    await ctx.answerCbQuery('✅ Savat tozalandi!');
+    if (!cart || cart.items.length === 0) {
+      const message = '🛒 **Savat bo\'sh**\n\nMahsulot qo\'shish uchun kategoriyalarni ko\'ring';
+      const keyboard = {
+        inline_keyboard: [
+          [{ text: '🍽️ Kategoriyalar', callback_data: 'show_categories' }],
+          [{ text: '🔙 Asosiy menyu', callback_data: 'back_to_main' }]
+        ]
+      };
 
-    await ctx.editMessageText(
-      '🗑️ **Savat tozalandi!**\n\nBarcha mahsulotlar savatdan olib tashlandi.',
-      {
-        parse_mode: 'Markdown',
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: '🛍️ Xarid qilish', callback_data: 'show_categories' }],
-            [{ text: '🏠 Bosh sahifa', callback_data: 'main_menu' }]
-          ]
-        }
+      if (ctx.callbackQuery) {
+        return await ctx.editMessageText(message, {
+          parse_mode: 'Markdown',
+          reply_markup: keyboard
+        });
+      } else {
+        return await ctx.reply(message, {
+          parse_mode: 'Markdown',
+          reply_markup: keyboard
+        });
       }
+    }
+
+    let message = '🛒 **Sizning savatangiz:**\n\n';
+    let total = 0;
+
+    cart.items.forEach((item, index) => {
+      const itemTotal = item.quantity * item.price;
+      total += itemTotal;
+
+      message += `${index + 1}. **${item.productName}**\n`;
+      message += `   ${item.quantity} x ${item.price.toLocaleString()} = ${itemTotal.toLocaleString()} so'm\n\n`;
+    });
+
+    message += `💰 **Jami:** ${total.toLocaleString()} so'm`;
+
+    if (ctx.callbackQuery) {
+      // Agar xabar rasmli bo'lsa, yangi xabar yuboriladi
+      if (ctx.callbackQuery.message.photo) {
+        await ctx.reply(message, {
+          parse_mode: 'Markdown',
+          reply_markup: cartKeyboard(cart).reply_markup
+        });
+      } else {
+        await ctx.editMessageText(message, {
+          parse_mode: 'Markdown',
+          reply_markup: cartKeyboard(cart).reply_markup
+        });
+      }
+    } else {
+      await ctx.reply(message, {
+        parse_mode: 'Markdown',
+        reply_markup: cartKeyboard(cart).reply_markup
+      });
+    }
+
+  } catch (error) {
+    console.error('Show cart error:', error);
+    await ctx.reply('❌ Savatni ko\'rsatishda xatolik!');
+  }
+}
+
+async function clearCart(ctx) {
+  try {
+    const telegramId = ctx.from.id;
+    const user = await User.findOne({ telegramId });
+    if (!user) {
+      return await ctx.answerCbQuery('Foydalanuvchi topilmadi!');
+    }
+    await Cart.findOneAndUpdate(
+      { user: user._id, isActive: true },
+      { $set: { items: [], total: 0 } }
     );
+
+    await ctx.answerCbQuery('🗑️ Savat tozalandi!');
+    await showCart(ctx);
 
   } catch (error) {
     console.error('Clear cart error:', error);
     await ctx.answerCbQuery('❌ Savatni tozalashda xatolik!');
   }
-};
+}
 
 module.exports = {
   addToCart,
   showCart,
+  clearCart,
   updateQuantity,
-  removeFromCart,
-  clearCart
+  removeFromCart
 };

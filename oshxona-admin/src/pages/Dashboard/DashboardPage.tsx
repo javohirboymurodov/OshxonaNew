@@ -10,29 +10,27 @@ import {
   Button,
   Table,
   Tag,
-  Progress,
   List,
   Avatar,
   Spin,
   Alert,
-  Select,
-  DatePicker
+  DatePicker,
+  message as antdMessage
 } from 'antd';
 import {
   ArrowUpOutlined,
-  ArrowDownOutlined,
   ShoppingCartOutlined,
   UserOutlined,
   DollarOutlined,
   ShopOutlined,
-  EyeOutlined,
   ReloadOutlined,
   TruckOutlined,
   ClockCircleOutlined
 } from '@ant-design/icons';
-import { Line, Column, Pie } from '@ant-design/plots';
+import { Line, Pie } from '@ant-design/plots';
 import apiService from '@/services/api';
 import { useAuth } from '@/hooks/useAuth';
+import { useRealTimeOrders } from '@/hooks/useSocket';
 import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
@@ -90,14 +88,19 @@ const DashboardPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
-  const [chartData, setChartData] = useState<any[]>([]);
-  const [pieData, setPieData] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<Array<{ date: string; value: number }>>([]);
+  const [pieData, setPieData] = useState<Array<{ type: string; value: number }>>([]);
   const [error, setError] = useState<string | null>(null);
-  const [dateRange, setDateRange] = useState<any>([
+  const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>([
     dayjs().subtract(7, 'days'),
     dayjs()
   ]);
   const { user } = useAuth();
+  const token = localStorage.getItem('token') || '';
+  const branchId = ((user as unknown) as { branch?: { _id?: string } } | null)?.branch?._id || 'default';
+  const { newOrders, connected } = useRealTimeOrders(token, branchId);
+
+  const [messageApi, contextHolder] = antdMessage.useMessage();
 
   const fetchDashboardData = async () => {
     setLoading(true);
@@ -105,37 +108,55 @@ const DashboardPage: React.FC = () => {
     
     try {
       // Dashboard stats
-      const statsResponse = await apiService.get<DashboardStats>('/dashboard/stats', {
-        startDate: dateRange[0].toISOString(),
-        endDate: dateRange[1].toISOString()
-      });
+      const statsResponse = await apiService.getDashboardStats();
       
-      // Recent orders
-      const ordersResponse = await apiService.get<{ items: RecentOrder[] }>('/orders', {
-        limit: 10,
-        sort: '-createdAt'
-      });
+      // Bugungi faol buyurtmalar (delivered/cancelled emas)
+      const startOfDay = dayjs().startOf('day').toDate().toISOString();
+      const endOfDay = dayjs().endOf('day').toDate().toISOString();
+      type RawOrder = {
+        _id?: unknown;
+        orderId?: unknown;
+        orderNumber?: unknown;
+        user?: { firstName?: unknown; lastName?: unknown };
+        customerInfo?: { name?: unknown };
+        totalAmount?: unknown;
+        total?: unknown;
+        status?: unknown;
+        orderType?: unknown;
+        createdAt?: unknown;
+      };
+      const ordersData = await apiService.get<{ orders?: RawOrder[]; data?: { orders?: RawOrder[] } }>(`/orders?page=1&limit=20&dateFrom=${encodeURIComponent(startOfDay)}&dateTo=${encodeURIComponent(endOfDay)}`);
+      const rawOrders: RawOrder[] = (ordersData?.orders || ordersData?.data?.orders || []) as RawOrder[];
+      const activeStatuses = new Set(['pending','confirmed','preparing','ready','on_delivery']);
+      const ordersResponse: RecentOrder[] = rawOrders
+        .filter((o) => activeStatuses.has(String(o.status)))
+        .slice(0, 10)
+        .map((o) => ({
+          _id: String(o._id ?? ''),
+          orderNumber: String((o.orderId ?? o.orderNumber ?? '')),
+          user: { firstName: String(o.user?.firstName ?? o.customerInfo?.name ?? 'Mijoz'), lastName: String(o.user?.lastName ?? '') },
+          totalAmount: Number(o.totalAmount ?? o.total ?? 0),
+          status: String(o.status ?? ''),
+          orderType: String(o.orderType ?? ''),
+          createdAt: String(o.createdAt ?? new Date().toISOString())
+        }));
 
       // Chart data (revenue trend)
-      const chartResponse = await apiService.get('/dashboard/chart-data', {
-        startDate: dateRange[0].toISOString(),
-        endDate: dateRange[1].toISOString(),
-        type: 'revenue'
-      });
+      const chartResponse = await apiService.get<{ date: string; value: number }[]>(`/dashboard/chart-data?startDate=${encodeURIComponent(dateRange[0].toISOString())}&endDate=${encodeURIComponent(dateRange[1].toISOString())}&type=revenue`);
 
       setStats(statsResponse);
-      setRecentOrders(ordersResponse.items);
+      setRecentOrders(ordersResponse);
       setChartData(chartResponse);
 
       // Pie chart data for order types
-      const pieChartData = [
+      const pieChartData: Array<{ type: string; value: number }> = [
         { type: 'Yetkazib berish', value: statsResponse.orders.byStatus.delivered },
         { type: 'Olib ketish', value: Math.floor(statsResponse.orders.byStatus.delivered * 0.3) },
         { type: 'Zalda iste\'mol', value: Math.floor(statsResponse.orders.byStatus.delivered * 0.2) },
       ];
       setPieData(pieChartData);
 
-    } catch (err: any) {
+    } catch (err) {
       setError('Dashboard ma\'lumotlarini yuklashda xatolik yuz berdi');
       console.error('Dashboard error:', err);
       
@@ -184,7 +205,8 @@ const DashboardPage: React.FC = () => {
 
   useEffect(() => {
     fetchDashboardData();
-  }, [dateRange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateRange[0]?.toISOString(), dateRange[1]?.toISOString()]);
 
   const getStatusColor = (status: string) => {
     const colors: { [key: string]: string } = {
@@ -208,6 +230,18 @@ const DashboardPage: React.FC = () => {
       cancelled: 'Bekor qilingan'
     };
     return texts[status] || status;
+  };
+
+  const getNextStatuses = (currentStatus: string): string[] => {
+    const flow: Record<string, string[]> = {
+      pending: ['confirmed', 'cancelled'],
+      confirmed: ['preparing', 'cancelled'],
+      preparing: ['ready', 'cancelled'],
+      ready: ['delivered'],
+      delivered: [],
+      cancelled: []
+    };
+    return flow[currentStatus] || [];
   };
 
   const orderColumns = [
@@ -243,6 +277,35 @@ const DashboardPage: React.FC = () => {
       )
     },
     {
+      title: 'Amal',
+      key: 'action',
+      render: (record: RecentOrder) => {
+        const next = getNextStatuses(record.status);
+        return (
+          <Space size="small">
+            {next.map((s) => (
+              <Button
+                key={s}
+                size="small"
+                type="primary"
+                onClick={async () => {
+                  try {
+                    await apiService.updateOrderStatus(record._id, s);
+                    messageApi.success('Holat yangilandi');
+                    fetchDashboardData();
+                  } catch {
+                    messageApi.error('Holatni yangilashda xatolik');
+                  }
+                }}
+              >
+                {getStatusText(s)}
+              </Button>
+            ))}
+          </Space>
+        );
+      }
+    },
+    {
       title: 'Vaqt',
       dataIndex: 'createdAt',
       key: 'createdAt',
@@ -259,13 +322,16 @@ const DashboardPage: React.FC = () => {
       size: 3,
       shape: 'circle',
     },
-    tooltip: {
-      formatter: (datum: any) => {
-        return {
-          name: 'Daromad',
-          value: `${datum.value?.toLocaleString()} so'm`,
-        };
-      },
+    meta: {
+      value: {
+        alias: 'Daromad',
+        formatter: (v: number) => `${(v || 0).toLocaleString()} so'm`,
+      }
+    },
+    yAxis: {
+      label: {
+        formatter: (v: string) => `${Number(v).toLocaleString()}`
+      }
     },
     animation: {
       appear: {
@@ -282,7 +348,7 @@ const DashboardPage: React.FC = () => {
     radius: 0.8,
     label: {
       type: 'outer',
-      content: '{name} {percentage}',
+      content: (d: { type: string; value: number }) => `${d.type} ${Math.round((d.value / (pieData.reduce((s, v) => s + v.value, 0) || 1)) * 100)}%`,
     },
   };
 
@@ -299,11 +365,27 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div>
+      {contextHolder}
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <Row justify="space-between" align="middle">
           <Col>
-            <Title level={2}>Dashboard</Title>
+            <Title level={2} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              Dashboard
+              {connected && newOrders.length > 0 && (
+                <span style={{
+                  background: '#ff4d4f',
+                  color: '#fff',
+                  borderRadius: 12,
+                  padding: '0 8px',
+                  fontSize: 12,
+                  lineHeight: '20px',
+                  display: 'inline-block'
+                }}>
+                  +{newOrders.length} yangi
+                </span>
+              )}
+            </Title>
             <Text type="secondary">
               Xush kelibsiz, {user?.firstName} {user?.lastName}! 👋
             </Text>
@@ -312,7 +394,9 @@ const DashboardPage: React.FC = () => {
             <Space>
               <RangePicker
                 value={dateRange}
-                onChange={setDateRange}
+                onChange={(dates) => {
+                  if (dates && dates[0] && dates[1]) setDateRange([dates[0], dates[1]]);
+                }}
                 format="DD.MM.YYYY"
               />
               <Button 

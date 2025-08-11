@@ -1,60 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Card,
-  Table,
-  Button,
-  Space,
-  Tag,
-  Modal,
-  Form,
-  Input,
-  Switch,
-  Upload,
-  message,
-  Popconfirm,
-  Row,
-  Col,
-  Statistic
-} from 'antd';
-import {
-  PlusOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  UploadOutlined,
-  EyeOutlined,
-  EyeInvisibleOutlined
-} from '@ant-design/icons';
+import { Card, Button, message as antdMessage, Row, Col, Input, Select } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 import { apiService } from '@/services/api';
+import CategoriesTable from '@/components/Categories/CategoriesTable';
+import CategoryFormModal from '@/components/Categories/CategoryFormModal';
+import CategoryStats from '@/components/Categories/CategoryStats';
+import type { Category } from '@/components/Categories/types';
 
-interface Category {
-  _id: string;
-  name: string;
-  nameUz: string;
-  nameRu: string;
-  nameEn: string;
-  description?: string;
-  image?: string;
-  isActive: boolean;
-  order: number;
-  createdAt: string;
-}
+// types are imported from components/Categories/types
 
 const CategoriesPage: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
+  const [allCategories, setAllCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [form] = Form.useForm();
+  // Modal ichida o'zining form instance'i boshqariladi
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [visibilityFilter, setVisibilityFilter] = useState<'all' | 'visible' | 'hidden'>('all');
 
   // Fetch categories
   const fetchCategories = async () => {
     setLoading(true);
     try {
-      const response = await apiService.getCategories();
-      setCategories(response.items || []);
+      const response = await apiService.getCategories(undefined, undefined, search);
+      const items: Category[] = response.items || [];
+      setAllCategories(items);
+      applyClientFilters(items);
     } catch (error) {
       console.error('Categories fetch error:', error);
-      message.error('Kategoriyalarni yuklashda xatolik!');
+      antdMessage.error('Kategoriyalarni yuklashda xatolik!');
     } finally {
       setLoading(false);
     }
@@ -62,10 +38,44 @@ const CategoriesPage: React.FC = () => {
 
   useEffect(() => {
     fetchCategories();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    // live search and filters
+    fetchCategories();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
+
+  const applyClientFilters = (source: Category[]) => {
+    let data = [...source];
+    if (statusFilter !== 'all') {
+      const active = statusFilter === 'active';
+      data = data.filter(c => !!c.isActive === active);
+    }
+    if (visibilityFilter !== 'all') {
+      const visible = visibilityFilter === 'visible';
+      data = data.filter(c => (c.isVisible ?? true) === visible);
+    }
+    setCategories(data);
+  };
+
+  useEffect(() => {
+    applyClientFilters(allCategories);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter, visibilityFilter]);
+
   // Handle form submit
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (values: {
+    name: string;
+    nameUz: string;
+    nameRu: string;
+    nameEn: string;
+    description?: string;
+    isActive: boolean;
+    sortOrder?: number;
+    image?: { file?: File };
+  }) => {
     try {
       const formData = new FormData();
       formData.append('name', values.name);
@@ -73,7 +83,7 @@ const CategoriesPage: React.FC = () => {
       formData.append('nameRu', values.nameRu);
       formData.append('nameEn', values.nameEn);
       formData.append('description', values.description || '');
-      formData.append('isActive', values.isActive);
+      formData.append('isActive', String(values.isActive));
 
       if (values.image && values.image.file) {
         formData.append('image', values.image.file);
@@ -81,32 +91,23 @@ const CategoriesPage: React.FC = () => {
 
       if (editingCategory) {
         await apiService.updateCategory(editingCategory._id, formData);
-        message.success('Kategoriya muvaffaqiyatli yangilandi!');
+        antdMessage.success('Kategoriya muvaffaqiyatli yangilandi!');
       } else {
         await apiService.createCategory(formData);
-        message.success('Kategoriya muvaffaqiyatli qo\'shildi!');
+        antdMessage.success('Kategoriya muvaffaqiyatli qo\'shildi!');
       }
 
       setModalVisible(false);
       setEditingCategory(null);
-      form.resetFields();
       fetchCategories();
-    } catch (error) {
-      message.error('Xatolik yuz berdi!');
+    } catch {
+      antdMessage.error('Xatolik yuz berdi!');
     }
   };
 
   // Handle edit
   const handleEdit = (category: Category) => {
     setEditingCategory(category);
-    form.setFieldsValue({
-      name: category.name,
-      nameUz: category.nameUz,
-      nameRu: category.nameRu,
-      nameEn: category.nameEn,
-      description: category.description,
-      isActive: category.isActive
-    });
     setModalVisible(true);
   };
 
@@ -114,10 +115,10 @@ const CategoriesPage: React.FC = () => {
   const handleDelete = async (id: string) => {
     try {
       await apiService.deleteCategory(id);
-      message.success('Kategoriya o\'chirildi!');
+      antdMessage.success('Kategoriya o\'chirildi!');
       fetchCategories();
-    } catch (error) {
-      message.error('O\'chirishda xatolik!');
+    } catch {
+      antdMessage.error('O\'chirishda xatolik!');
     }
   };
 
@@ -125,80 +126,25 @@ const CategoriesPage: React.FC = () => {
   const toggleStatus = async (id: string) => {
     try {
       await apiService.toggleCategoryStatus(id);
-      message.success('Status o\'zgartirildi!');
+      antdMessage.success('Status o\'zgartirildi!');
       fetchCategories();
-    } catch (error) {
-      message.error('Status o\'zgartirishda xatolik!');
+    } catch {
+      antdMessage.error('Status o\'zgartirishda xatolik!');
     }
   };
 
-  const columns = [
-    {
-      title: 'Nom (O\'zbek)',
-      dataIndex: 'nameUz',
-      key: 'nameUz',
-    },
-    {
-      title: 'Nom (Rus)',
-      dataIndex: 'nameRu',
-      key: 'nameRu',
-    },
-    {
-      title: 'Nom (Ingliz)',
-      dataIndex: 'nameEn',
-      key: 'nameEn',
-    },
-    {
-      title: 'Status',
-      dataIndex: 'isActive',
-      key: 'isActive',
-      render: (isActive: boolean, record: Category) => (
-        <Switch
-          checked={isActive}
-          onChange={() => toggleStatus(record._id)}
-          checkedChildren={<EyeOutlined />}
-          unCheckedChildren={<EyeInvisibleOutlined />}
-        />
-      )
-    },
-    {
-      title: 'Tartib',
-      dataIndex: 'order',
-      key: 'order',
-      width: 80,
-    },
-    {
-      title: 'Amallar',
-      key: 'actions',
-      width: 150,
-      render: (_, record: Category) => (
-        <Space>
-          <Button
-            type="primary"
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          >
-            Tahrirlash
-          </Button>
-          <Popconfirm
-            title="Bu kategoriyani o'chirishni xohlaysizmi?"
-            onConfirm={() => handleDelete(record._id)}
-            okText="Ha"
-            cancelText="Yo'q"
-          >
-            <Button
-              danger
-              size="small"
-              icon={<DeleteOutlined />}
-            >
-              O'chirish
-            </Button>
-          </Popconfirm>
-        </Space>
-      )
+  // Toggle visibility
+  const toggleVisibility = async (id: string) => {
+    try {
+      await apiService.toggleCategoryVisibility(id);
+      antdMessage.success("Ko'rinish o'zgartirildi!");
+      fetchCategories();
+    } catch {
+      antdMessage.error("Ko'rinishni o'zgartirishda xatolik!");
     }
-  ];
+  };
+
+  // Legacy columns removed; table is now in CategoriesTable
 
   return (
     <div style={{ padding: 24 }}>
@@ -215,7 +161,6 @@ const CategoriesPage: React.FC = () => {
             icon={<PlusOutlined />}
             onClick={() => {
               setEditingCategory(null);
-              form.resetFields();
               setModalVisible(true);
             }}
             size="large"
@@ -225,156 +170,78 @@ const CategoriesPage: React.FC = () => {
         </Col>
       </Row>
 
+      {/* Filter bar */}
+      <Card style={{ marginBottom: 16 }}>
+        <Row gutter={12}>
+          <Col xs={24} md={12} lg={10}>
+            <Input
+              placeholder="Qidirish (nom)"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              allowClear
+            />
+          </Col>
+          <Col xs={24} md={6} lg={7}>
+            <Select
+              value={statusFilter}
+              onChange={setStatusFilter}
+              style={{ width: '100%' }}
+              options={[
+                { value: 'all', label: 'Barchasi' },
+                { value: 'active', label: 'Faol' },
+                { value: 'inactive', label: 'Nofaol' }
+              ]}
+            />
+          </Col>
+          <Col xs={24} md={6} lg={7}>
+            <Select
+              value={visibilityFilter}
+              onChange={setVisibilityFilter}
+              style={{ width: '100%' }}
+              options={[
+                { value: 'all', label: 'Hammasi' },
+                { value: 'visible', label: "Ko'rinadi" },
+                { value: 'hidden', label: 'Yashirin' }
+              ]}
+            />
+          </Col>
+        </Row>
+      </Card>
+
       {/* Statistics */}
-      <Row gutter={16} style={{ marginBottom: 24 }}>
-        <Col span={8}>
-          <Card>
-            <Statistic
-              title="Jami Kategoriyalar"
-              value={categories.length}
-              valueStyle={{ color: '#1890ff' }}
-            />
-          </Card>
-        </Col>
-        <Col span={8}>
-          <Card>
-            <Statistic
-              title="Faol Kategoriyalar"
-              value={categories.filter(c => c.isActive).length}
-              valueStyle={{ color: '#52c41a' }}
-            />
-          </Card>
-        </Col>
-        <Col span={8}>
-          <Card>
-            <Statistic
-              title="Nofaol Kategoriyalar"
-              value={categories.filter(c => !c.isActive).length}
-              valueStyle={{ color: '#ff4d4f' }}
-            />
-          </Card>
-        </Col>
-      </Row>
+      <CategoryStats categories={categories} />
 
       {/* Categories Table */}
       <Card>
-        <Table
-          columns={columns}
-          dataSource={categories}
-          rowKey="_id"
+        <CategoriesTable
           loading={loading}
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total) => `Jami ${total} ta kategoriya`
+          data={categories}
+          onToggleStatus={toggleStatus}
+          onToggleVisibility={toggleVisibility}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onReorder={async (ids) => {
+            try {
+              await apiService.post('/categories/reorder', { categoryIds: ids });
+              antdMessage.success('Tartib yangilandi');
+              fetchCategories();
+            } catch {
+              antdMessage.error('Tartibni yangilashda xatolik!');
+            }
           }}
         />
       </Card>
 
       {/* Add/Edit Modal */}
-      <Modal
-        title={editingCategory ? 'Kategoriyani Tahrirlash' : 'Yangi Kategoriya Qo\'shish'}
+      <CategoryFormModal
         open={modalVisible}
+        initial={editingCategory}
         onCancel={() => {
           setModalVisible(false);
           setEditingCategory(null);
-          form.resetFields();
         }}
-        footer={null}
-        width={600}
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-          initialValues={{ isActive: true }}
-        >
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="nameUz"
-                label="Nom (O'zbek)"
-                rules={[{ required: true, message: 'O\'zbek nomini kiriting!' }]}
-              >
-                <Input placeholder="Kategoriya nomi" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="nameRu"
-                label="Nom (Rus)"
-                rules={[{ required: true, message: 'Rus nomini kiriting!' }]}
-              >
-                <Input placeholder="Название категории" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="nameEn"
-                label="Nom (Ingliz)"
-                rules={[{ required: true, message: 'Ingliz nomini kiriting!' }]}
-              >
-                <Input placeholder="Category name" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="name"
-                label="Asosiy nom"
-                rules={[{ required: true, message: 'Asosiy nomini kiriting!' }]}
-              >
-                <Input placeholder="Asosiy nom" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item
-            name="description"
-            label="Tavsif"
-          >
-            <Input.TextArea
-              rows={3}
-              placeholder="Kategoriya haqida qisqacha ma'lumot..."
-            />
-          </Form.Item>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="isActive"
-                label="Status"
-                valuePropName="checked"
-              >
-                <Switch
-                  checkedChildren="Faol"
-                  unCheckedChildren="Nofaol"
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
-            <Space>
-              <Button
-                onClick={() => {
-                  setModalVisible(false);
-                  setEditingCategory(null);
-                  form.resetFields();
-                }}
-              >
-                Bekor qilish
-              </Button>
-              <Button type="primary" htmlType="submit">
-                {editingCategory ? 'Yangilash' : 'Qo\'shish'}
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
+        onSubmit={handleSubmit}
+      />
     </div>
   );
 };

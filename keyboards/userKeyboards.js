@@ -68,7 +68,8 @@ const orderTypeKeyboard = Markup.inlineKeyboard([
     Markup.button.callback('🏃 Olib ketish', 'order_type_pickup')
   ],
   [
-    Markup.button.callback('🍽️ Oldindan Buyurtma', 'order_type_dine_in')
+    // Oldindan buyurtma (Zalda iste'mol emas). Nomni aniqroq qilamiz
+    Markup.button.callback('🗓️ Avvaldan buyurtma', 'order_type_preorder')
   ],
   [
     Markup.button.callback('🔙 Orqaga', 'show_cart')
@@ -97,7 +98,8 @@ const backToMainKeyboard = Markup.inlineKeyboard([
 function quantityKeyboard(productId, quantity = 1) {
   return Markup.inlineKeyboard([
     [
-      Markup.button.callback('➖', `change_qty_${productId}_${quantity - 1 < 0 ? 0 : quantity - 1}`),
+      // pastga bosilganda 0 dan ham past (−1) jo'natamiz — handler bu holatda kategoriyalarga qaytaradi
+      Markup.button.callback('➖', `change_qty_${productId}_${quantity - 1}`),
       Markup.button.callback(`${quantity}`, 'noop'),
       Markup.button.callback('➕', `change_qty_${productId}_${quantity + 1}`)
     ],

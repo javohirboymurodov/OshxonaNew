@@ -1,5 +1,6 @@
 const express = require('express');
-const { Order, User } = require('../../models');
+const { Order, User, Branch } = require('../../models');
+const DeliveryService = require('../../services/deliveryService');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const SocketManager = require('../../config/socketConfig');
 
@@ -12,7 +13,7 @@ router.use(authenticateToken);
 // 📋 ORDER MANAGEMENT
 
 
-// Get orders for admin's branch
+// Get orders for admin's branch + search
 router.get('/', requireAdmin, async (req, res) => {
   try {
     const { 
@@ -21,12 +22,15 @@ router.get('/', requireAdmin, async (req, res) => {
       status, 
       orderType, 
       dateFrom, 
-      dateTo 
+      dateTo, 
+      search,
+      courier
     } = req.query;
-    
-    const branchId = req.user.branch;
 
-    let query = { branch: branchId };
+    let query = {};
+    // Branch scope: superadmin ko'radi hammasini, admin faqat o'z filialini
+    const branchId = req.user.role === 'superadmin' ? null : req.user.branch;
+    if (branchId) query.branch = branchId;
     
     if (status) query.status = status;
     if (orderType) query.orderType = orderType;
@@ -37,16 +41,90 @@ router.get('/', requireAdmin, async (req, res) => {
       if (dateTo) query.createdAt.$lte = new Date(dateTo);
     }
 
-    const orders = await Order.find(query)
+    // Live search: orderId, orderNumber, user's name, phone
+    if (search && String(search).trim().length > 0) {
+      const text = String(search).trim();
+      const regex = new RegExp(text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      query.$or = [
+        { orderId: { $regex: regex } },
+        { orderNumber: { $regex: regex } },
+        { 'customerInfo.name': { $regex: regex } },
+        { 'customerInfo.phone': { $regex: regex } },
+      ];
+    }
+
+    let orders = await Order.find(query)
       .populate('user', 'firstName lastName phone')
-      // .populate('courier', 'firstName lastName phone courierInfo.vehicleType')
-      .populate('branch', 'name address')
+      .populate('deliveryInfo.courier', 'firstName lastName phone courierInfo')
       .populate('items.product', 'name price')
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .sort({ createdAt: -1 });
 
+    // Courier filter (assigned/unassigned)
+    if (courier === 'assigned') {
+      query['deliveryInfo.courier'] = { $ne: null };
+    } else if (courier === 'unassigned') {
+      query['deliveryInfo.courier'] = { $in: [null, undefined] };
+    }
+
     const total = await Order.countDocuments(query);
+
+    // Enrich with delivery metadata for delivery orders
+    try {
+      // Determine restaurant/branch coordinates
+      let origin = null;
+      if (req.user.role !== 'superadmin' && req.user.branch) {
+        const branch = await Branch.findById(req.user.branch);
+        if (branch?.address?.coordinates?.latitude && branch?.address?.coordinates?.longitude) {
+          origin = {
+            lat: branch.address.coordinates.latitude,
+            lon: branch.address.coordinates.longitude
+          };
+        }
+      }
+      // Fallback to env
+      if (!origin && process.env.DEFAULT_RESTAURANT_LAT && process.env.DEFAULT_RESTAURANT_LON) {
+        origin = {
+          lat: parseFloat(process.env.DEFAULT_RESTAURANT_LAT),
+          lon: parseFloat(process.env.DEFAULT_RESTAURANT_LON)
+        };
+      }
+
+      const enriched = [];
+      for (const o of orders) {
+        const obj = o.toObject();
+        if (obj.orderType === 'delivery' && obj.deliveryInfo?.location?.latitude && obj.deliveryInfo?.location?.longitude) {
+          const calc = await DeliveryService.calculateDeliveryTime(
+            {
+              latitude: obj.deliveryInfo.location.latitude,
+              longitude: obj.deliveryInfo.location.longitude
+            },
+            obj.items,
+            origin
+          );
+          const fee = await DeliveryService.calculateDeliveryFee(
+            {
+              latitude: obj.deliveryInfo.location.latitude,
+              longitude: obj.deliveryInfo.location.longitude
+            },
+            obj.total ?? obj.totalAmount ?? 0
+          );
+          obj.deliveryMeta = {
+            distanceKm: calc?.distance ?? null,
+            etaMinutes: calc?.totalTime ?? null,
+            preparationMinutes: calc?.preparationTime ?? null,
+            deliveryMinutes: calc?.deliveryTime ?? null,
+            deliveryFee: fee?.fee ?? null,
+            isFreeDelivery: fee?.isFreeDelivery ?? false
+          };
+        }
+        enriched.push(obj);
+      }
+      orders = enriched;
+    } catch (enrichErr) {
+      console.error('Order enrichment error:', enrichErr);
+    }
 
     res.json({
       success: true,
@@ -69,22 +147,108 @@ router.get('/', requireAdmin, async (req, res) => {
   }
 });
 
+// Orders stats (for dashboard/cards)
+router.get('/stats', requireAdmin, async (req, res) => {
+  try {
+    // Branch scope
+    const match = {};
+    const branchId = req.user.role === 'superadmin' ? null : req.user.branch;
+    if (branchId) match.branch = branchId;
+
+    const result = await Order.aggregate([
+      { $match: match },
+      {
+        $group: {
+          _id: null,
+          pending: { $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] } },
+          confirmed: { $sum: { $cond: [{ $eq: ['$status', 'confirmed'] }, 1, 0] } },
+          preparing: { $sum: { $cond: [{ $eq: ['$status', 'preparing'] }, 1, 0] } },
+          ready: { $sum: { $cond: [{ $eq: ['$status', 'ready'] }, 1, 0] } },
+          delivered: { $sum: { $cond: [{ $in: ['$status', ['delivered', 'completed', 'picked_up', 'on_delivery']] }, 1, 0] } },
+          cancelled: { $sum: { $cond: [{ $eq: ['$status', 'cancelled'] }, 1, 0] } },
+        }
+      }
+    ]);
+
+    const stats = result[0] || { pending: 0, confirmed: 0, preparing: 0, ready: 0, delivered: 0, cancelled: 0 };
+
+    res.json({ success: true, data: { stats } });
+  } catch (error) {
+    console.error('Orders stats error:', error);
+    res.status(500).json({ success: false, message: 'Buyurtma statistikasini olishda xatolik!' });
+  }
+});
+
 // Get single order
 router.get('/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const branchId = req.user.branch;
+    const branchId = req.user.role === 'superadmin' ? null : req.user.branch;
 
-    const order = await Order.findOne({ _id: id, branch: branchId })
+    // SuperAdmin uchun branch filter yo'q
+    const query = { _id: id };
+    if (branchId) {
+      query.branch = branchId;
+    }
+
+    const orderDoc = await Order.findOne(query)
       .populate('user', 'firstName lastName phone address')
-      .populate('courier', 'firstName lastName phone courierInfo')
+      .populate('deliveryInfo.courier', 'firstName lastName phone courierInfo')
       .populate('items.product', 'name price description');
 
-    if (!order) {
+    if (!orderDoc) {
       return res.status(404).json({
         success: false,
         message: 'Buyurtma topilmadi!'
       });
+    }
+
+    // Enrich single order with delivery metadata if applicable
+    let order = orderDoc.toObject();
+    try {
+      if (order.orderType === 'delivery' && order.deliveryInfo?.location?.latitude && order.deliveryInfo?.location?.longitude) {
+        let origin = null;
+        if (branchId) {
+          const branch = await Branch.findById(branchId);
+          if (branch?.address?.coordinates?.latitude && branch?.address?.coordinates?.longitude) {
+            origin = {
+              lat: branch.address.coordinates.latitude,
+              lon: branch.address.coordinates.longitude
+            };
+          }
+        }
+        if (!origin && process.env.DEFAULT_RESTAURANT_LAT && process.env.DEFAULT_RESTAURANT_LON) {
+          origin = {
+            lat: parseFloat(process.env.DEFAULT_RESTAURANT_LAT),
+            lon: parseFloat(process.env.DEFAULT_RESTAURANT_LON)
+          };
+        }
+        const calc = await DeliveryService.calculateDeliveryTime(
+          {
+            latitude: order.deliveryInfo.location.latitude,
+            longitude: order.deliveryInfo.location.longitude
+          },
+          order.items,
+          origin
+        );
+        const fee = await DeliveryService.calculateDeliveryFee(
+          {
+            latitude: order.deliveryInfo.location.latitude,
+            longitude: order.deliveryInfo.location.longitude
+          },
+          order.total ?? order.totalAmount ?? 0
+        );
+        order.deliveryMeta = {
+          distanceKm: calc?.distance ?? null,
+          etaMinutes: calc?.totalTime ?? null,
+          preparationMinutes: calc?.preparationTime ?? null,
+          deliveryMinutes: calc?.deliveryTime ?? null,
+          deliveryFee: fee?.fee ?? null,
+          isFreeDelivery: fee?.isFreeDelivery ?? false
+        };
+      }
+    } catch (singleEnrichErr) {
+      console.error('Order single enrichment error:', singleEnrichErr);
     }
 
     res.json({
@@ -106,9 +270,9 @@ router.patch('/:id/status', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { status, message: customMessage } = req.body;
-    const branchId = req.user.branch;
+    const branchId = req.user.role === 'superadmin' ? null : req.user.branch;
 
-    const validStatuses = ['pending', 'confirmed', 'preparing', 'ready', 'delivered', 'cancelled'];
+    const validStatuses = ['pending', 'confirmed', 'ready', 'on_delivery', 'delivered', 'picked_up', 'cancelled'];
     
     if (!validStatuses.includes(status)) {
       return res.status(400).json({
@@ -117,8 +281,14 @@ router.patch('/:id/status', requireAdmin, async (req, res) => {
       });
     }
 
+    // SuperAdmin uchun branch filter yo'q
+    const query = { _id: id };
+    if (branchId) {
+      query.branch = branchId;
+    }
+
     const order = await Order.findOneAndUpdate(
-      { _id: id, branch: branchId },
+      query,
       { 
         status,
         updatedAt: new Date(),
@@ -159,7 +329,7 @@ router.patch('/:id/status', requireAdmin, async (req, res) => {
       if (order.user.telegramId) {
         const { bot } = require('../../index');
         const statusEmoji = getStatusEmoji(status);
-        const botMessage = `${statusEmoji} **Buyurtma №${order.orderId}**\n\n📍 **Holat:** ${statusMessage}\n📅 **Vaqt:** ${new Date().toLocaleString('uz-UZ')}`;
+        let botMessage = `${statusEmoji} **Buyurtma №${order.orderId}**\n\n📍 **Holat:** ${statusMessage}\n📅 **Vaqt:** ${new Date().toLocaleString('uz-UZ')}`;
         
         if (getEstimatedTime(status, order.orderType)) {
           botMessage += `\n⏰ **Kutilayotgan vaqt:** ${getEstimatedTime(status, order.orderType)}`;
@@ -241,14 +411,13 @@ router.patch('/:id/assign-courier', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { courierId } = req.body;
-    const branchId = req.user.branch;
+    const branchId = req.user.role === 'superadmin' ? null : req.user.branch;
 
     // Check if courier exists and is available
     const courier = await User.findOne({
       _id: courierId,
       role: 'courier',
-      'courierInfo.isAvailable': true,
-      'courierInfo.isOnline': true
+      isActive: true
     });
 
     if (!courier) {
@@ -258,15 +427,17 @@ router.patch('/:id/assign-courier', requireAdmin, async (req, res) => {
       });
     }
 
+    const query = { _id: id };
+    if (branchId) query.branch = branchId;
     const order = await Order.findOneAndUpdate(
-      { _id: id, branch: branchId },
+      query,
       { 
-        courier: courierId,
+        'deliveryInfo.courier': courierId,
         status: 'assigned',
         updatedAt: new Date()
       },
       { new: true }
-    ).populate('courier', 'firstName lastName phone');
+    ).populate('deliveryInfo.courier', 'firstName lastName phone courierInfo');
 
     if (!order) {
       return res.status(404).json({

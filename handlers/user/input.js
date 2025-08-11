@@ -73,7 +73,7 @@ async function handlePhoneInput(ctx, phone) {
     ctx.session.orderData = ctx.session.orderData || {};
     ctx.session.orderData.phone = formattedPhone;
     ctx.session.waitingFor = null;
-    await ctx.reply('.', { reply_markup: { remove_keyboard: true } });
+    // Keraksiz bo'sh xabar yubormaymiz; to'g'ridan-to'g'ri startHandler
     await require('./profile').startHandler(ctx);
   } catch (error) {
     console.error('Handle phone input error:', error);

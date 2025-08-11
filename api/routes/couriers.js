@@ -98,10 +98,15 @@ router.get('/available/for-order', requireAdmin, async (req, res) => {
     .select('firstName lastName phone courierInfo.vehicleType courierInfo.rating courierInfo.currentLocation')
     .sort({ 'courierInfo.rating': -1 });
 
-    res.json({
-      success: true,
-      data: { couriers: availableCouriers }
-    });
+    // Agar mavjud kuryer topilmasa, barcha kuryerlarni (online/offline) qaytaramiz
+    if (!availableCouriers || availableCouriers.length === 0) {
+      const allCouriers = await User.find({ role: 'courier', isActive: true })
+        .select('firstName lastName phone courierInfo')
+        .sort({ 'courierInfo.isOnline': -1, 'courierInfo.rating': -1, createdAt: -1 });
+      return res.json({ success: true, data: { couriers: allCouriers, fallback: true } });
+    }
+
+    res.json({ success: true, data: { couriers: availableCouriers, fallback: false } });
 
   } catch (error) {
     console.error('Get available couriers error:', error);

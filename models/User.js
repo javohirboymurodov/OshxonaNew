@@ -3,9 +3,7 @@ const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
   telegramId: {
-    type: Number,
-    unique: true,
-    sparse: true // Admin userlar uchun null bo'lishi mumkin
+    type: Number
   },
   firstName: {
     type: String,
@@ -23,9 +21,7 @@ const userSchema = new mongoose.Schema({
   email: {
     type: String,
     trim: true,
-    lowercase: true,
-    unique: true,
-    sparse: true // Telegram userlar uchun null
+    lowercase: true
   },
   password: {
     type: String,

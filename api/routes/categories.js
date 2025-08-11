@@ -39,14 +39,12 @@ router.get('/', async (req, res) => {
     const { page = 1, limit = 15, search } = req.query;
 
     let query = {};
-
-    // Search functionality
     if (search && search.trim()) {
       query.$or = [
         { name: { $regex: search.trim(), $options: 'i' } },
+        { nameUz: { $regex: search.trim(), $options: 'i' } },
         { nameRu: { $regex: search.trim(), $options: 'i' } },
-        { nameEn: { $regex: search.trim(), $options: 'i' } },
-        { description: { $regex: search.trim(), $options: 'i' } }
+        { nameEn: { $regex: search.trim(), $options: 'i' } }
       ];
     }
 
@@ -57,17 +55,87 @@ router.get('/', async (req, res) => {
 
     const total = await Category.countDocuments(query);
 
-    // Har bir kategoriya uchun mahsulotlar sonini olish
-    const categoriesWithCount = await Promise.all(
+    // 🔥 REAL-TIME STATISTICS CALCULATION
+    const categoriesWithStats = await Promise.all(
       categories.map(async (category) => {
-        const productCount = await Product.countDocuments({
-          categoryId: category._id,
-          isActive: true
-        });
-        
+        // Real-time product count
+        const [totalProducts, activeProducts] = await Promise.all([
+          Product.countDocuments({ categoryId: category._id }),
+          Product.countDocuments({ categoryId: category._id, isActive: true })
+        ]);
+
+        // Real-time order stats (agar Order model mavjud bo'lsa)
+        let totalOrders = 0;
+        let totalRevenue = 0;
+        try {
+          const Order = require('../../models/Order');
+          const orderStats = await Order.aggregate([
+            {
+              $unwind: '$items'
+            },
+            {
+              $lookup: {
+                from: 'products',
+                localField: 'items.product',
+                foreignField: '_id',
+                as: 'productInfo'
+              }
+            },
+            {
+              $unwind: '$productInfo'
+            },
+            {
+              $match: {
+                'productInfo.categoryId': category._id,
+                status: 'completed'
+              }
+            },
+            {
+              $group: {
+                _id: null,
+                totalOrders: { $sum: 1 },
+                totalRevenue: { $sum: '$items.totalPrice' }
+              }
+            }
+          ]);
+
+          if (orderStats.length > 0) {
+            totalOrders = orderStats[0].totalOrders;
+            totalRevenue = orderStats[0].totalRevenue;
+          }
+        } catch (error) {
+          // Order model mavjud emas, default values
+          console.log('Order model not found, using default values');
+        }
+
+        // Stats yangilash (agar farq bo'lsa)
+        const needsUpdate = (
+          category.stats.totalProducts !== totalProducts ||
+          category.stats.activeProducts !== activeProducts ||
+          category.stats.totalOrders !== totalOrders
+        );
+
+        if (needsUpdate) {
+          await Category.findByIdAndUpdate(category._id, {
+            'stats.totalProducts': totalProducts,
+            'stats.activeProducts': activeProducts,
+            'stats.totalOrders': totalOrders,
+            'stats.totalRevenue': totalRevenue,
+            'stats.popularityScore': totalOrders * 0.4 + category.stats.totalViews * 0.3 + activeProducts * 0.3
+          });
+        }
+
         return {
           ...category.toObject(),
-          productCount
+          // Real-time ma'lumotlar
+          currentStats: {
+            totalProducts,
+            activeProducts,
+            totalOrders,
+            totalRevenue,
+            totalViews: category.stats.totalViews || 0,
+            popularityScore: Math.round(totalOrders * 0.4 + (category.stats.totalViews || 0) * 0.3 + activeProducts * 0.3)
+          }
         };
       })
     );
@@ -75,7 +143,7 @@ router.get('/', async (req, res) => {
     res.json({
       success: true,
       data: {
-        items: categoriesWithCount,
+        items: categoriesWithStats,
         pagination: {
           current: parseInt(page),
           pageSize: parseInt(limit),
@@ -84,7 +152,6 @@ router.get('/', async (req, res) => {
         }
       }
     });
-
   } catch (error) {
     console.error('Get categories error:', error);
     res.status(500).json({
@@ -110,7 +177,7 @@ router.get('/:id', async (req, res) => {
 
     // Kategoriya ichidagi mahsulotlar sonini olish
     const productCount = await Product.countDocuments({
-      category: category._id,
+      categoryId: category._id,
       isActive: true
     });
 
@@ -132,73 +199,59 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create new category
-router.post('/', async (req, res) => {
+router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const { 
-      name, 
-      nameRu, 
-      nameEn, 
-      emoji, 
-      description, 
-      descriptionRu, 
-      descriptionEn,
-      sortOrder
-    } = req.body;
+    const { name, nameUz, nameRu, nameEn, emoji, description, isActive, sortOrder } = req.body;
 
-    // Nom tekshirish
-    if (!name || name.trim().length < 2) {
+    // Validation
+    if (!name || !name.trim()) {
       return res.status(400).json({
         success: false,
-        message: 'Kategoriya nomi kamida 2 ta belgidan iborat bo\'lishi kerak!'
+        message: 'Kategoriya nomi kiritilishi shart!'
       });
     }
 
-    // Takroriy nom tekshirish
+    if (!nameUz || !nameUz.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'O\'zbek tilida nom kiritilishi shart!'
+      });
+    }
+
+    // Check if category with same name exists
     const existingCategory = await Category.findOne({
-      name: name.trim()
+      $or: [
+        { name: name.trim() },
+        { nameUz: nameUz.trim() }
+      ]
     });
 
     if (existingCategory) {
       return res.status(400).json({
         success: false,
-        message: 'Bu nomli kategoriya allaqachon mavjud!'
+        message: 'Bunday nomli kategoriya allaqachon mavjud!'
       });
     }
 
-    // Tartib raqami (agar berilmagan bo'lsa, oxirgi bo'lsin)
-    let orderNumber = parseInt(sortOrder) || 0;
-    if (!orderNumber) {
-      const lastCategory = await Category.findOne()
-        .sort({ sortOrder: -1 });
-      orderNumber = lastCategory ? lastCategory.sortOrder + 1 : 1;
-    }
-
-    const category = new Category({
+    // Create category
+    const categoryData = {
       name: name.trim(),
+      nameUz: nameUz.trim(),
       nameRu: nameRu?.trim() || '',
       nameEn: nameEn?.trim() || '',
-      emoji: emoji?.trim() || '🍽️',
+      emoji: emoji || '🍽️',
       description: description?.trim() || '',
-      descriptionRu: descriptionRu?.trim() || '',
-      descriptionEn: descriptionEn?.trim() || '',
-      sortOrder: orderNumber,
-      isActive: true,
-      isVisible: true,
-      stats: {
-        totalProducts: 0,
-        totalOrders: 0,
-        totalViews: 0
-      }
-    });
+      isActive: isActive !== undefined ? isActive : true,
+      sortOrder: sortOrder || 0
+    };
 
-    await category.save();
+    const category = await Category.create(categoryData);
 
     res.status(201).json({
       success: true,
       message: 'Kategoriya muvaffaqiyatli yaratildi!',
       data: category
     });
-
   } catch (error) {
     console.error('Create category error:', error);
     res.status(500).json({
@@ -209,24 +262,13 @@ router.post('/', async (req, res) => {
 });
 
 // Update category
-router.put('/:id', async (req, res) => {
+router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { 
-      name, 
-      nameRu, 
-      nameEn, 
-      emoji, 
-      description, 
-      descriptionRu, 
-      descriptionEn,
-      sortOrder,
-      isActive,
-      isVisible
-    } = req.body;
+    const { name, nameUz, nameRu, nameEn, emoji, description, isActive, sortOrder } = req.body;
 
+    // Check if category exists
     const category = await Category.findById(id);
-
     if (!category) {
       return res.status(404).json({
         success: false,
@@ -234,46 +276,50 @@ router.put('/:id', async (req, res) => {
       });
     }
 
-    // Nom tekshirish
-    if (name && name.trim().length < 2) {
+    // Validation
+    if (!name || !name.trim()) {
       return res.status(400).json({
         success: false,
-        message: 'Kategoriya nomi kamida 2 ta belgidan iborat bo\'lishi kerak!'
+        message: 'Kategoriya nomi kiritilishi shart!'
       });
     }
 
-    // Takroriy nom tekshirish (o'zidan boshqasi bilan)
-    if (name && name.trim() !== category.name) {
-      const existingCategory = await Category.findOne({
-        name: name.trim(),
-        _id: { $ne: id }
+    if (!nameUz || !nameUz.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'O\'zbek tilida nom kiritilishi shart!'
       });
-
-      if (existingCategory) {
-        return res.status(400).json({
-          success: false,
-          message: 'Bu nomli kategoriya allaqachon mavjud!'
-        });
-      }
     }
 
-    // Yangilanishi kerak bo'lgan maydonlar
-    const updateData = {};
-    
-    if (name) updateData.name = name.trim();
-    if (nameRu !== undefined) updateData.nameRu = nameRu.trim();
-    if (nameEn !== undefined) updateData.nameEn = nameEn.trim();
-    if (emoji) updateData.emoji = emoji.trim();
-    if (description !== undefined) updateData.description = description.trim();
-    if (descriptionRu !== undefined) updateData.descriptionRu = descriptionRu.trim();
-    if (descriptionEn !== undefined) updateData.descriptionEn = descriptionEn.trim();
-    if (sortOrder !== undefined) updateData.sortOrder = parseInt(sortOrder) || category.sortOrder;
-    if (isActive !== undefined) updateData.isActive = Boolean(isActive);
-    if (isVisible !== undefined) updateData.isVisible = Boolean(isVisible);
+    // Check for duplicate names (excluding current category)
+    const existingCategory = await Category.findOne({
+      _id: { $ne: id },
+      $or: [
+        { name: name.trim() },
+        { nameUz: nameUz.trim() }
+      ]
+    });
 
+    if (existingCategory) {
+      return res.status(400).json({
+        success: false,
+        message: 'Bunday nomli kategoriya allaqachon mavjud!'
+      });
+    }
+
+    // Update category
     const updatedCategory = await Category.findByIdAndUpdate(
       id,
-      updateData,
+      {
+        name: name.trim(),
+        nameUz: nameUz.trim(),
+        nameRu: nameRu?.trim() || '',
+        nameEn: nameEn?.trim() || '',
+        emoji: emoji || category.emoji,
+        description: description?.trim() || '',
+        isActive: isActive !== undefined ? isActive : category.isActive,
+        sortOrder: sortOrder !== undefined ? sortOrder : category.sortOrder
+      },
       { new: true, runValidators: true }
     );
 
@@ -282,12 +328,11 @@ router.put('/:id', async (req, res) => {
       message: 'Kategoriya muvaffaqiyatli yangilandi!',
       data: updatedCategory
     });
-
   } catch (error) {
     console.error('Update category error:', error);
     res.status(500).json({
       success: false,
-      message: 'Kategoriyani yangilashda xatolik!'
+      message: 'Kategoriya yangilashda xatolik!'
     });
   }
 });
@@ -312,7 +357,7 @@ router.patch('/:id/toggle-status', async (req, res) => {
     // Agar kategoriya o'chirilayotgan bo'lsa, uning mahsulotlarini ham o'chirish
     if (!category.isActive) {
       await Product.updateMany(
-        { category: id },
+        { categoryId: id },
         { isActive: false }
       );
     }
@@ -380,7 +425,7 @@ router.delete('/:id', async (req, res) => {
 
     // Kategoriyada mahsulotlar bor-yo'qligini tekshirish
     const productCount = await Product.countDocuments({
-      category: id,
+      categoryId: id,
       isActive: true
     });
 
@@ -505,7 +550,7 @@ router.get('/stats/overview', async (req, res) => {
           $lookup: {
             from: 'products',
             localField: '_id',
-            foreignField: 'category',
+            foreignField: 'categoryId',
             as: 'products'
           }
         },

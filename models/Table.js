@@ -2,14 +2,23 @@ const mongoose = require('mongoose');
 
 // stolda qr kod orqali zakaz qilish uchun table modeli
 const tableSchema = new mongoose.Schema({
+  branch: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Branch',
+    required: true
+  },
   number: { 
     type: Number, 
-    required: true, 
-    unique: true
+    required: true
   },
   qrCode: { 
-    type: String, 
-    unique: true
+    type: String,
+    default: function() {
+      // Fallback: table number + branch id
+      const num = this.number || 'X';
+      const br = this.branch ? String(this.branch) : 'default';
+      return `table_${num}_b_${br}`;
+    },
   },
   capacity: { type: Number, required: true },
   location: String,

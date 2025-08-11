@@ -19,15 +19,18 @@ export const useSocket = (options: UseSocketOptions = {}): SocketHook => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [onlineAdmins, setOnlineAdmins] = useState(0);
+  const [onlineAdmins] = useState(0);
 
   useEffect(() => {
-    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:5000';
+    const base = import.meta.env.VITE_SOCKET_URL
+      || (import.meta.env.VITE_API_BASE_URL ? String(import.meta.env.VITE_API_BASE_URL).replace(/\/api$/, '') : 'http://localhost:5000');
+    const socketUrl = base.replace(/^ws:\/\//, 'http://').replace(/^wss:\/\//, 'https://');
     
     console.log('🔌 Connecting to Socket.IO server:', socketUrl);
     
     const socketInstance = io(socketUrl, {
       transports: ['websocket', 'polling'],
+      withCredentials: true,
       timeout: 10000,
       reconnection: true,
       reconnectionAttempts: 5,
@@ -103,25 +106,33 @@ export const useSocket = (options: UseSocketOptions = {}): SocketHook => {
 // Real-time buyurtmalar hook (Admin uchun)
 export const useRealTimeOrders = (token: string, branchId: string) => {
   const { socket, connected } = useSocket({ token, branchId });
-  const [newOrders, setNewOrders] = useState<any[]>([]);
-  const [orderUpdates, setOrderUpdates] = useState<any[]>([]);
+  type NewOrderLite = { orderId?: string; id?: string; customer?: { name?: string }; total?: number; sound?: boolean };
+  const [newOrders, setNewOrders] = useState<NewOrderLite[]>([]);
+  const [orderUpdates, setOrderUpdates] = useState<Record<string, unknown>[]>([]);
 
   useEffect(() => {
     if (!socket || !connected) return;
 
     // Yangi buyurtma kelganda
-    const handleNewOrder = (order: any) => {
+    const handleNewOrder = (order: NewOrderLite) => {
       console.log('📦 New order received:', order);
       setNewOrders(prev => [order, ...prev.slice(0, 49)]); // Last 50 orders
       
       // Audio notification (agar browser ruxsat bergan bo'lsa)
       if (order.sound && 'Notification' in window) {
-        new Audio('/notification.mp3').play().catch(console.error);
+        const play = async () => {
+          try {
+            await new Audio('/notification.wav').play();
+          } catch {
+            try { await new Audio('/notification.mp3').play(); } catch (e) { console.error(e); }
+          }
+        };
+        play();
         
         // Browser notification
         if (Notification.permission === 'granted') {
-          new Notification(`Yangi buyurtma №${order.orderId}`, {
-            body: `${order.customer.name} - ${order.total.toLocaleString()} so'm`,
+          new Notification(`Yangi buyurtma №${order.orderId || ''}`.trim(), {
+            body: `${order.customer?.name || 'Mijoz'} - ${(order.total || 0).toLocaleString()} so'm`,
             icon: '/favicon.ico',
             tag: `order-${order.id}`
           });
@@ -130,7 +141,7 @@ export const useRealTimeOrders = (token: string, branchId: string) => {
     };
 
     // Buyurtma yangilanishi
-    const handleOrderUpdate = (update: any) => {
+    const handleOrderUpdate = (update: Record<string, unknown>) => {
       console.log('🔄 Order update received:', update);
       setOrderUpdates(prev => [update, ...prev.slice(0, 99)]);
     };
@@ -166,8 +177,8 @@ export const useRealTimeOrders = (token: string, branchId: string) => {
 // User buyurtma kuzatuvi hook
 export const useOrderTracking = (orderId: string, userId?: string) => {
   const { socket, connected } = useSocket({ userId, orderId });
-  const [orderStatus, setOrderStatus] = useState<any>(null);
-  const [statusHistory, setStatusHistory] = useState<any[]>([]);
+  const [orderStatus, setOrderStatus] = useState<Record<string, unknown> | null>(null);
+  const [statusHistory, setStatusHistory] = useState<Record<string, unknown>[]>([]);
 
   useEffect(() => {
     if (!socket || !connected || !orderId) return;
@@ -176,13 +187,13 @@ export const useOrderTracking = (orderId: string, userId?: string) => {
     socket.emit('track-order', orderId);
 
     // Status yangilanishlarini tinglash
-    const handleStatusUpdate = (update: any) => {
+    const handleStatusUpdate = (update: Record<string, unknown>) => {
       console.log('📊 Order status update:', update);
       setOrderStatus(update);
       setStatusHistory(prev => [update, ...prev]);
     };
 
-    const handleOrderStatusUpdate = (update: any) => {
+    const handleOrderStatusUpdate = (update: { orderId?: string }) => {
       console.log('📋 Order updated:', update);
       if (update.orderId === orderId) {
         setOrderStatus(update);

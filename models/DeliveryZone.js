@@ -169,13 +169,17 @@ deliveryZoneSchema.methods.calculateDeliveryFee = function(orderAmount, weight =
 
 deliveryZoneSchema.methods.isWorkingNow = function() {
   const now = new Date();
-  const dayName = now.toLocaleDateString('en-US', { weekday: 'lowercase' });
+  // weekday value must be one of: 'long' | 'short' | 'narrow'
+  const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'long' })
+    .format(now)
+    .toLowerCase(); // 'monday' | 'tuesday' ...
   const currentTime = now.toTimeString().slice(0, 5); // HH:MM format
-  
-  const daySchedule = this.workingHours[dayName];
-  
-  if (!daySchedule || !daySchedule.isActive) return false;
-  
+
+  const daySchedule = this.workingHours?.[dayName];
+
+  if (!daySchedule || daySchedule.isActive === false) return false;
+  if (!daySchedule.start || !daySchedule.end) return true;
+
   return currentTime >= daySchedule.start && currentTime <= daySchedule.end;
 };
 

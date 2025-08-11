@@ -7,15 +7,26 @@ class SocketManager {
   static connectedAdmins = new Map();
   
   static init(server) {
+    const isDev = process.env.NODE_ENV !== 'production';
     this.io = socketIo(server, {
-      cors: {
-        origin: [
-          process.env.ADMIN_PANEL_URL || 'http://localhost:3000',
-          process.env.USER_FRONTEND_URL || 'http://localhost:3001'
-        ],
-        credentials: true,
-        methods: ['GET', 'POST']
-      },
+      cors: isDev
+        ? {
+            origin: (origin, callback) => {
+              // Dev: localhostning barcha portlariga ruxsat
+              if (!origin || /^http:\/\/localhost(?::\d+)?$/.test(origin)) return callback(null, true);
+              return callback(null, true);
+            },
+            credentials: true,
+            methods: ['GET', 'POST']
+          }
+        : {
+            origin: [
+              process.env.ADMIN_PANEL_URL || 'http://localhost:3000',
+              process.env.USER_FRONTEND_URL || 'http://localhost:3001'
+            ],
+            credentials: true,
+            methods: ['GET', 'POST']
+          },
       transports: ['websocket', 'polling']
     });
     
@@ -37,7 +48,7 @@ class SocketManager {
           if (decoded.role === 'admin' || decoded.role === 'superadmin') {
             socket.join(`branch:${branchId}`);
             this.connectedAdmins.set(socket.id, {
-              userId: decoded.id,
+              userId: decoded.userId || decoded.id,
               branchId: branchId,
               role: decoded.role
             });
@@ -134,12 +145,19 @@ class SocketManager {
   // Buyurtma yangilanishi (admin tarafidan)
   static emitOrderUpdate(orderId, updateData) {
     if (this.io) {
-      this.io.to(`order:${orderId}`).emit('order-updated', {
-        orderId,
+      const payload = {
+        orderId, // Eslatma: updateData ichida ham orderId bo'lsa, bu mongoIdni saqlash uchun oldinga qo'yildi
         ...updateData
-      });
+      };
+      // Order xonasiga
+      this.io.to(`order:${orderId}`).emit('order-updated', payload);
+
+      // Agar branchId berilgan bo'lsa, shu filialdagi barcha adminlarga ham yuboramiz
+      if (updateData && updateData.branchId) {
+        this.io.to(`branch:${updateData.branchId}`).emit('order-updated', payload);
+      }
       
-      console.log(`🔄 Order update emitted for order:${orderId}`);
+      console.log(`🔄 Order update emitted for order:${orderId}${updateData && updateData.branchId ? ` (branch:${updateData.branchId})` : ''}`);
     }
   }
   

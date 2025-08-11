@@ -188,12 +188,15 @@ class Helpers {
       uz: {
         delivery: '🚚 Yetkazib berish',
         pickup: '🏃 Olib ketish',
-        dine_in: '🍽️ Oldindan Buyurtma'
+        // Dine-in: Avvaldan buyurtma (predzakaz)
+        dine_in: '🗓️ Avvaldan buyurtma',
+        table: '🍽️ Stoldan (QR)'
       },
       ru: {
         delivery: '🚚 Доставка',
         pickup: '🏃 Самовывоз',
-        dine_in: '🍽️ В ресторане'
+        dine_in: '🗓️ Предзаказ',
+        table: '🍽️ Со стола (QR)'
       }
     };
     

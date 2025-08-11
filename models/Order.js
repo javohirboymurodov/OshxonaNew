@@ -18,12 +18,11 @@ const orderSchema = new mongoose.Schema({
   orderId: { 
     type: String, 
     required: true, 
-    unique: true
+    unique: true  // index: true ni olib tashlash
   },
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  
-  // BRANCH maydonini qo'shdik
-  branch: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch', required: true },
+  // Branch of the restaurant this order belongs to
+  branch: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch' },
   
   // Order items
   items: [orderItemSchema],
@@ -31,7 +30,7 @@ const orderSchema = new mongoose.Schema({
   // Order type
   orderType: { 
     type: String, 
-    enum: ['delivery', 'pickup', 'dine_in'], 
+    enum: ['delivery', 'pickup', 'dine_in', 'table'], 
     required: true
   },
   
@@ -115,9 +114,9 @@ const orderSchema = new mongoose.Schema({
   suppressReservedKeysWarning: true
 });
 
-// Indexlar
+// Faqat kerakli indexlar
 orderSchema.index({ user: 1 });
-orderSchema.index({ branch: 1 }); // Branch index qo'shdik
+orderSchema.index({ branch: 1 });
 orderSchema.index({ status: 1 });
 orderSchema.index({ createdAt: 1 });
 orderSchema.index({ orderType: 1 });
@@ -130,4 +129,5 @@ orderSchema.pre('save', function(next) {
   next();
 });
 
+// Overwrite xatosini oldini olish
 module.exports = mongoose.models.Order || mongoose.model('Order', orderSchema);

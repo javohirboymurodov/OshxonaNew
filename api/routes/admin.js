@@ -1,6 +1,15 @@
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 const { User, Product, Order, Category, Review } = require('../../models');
-const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const { authenticateToken, requireAdmin, requireRole } = require('../middleware/auth');
+
+// Use local upload instead of Cloudinary
+const { 
+  uploadSingle, 
+  uploadMultiple, 
+  handleUploadError 
+} = require('../../config/localUploadConfig');
 
 const router = express.Router();
 
@@ -101,9 +110,9 @@ router.get('/products', async (req, res) => {
     }
 
     const products = await Product.find(query)
-      .populate('categoryId', 'name nameRu nameEn')
-      .limit(limit * 1)
-      .skip((page - 1) * limit)
+      .populate('categoryId', 'name nameRu nameEn emoji')
+      .limit(parseInt(limit))
+      .skip((parseInt(page) - 1) * parseInt(limit))
       .sort({ createdAt: -1 });
 
     const total = await Product.countDocuments(query);
@@ -113,9 +122,9 @@ router.get('/products', async (req, res) => {
       data: {
         items: products,
         pagination: {
-          current: page,
-          pageSize: limit,
-          pages: Math.ceil(total / limit),
+          current: parseInt(page),
+          pageSize: parseInt(limit),
+          pages: Math.ceil(total / parseInt(limit)),
           total
         }
       }
@@ -130,54 +139,12 @@ router.get('/products', async (req, res) => {
   }
 });
 
-// Create product
-router.post('/products', async (req, res) => {
-  try {
-    const branchId = req.user.role === 'superadmin' ? req.body.branch : req.user.branch;
-    const productData = { ...req.body };
-    
-    if (branchId) {
-      productData.branch = branchId;
-    }
-
-    const product = new Product(productData);
-    await product.save();
-
-    const savedProduct = await Product.findById(product._id)
-      .populate('categoryId', 'name');
-
-    res.status(201).json({
-      success: true,
-      message: 'Mahsulot muvaffaqiyatli yaratildi!',
-      data: { product: savedProduct }
-    });
-
-  } catch (error) {
-    console.error('Create product error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Mahsulot yaratishda xatolik!'
-    });
-  }
-});
-
-// Update product
-router.put('/products/:id', async (req, res) => {
+// Toggle product active status
+router.patch('/products/:id/toggle-status', async (req, res) => {
   try {
     const { id } = req.params;
-    const branchId = req.user.role === 'superadmin' ? null : req.user.branch;
 
-    let query = { _id: id };
-    if (branchId) {
-      query.branch = branchId;
-    }
-
-    const product = await Product.findOneAndUpdate(
-      query,
-      req.body,
-      { new: true, runValidators: true }
-    ).populate('categoryId', 'name');
-
+    const product = await Product.findById(id);
     if (!product) {
       return res.status(404).json({
         success: false,
@@ -185,17 +152,163 @@ router.put('/products/:id', async (req, res) => {
       });
     }
 
+    product.isActive = !product.isActive;
+    await product.save();
+
     res.json({
       success: true,
-      message: 'Mahsulot muvaffaqiyatli yangilandi!',
+      message: `Mahsulot ${product.isActive ? 'faollashtirildi' : 'faolsizlashtirildi'}!`,
       data: { product }
     });
 
   } catch (error) {
-    console.error('Update product error:', error);
+    console.error('Toggle product status error:', error);
     res.status(500).json({
       success: false,
-      message: 'Mahsulot yangilashda xatolik!'
+      message: 'Mahsulot holatini o\'zgartirishda xatolik!'
+    });
+  }
+});
+
+// Create product
+router.post('/products', uploadSingle, handleUploadError, async (req, res) => {
+  try {
+    console.log('Received product data:', req.body);
+    console.log('Received file:', req.file);
+
+    const {
+      name,
+      description,
+      price,
+      originalPrice,
+      categoryId,
+      preparationTime,
+      ingredients,
+      allergens,
+      tags,
+      weight,
+      unit,
+      minOrderQuantity,
+      maxOrderQuantity,
+      isActive,
+      isAvailable,
+      isPopular,
+      isFeatured,
+      isNewProduct
+    } = req.body;
+
+    // Validation
+    if (!name) {
+      return res.status(400).json({
+        success: false,
+        message: 'Mahsulot nomi kiritilishi shart!'
+      });
+    }
+
+    if (!price || price <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Mahsulot narxi kiritilishi shart!'
+      });
+    }
+
+    if (!categoryId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Kategoriya tanlanishi shart!'
+      });
+    }
+
+    // Check if category exists
+    const categoryExists = await Category.findById(categoryId);
+    if (!categoryExists) {
+      return res.status(400).json({
+        success: false,
+        message: 'Bunday kategoriya topilmadi!'
+      });
+    }
+
+    // Handle local image upload
+    let imageUrl = null;
+    let imageFileName = null;
+    
+    if (req.file) {
+      imageUrl = `/uploads/${req.file.filename}`;
+      imageFileName = req.file.filename;
+    }
+
+    // Create product data
+    const productData = {
+      name: name.trim(),
+      description: description?.trim(),
+      price: parseFloat(price),
+      originalPrice: originalPrice ? parseFloat(originalPrice) : undefined,
+      categoryId: categoryId,
+      preparationTime: preparationTime ? parseInt(preparationTime) : 15,
+      
+      // Process arrays
+      ingredients: ingredients ? 
+        (typeof ingredients === 'string' ? 
+          ingredients.split(',').map(i => i.trim()).filter(Boolean) : 
+          ingredients) : [],
+      allergens: allergens ? 
+        (typeof allergens === 'string' ? 
+          allergens.split(',').map(a => a.trim()).filter(Boolean) : 
+          allergens) : [],
+      tags: tags ? 
+        (typeof tags === 'string' ? 
+          tags.split(',').map(t => t.trim()).filter(Boolean) : 
+          tags) : [],
+
+      // Additional fields
+      weight: weight ? parseFloat(weight) : undefined,
+      unit: unit || 'portion',
+      minOrderQuantity: minOrderQuantity ? parseInt(minOrderQuantity) : 1,
+      maxOrderQuantity: maxOrderQuantity ? parseInt(maxOrderQuantity) : 50,
+
+      // Status flags
+      isActive: isActive !== undefined ? isActive === 'true' : true,
+      isAvailable: isAvailable !== undefined ? isAvailable === 'true' : true,
+      isPopular: isPopular === 'true',
+      isFeatured: isFeatured === 'true',
+      isNewProduct: isNewProduct === 'true',
+
+      // Local image data
+      image: imageUrl,
+      imageFileName: imageFileName
+    };
+
+    console.log('Creating product with data:', productData);
+
+    const product = new Product(productData);
+    await product.save();
+
+    // Populate category info
+    await product.populate('categoryId', 'name nameUz nameRu nameEn emoji');
+
+    res.status(201).json({
+      success: true,
+      message: 'Mahsulot muvaffaqiyatli yaratildi!',
+      data: product
+    });
+
+  } catch (error) {
+    console.error('Create product error:', error);
+    
+    // Agar validation error bo'lsa
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Ma\'lumotlarda xatolik!',
+        errors: errors
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Mahsulot yaratishda xatolik!',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
@@ -203,15 +316,11 @@ router.put('/products/:id', async (req, res) => {
 // Delete product
 router.delete('/products/:id', async (req, res) => {
   try {
-    const { id } = req.params;
-    const branchId = req.user.branch;
-
-    const product = await Product.findOneAndUpdate(
-      { _id: id, branch: branchId },
-      { isActive: false },
-      { new: true }
-    );
-
+    const productId = req.params.id;
+    
+    // Avval mahsulotni topish
+    const product = await Product.findById(productId);
+    
     if (!product) {
       return res.status(404).json({
         success: false,
@@ -219,34 +328,208 @@ router.delete('/products/:id', async (req, res) => {
       });
     }
 
+    // Agar mahsulotda rasm bo'lsa, uni o'chirish
+    if (product.image || product.imageFileName) {
+      try {
+        let imagePath;
+        
+        // Image path yaratish
+        if (product.imageFileName) {
+          imagePath = path.join(__dirname, '../../uploads', product.imageFileName);
+        } else if (product.image && product.image.startsWith('/uploads/')) {
+          const fileName = product.image.replace('/uploads/', '');
+          imagePath = path.join(__dirname, '../../uploads', fileName);
+        }
+
+        // Faylni o'chirish
+        if (imagePath && fs.existsSync(imagePath)) {
+          fs.unlinkSync(imagePath);
+          console.log('✅ Rasm o\'chirildi:', imagePath);
+        } else {
+          console.log('⚠️ Rasm fayli topilmadi:', imagePath);
+        }
+      } catch (imageError) {
+        console.error('❌ Rasmni o\'chirishda xatolik:', imageError);
+        // Rasm o'chirilmasa ham, mahsulotni o'chirishda davom etish
+      }
+    }
+
+    // Mahsulotni database'dan o'chirish
+    await Product.findByIdAndDelete(productId);
+
+    console.log(`✅ Mahsulot o'chirildi: ${product.name} (ID: ${productId})`);
+
     res.json({
       success: true,
-      message: 'Mahsulot muvaffaqiyatli o\'chirildi!'
+      message: 'Mahsulot va rasm muvaffaqiyatli o\'chirildi!'
     });
 
   } catch (error) {
     console.error('Delete product error:', error);
     res.status(500).json({
       success: false,
-      message: 'Mahsulot o\'chirishda xatolik!'
+      message: 'Mahsulotni o\'chirishda xatolik!',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
 
+// Update product
+router.put('/products/:id', uploadSingle, handleUploadError, async (req, res) => {
+  try {
+    const productId = req.params.id;
+    
+    // Avval mahsulotni topish
+    const existingProduct = await Product.findById(productId);
+    
+    if (!existingProduct) {
+      return res.status(404).json({
+        success: false,
+        message: 'Mahsulot topilmadi!'
+      });
+    }
+
+    const {
+      name,
+      description,
+      price,
+      originalPrice,
+      categoryId,
+      preparationTime,
+      ingredients,
+      allergens,
+      tags,
+      weight,
+      unit,
+      minOrderQuantity,
+      maxOrderQuantity,
+      isActive,
+      isAvailable,
+      isPopular,
+      isFeatured,
+      isNewProduct
+    } = req.body;
+
+    // Update data yaratish
+    const updateData = {
+      name: name?.trim(),
+      description: description?.trim(),
+      price: price ? parseFloat(price) : existingProduct.price,
+      originalPrice: originalPrice ? parseFloat(originalPrice) : existingProduct.originalPrice,
+      categoryId: categoryId || existingProduct.categoryId,
+      preparationTime: preparationTime ? parseInt(preparationTime) : existingProduct.preparationTime,
+      
+      // Process arrays
+      ingredients: ingredients ? 
+        (typeof ingredients === 'string' ? 
+          ingredients.split(',').map(i => i.trim()).filter(Boolean) : 
+          ingredients) : existingProduct.ingredients,
+      allergens: allergens ? 
+        (typeof allergens === 'string' ? 
+          allergens.split(',').map(a => a.trim()).filter(Boolean) : 
+          allergens) : existingProduct.allergens,
+      tags: tags ? 
+        (typeof tags === 'string' ? 
+          tags.split(',').map(t => t.trim()).filter(Boolean) : 
+          tags) : existingProduct.tags,
+
+      // Additional fields
+      weight: weight ? parseFloat(weight) : existingProduct.weight,
+      unit: unit || existingProduct.unit,
+      minOrderQuantity: minOrderQuantity ? parseInt(minOrderQuantity) : existingProduct.minOrderQuantity,
+      maxOrderQuantity: maxOrderQuantity ? parseInt(maxOrderQuantity) : existingProduct.maxOrderQuantity,
+
+      // Status flags
+      isActive: isActive !== undefined ? isActive === 'true' : existingProduct.isActive,
+      isAvailable: isAvailable !== undefined ? isAvailable === 'true' : existingProduct.isAvailable,
+      isPopular: isPopular === 'true',
+      isFeatured: isFeatured === 'true',
+      isNewProduct: isNewProduct === 'true',
+
+      updatedAt: new Date()
+    };
+
+    // Agar yangi rasm yuklangan bo'lsa
+    if (req.file) {
+      // Eski rasmni o'chirish
+      if (existingProduct.image || existingProduct.imageFileName) {
+        try {
+          let oldImagePath;
+          
+          if (existingProduct.imageFileName) {
+            oldImagePath = path.join(__dirname, '../../uploads', existingProduct.imageFileName);
+          } else if (existingProduct.image && existingProduct.image.startsWith('/uploads/')) {
+            const fileName = existingProduct.image.replace('/uploads/', '');
+            oldImagePath = path.join(__dirname, '../../uploads', fileName);
+          }
+
+          if (oldImagePath && fs.existsSync(oldImagePath)) {
+            fs.unlinkSync(oldImagePath);
+            console.log('✅ Eski rasm o\'chirildi:', oldImagePath);
+          }
+        } catch (deleteError) {
+          console.error('❌ Eski rasmni o\'chirishda xatolik:', deleteError);
+        }
+      }
+
+      // Yangi rasm ma'lumotlarini qo'shish
+      updateData.image = `/uploads/${req.file.filename}`;
+      updateData.imageFileName = req.file.filename;
+    }
+
+    console.log('Updating product with data:', updateData);
+
+    // Mahsulotni yangilash
+    const updatedProduct = await Product.findByIdAndUpdate(
+      productId,
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    // Populate category info
+    await updatedProduct.populate('categoryId', 'name nameUz nameRu nameEn emoji');
+
+    res.json({
+      success: true,
+      message: 'Mahsulot muvaffaqiyatli yangilandi!',
+      data: updatedProduct
+    });
+
+  } catch (error) {
+    console.error('Update product error:', error);
+    
+    // Validation error
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Ma\'lumotlarda xatolik!',
+        errors: errors
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Mahsulotni yangilashda xatolik!',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
 
 // 📋 CATEGORY MANAGEMENT
 
 // Get categories
 router.get('/categories', async (req, res) => {
   try {
-    const branchId = req.user.branch;
-    
-    const categories = await Category.find({ branch: branchId })
+    const categories = await Category.find({ isActive: true })
       .sort({ sortOrder: 1, createdAt: -1 });
 
     res.json({
       success: true,
-      data: { categories }
+      data: {
+        items: categories,
+        categories: categories // backward compatibility
+      }
     });
 
   } catch (error) {
@@ -261,8 +544,7 @@ router.get('/categories', async (req, res) => {
 // Create category
 router.post('/categories', async (req, res) => {
   try {
-    const branchId = req.user.branch;
-    const categoryData = { ...req.body, branch: branchId };
+    const categoryData = { ...req.body };
 
     const category = new Category(categoryData);
     await category.save();
@@ -270,7 +552,7 @@ router.post('/categories', async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Kategoriya muvaffaqiyatli yaratildi!',
-      data: { category }
+      data: category
     });
 
   } catch (error) {
@@ -286,10 +568,9 @@ router.post('/categories', async (req, res) => {
 router.put('/categories/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const branchId = req.user.branch;
 
-    const category = await Category.findOneAndUpdate(
-      { _id: id, branch: branchId },
+    const category = await Category.findByIdAndUpdate(
+      id,
       req.body,
       { new: true, runValidators: true }
     );
@@ -304,7 +585,7 @@ router.put('/categories/:id', async (req, res) => {
     res.json({
       success: true,
       message: 'Kategoriya muvaffaqiyatli yangilandi!',
-      data: { category }
+      data: category
     });
 
   } catch (error) {
@@ -323,12 +604,28 @@ router.put('/categories/:id', async (req, res) => {
 // Get orders for admin's branch
 router.get('/orders', async (req, res) => {
   try {
-    const { page = 1, limit = 15, status } = req.query;
+    const { page = 1, limit = 15, status, orderType, dateFrom, dateTo, search } = req.query;
     const branchId = req.user.branch;
 
-    let query = { branch: branchId };
-    if (status && status !== 'all') {
-      query.status = status;
+    let query = {};
+    // Branch filter temporarily disabled (Order model may not have branch)
+    if (status && status !== 'all') query.status = status;
+    if (orderType && orderType !== 'all') query.orderType = orderType;
+    if (dateFrom || dateTo) {
+      query.createdAt = {};
+      if (dateFrom) query.createdAt.$gte = new Date(dateFrom);
+      if (dateTo) query.createdAt.$lte = new Date(dateTo);
+    }
+
+    if (search && String(search).trim().length > 0) {
+      const text = String(search).trim();
+      const regex = new RegExp(text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      query.$or = [
+        { orderId: { $regex: regex } },
+        { orderNumber: { $regex: regex } },
+        { 'customerInfo.name': { $regex: regex } },
+        { 'customerInfo.phone': { $regex: regex } },
+      ];
     }
 
     const orders = await Order.find(query)
@@ -367,25 +664,24 @@ router.get('/orders/stats', async (req, res) => {
   try {
     const branchId = req.user.branch;
     
-    const stats = await Order.aggregate([
-      { $match: { branch: branchId } },
+    const result = await Order.aggregate([
+      { $match: {} },
       {
         $group: {
-          _id: '$status',
-          count: { $sum: 1 }
+          _id: null,
+          pending: { $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] } },
+          confirmed: { $sum: { $cond: [{ $eq: ['$status', 'confirmed'] }, 1, 0] } },
+          preparing: { $sum: { $cond: [{ $eq: ['$status', 'preparing'] }, 1, 0] } },
+          ready: { $sum: { $cond: [{ $eq: ['$status', 'ready'] }, 1, 0] } },
+          delivered: { $sum: { $cond: [{ $in: ['$status', ['delivered', 'completed', 'picked_up', 'on_delivery']] }, 1, 0] } },
+          cancelled: { $sum: { $cond: [{ $eq: ['$status', 'cancelled'] }, 1, 0] } },
         }
       }
     ]);
 
-    const formattedStats = stats.reduce((acc, item) => {
-      acc[item._id] = item.count;
-      return acc;
-    }, {});
+    const stats = result[0] || { pending: 0, confirmed: 0, preparing: 0, ready: 0, delivered: 0, cancelled: 0 };
 
-    res.json({
-      success: true,
-      data: { stats: formattedStats }
-    });
+    res.json({ success: true, data: { stats } });
 
   } catch (error) {
     console.error('Orders stats error:', error);
@@ -399,7 +695,6 @@ router.get('/orders/stats', async (req, res) => {
 // Settings routes
 router.get('/settings', async (req, res) => {
   try {
-    // Mock settings
     res.json({
       success: true,
       data: {
@@ -418,21 +713,6 @@ router.get('/settings', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Sozlamalarni olishda xatolik!'
-    });
-  }
-});
-
-router.get('/branches', async (req, res) => {
-  try {
-    const branches = await Branch.find().sort({ createdAt: -1 });
-    res.json({
-      success: true,
-      data: { branches }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Filiallarni olishda xatolik!'
     });
   }
 });

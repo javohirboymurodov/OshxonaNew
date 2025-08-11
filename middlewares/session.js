@@ -49,8 +49,20 @@ const sessionMiddleware = async (ctx, next) => {
         }
       }
       
-      // Faollik vaqtini yangilash
-      await user.updateLastActivity();
+      // Faollik vaqtini yangilash (fallback: direct save if method not defined)
+      try {
+        if (typeof user.updateLastActivity === 'function') {
+          await user.updateLastActivity();
+        } else {
+          user.updatedAt = new Date();
+          await user.save();
+        }
+      } catch (e) {
+        try {
+          user.updatedAt = new Date();
+          await user.save();
+        } catch {}
+      }
       
       // Session ga foydalanuvchini saqlash
       ctx.session.user = user;

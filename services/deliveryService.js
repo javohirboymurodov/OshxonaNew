@@ -9,7 +9,14 @@ class DeliveryService {
         .sort({ priority: -1 });
       
       for (const zone of zones) {
-        if (zone.containsPoint(latitude, longitude) && zone.isAvailableNow()) {
+        // Model method names: isPointInZone(), isWorkingNow()
+        const isInside = typeof zone.isPointInZone === 'function'
+          ? zone.isPointInZone(latitude, longitude)
+          : false;
+        const isWorking = typeof zone.isWorkingNow === 'function'
+          ? zone.isWorkingNow()
+          : true;
+        if (isInside && isWorking) {
           return zone;
         }
       }
@@ -22,17 +29,18 @@ class DeliveryService {
   }
   
   // Yetkazib berish vaqtini hisoblash
-  static async calculateDeliveryTime(userLocation, orderItems = []) {
+  // restaurantLocation: { lat: number, lon: number } ixtiyoriy.
+  static async calculateDeliveryTime(userLocation, orderItems = [], restaurantLocation) {
     try {
-      const restaurantLocation = {
-        lat: process.env.DEFAULT_RESTAURANT_LAT,
-        lon: process.env.DEFAULT_RESTAURANT_LON
+      const origin = {
+        lat: restaurantLocation?.lat ?? parseFloat(process.env.DEFAULT_RESTAURANT_LAT),
+        lon: restaurantLocation?.lon ?? parseFloat(process.env.DEFAULT_RESTAURANT_LON)
       };
       
       // Masofani hisoblash
       const distance = geoService.calculateDistance(
-        restaurantLocation.lat,
-        restaurantLocation.lon,
+        origin.lat,
+        origin.lon,
         userLocation.latitude,
         userLocation.longitude
       );
