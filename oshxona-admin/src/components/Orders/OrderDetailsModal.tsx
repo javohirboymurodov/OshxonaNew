@@ -16,6 +16,7 @@ export interface OrderItem {
 export interface Order {
   _id: string;
   orderNumber: string;
+  status?: string;
   user?: { firstName?: string; lastName?: string; phone?: string; telegramId?: number } | null;
   customerInfo?: { name?: string; phone?: string } | null;
   items: OrderItem[];
@@ -27,6 +28,7 @@ export interface Order {
   statusHistory?: Array<{ status: string; timestamp?: string | Date; message?: string; note?: string; updatedBy?: string }>;
   createdAt: string; updatedAt: string;
   dineInInfo?: { arrivalTime?: number | string; tableNumber?: string } | null;
+  branch?: { name?: string; title?: string; address?: string } | string | null;
 }
 
 interface Props {
@@ -35,13 +37,15 @@ interface Props {
   onClose: () => void;
   getOrderTypeText: (t: string) => string;
   getPaymentText: (t: string) => string;
+  onStatusUpdated?: (newStatus: string) => void;
 }
 
-const OrderDetailsModal: React.FC<Props> = ({ open, order, onClose, getOrderTypeText, getPaymentText }) => {
+const OrderDetailsModal: React.FC<Props> = ({ open, order, onClose, getOrderTypeText, getPaymentText, onStatusUpdated }) => {
   if (!order) return null;
   const fullName = [order.user?.firstName, order.user?.lastName].filter(Boolean).join(' ') || order.customerInfo?.name || '-';
   const phone = order.user?.phone || order.customerInfo?.phone || "Ko'rsatilmagan";
-  const [messageApi] = antdMessage.useMessage ? antdMessage.useMessage() : [antdMessage];
+  // AntD message konteksti (React 19 bilan to'g'ri)
+  const [messageApi, contextHolder] = antdMessage.useMessage();
 
   const getStatusConfig = (status: string) => {
     const map: Record<string, { color: string; text: string }> = {
@@ -49,21 +53,34 @@ const OrderDetailsModal: React.FC<Props> = ({ open, order, onClose, getOrderType
       confirmed: { color: 'blue', text: 'Tasdiqlangan' },
       preparing: { color: 'purple', text: 'Tayyorlanmoqda' },
       ready: { color: 'cyan', text: 'Tayyor' },
+      on_delivery: { color: 'geekblue', text: 'Yetkazilmoqda' },
+      picked_up: { color: 'green', text: 'Olib ketildi' },
       delivered: { color: 'green', text: 'Yetkazilgan' },
       cancelled: { color: 'red', text: 'Bekor qilingan' }
     };
     return map[status] || { color: 'default', text: status };
   };
 
-  const getNextStatuses = (currentStatus: string): string[] => {
-    const flow: Record<string, string[]> = {
+  const getNextStatuses = (currentStatus: string, orderType?: string): string[] => {
+    const common: Record<string, string[]> = {
       pending: ['confirmed', 'cancelled'],
-      confirmed: ['preparing', 'cancelled'],
-      preparing: ['ready', 'cancelled'],
-      ready: ['delivered'],
+      confirmed: ['ready', 'cancelled'],
+      ready: [],
+      cancelled: [],
       delivered: [],
-      cancelled: []
+      picked_up: [],
+      on_delivery: []
     };
+    if (orderType === 'delivery') {
+      const flow = { ...common, ready: ['on_delivery'], on_delivery: ['delivered'] } as Record<string, string[]>;
+      return flow[currentStatus] || [];
+    }
+    if (orderType === 'pickup') {
+      const flow = { ...common, ready: ['picked_up'] } as Record<string, string[]>;
+      return flow[currentStatus] || [];
+    }
+    // dine_in va table: tayyor → delivered
+    const flow = { ...common, ready: ['delivered'] } as Record<string, string[]>;
     return flow[currentStatus] || [];
   };
 
@@ -72,14 +89,30 @@ const OrderDetailsModal: React.FC<Props> = ({ open, order, onClose, getOrderType
       const { default: apiService } = await import('@/services/api');
       await apiService.updateOrderStatus(order._id, s);
       messageApi.success('Holat yangilandi');
+      if (onStatusUpdated) onStatusUpdated(s);
       onClose();
     } catch {
       messageApi.error('Holatni yangilashda xatolik');
     }
   };
 
+  const displayOrderNumber = String((order as unknown as { orderNumber?: string; orderId?: string }).orderNumber || (order as unknown as { orderNumber?: string; orderId?: string }).orderId || '');
+
+  const resolvedItems: OrderItem[] = (() => {
+    const anyOrder = order as unknown as Record<string, any>;
+    const raw = anyOrder.items || anyOrder.orderItems || anyOrder.products || [];
+    return (raw as any[]).map((it) => ({
+      product: it.product || undefined,
+      productName: it.productName || it.name || it.title || it.product?.name,
+      quantity: Number(it.quantity ?? it.qty ?? 0),
+      price: Number(it.price ?? it.unitPrice ?? it.product?.price ?? 0),
+      total: Number(it.total ?? it.totalPrice ?? (Number(it.price ?? 0) * Number(it.quantity ?? 0))),
+    }));
+  })();
+
   return (
-    <Modal title={`Buyurtma tafsilotlari - ${order.orderNumber}`} open={open} onCancel={onClose} footer={null} width={800}>
+    <Modal title={`Buyurtma tafsilotlari - ${displayOrderNumber || '-'}`} open={open} onCancel={onClose} footer={null} width={800}>
+      {contextHolder}
       <Row gutter={24}>
         <Col span={12}>
           <Card title="Mijoz ma'lumotlari" size="small">
@@ -94,9 +127,9 @@ const OrderDetailsModal: React.FC<Props> = ({ open, order, onClose, getOrderType
         </Col>
         <Col span={12}>
           <Card title="Buyurtma ma'lumotlari" size="small" extra={
-            <Space>
-              <Tag color={getStatusConfig(String((order as unknown as { status?: string }).status || 'pending')).color}>{getStatusConfig(String((order as unknown as { status?: string }).status || 'pending')).text}</Tag>
-              {getNextStatuses(String((order as unknown as { status?: string }).status || 'pending')).map((s) => (
+            <Space size={[8,8]} wrap>
+              <Tag color={getStatusConfig(String(order.status || 'pending')).color}>{getStatusConfig(String(order.status || 'pending')).text}</Tag>
+              {getNextStatuses(String(order.status || 'pending'), order.orderType).map((s) => (
                 <Button key={s} size="small" type="primary" onClick={() => updateStatus(s)}>{getStatusConfig(s).text}</Button>
               ))}
             </Space>
@@ -105,7 +138,12 @@ const OrderDetailsModal: React.FC<Props> = ({ open, order, onClose, getOrderType
               <Descriptions.Item label="Raqam">{order.orderNumber}</Descriptions.Item>
               <Descriptions.Item label="Turi">{getOrderTypeText(order.orderType)}</Descriptions.Item>
               <Descriptions.Item label="To'lov">{getPaymentText(order.paymentMethod)}</Descriptions.Item>
-              {order.orderType === 'dine_in' && (
+              {order.branch && (
+                <Descriptions.Item label="Filial">
+                  {typeof order.branch === 'string' ? order.branch : (order.branch?.name || order.branch?.title || '-')}
+                </Descriptions.Item>
+              )}
+              {(order.orderType === 'dine_in' || order.orderType === 'table') && (
                 <>
                   {order.dineInInfo?.arrivalTime != null && (
                     <Descriptions.Item label="Kutilayotgan kelish">{String(order.dineInInfo.arrivalTime)} daqiqa</Descriptions.Item>
@@ -155,7 +193,7 @@ const OrderDetailsModal: React.FC<Props> = ({ open, order, onClose, getOrderType
 
       <Card title="Buyurtma tarkibi" style={{ marginTop: 16 }}>
         <Table
-          dataSource={order.items}
+          dataSource={resolvedItems}
           columns={[
             {
               title: 'Mahsulot',
@@ -178,7 +216,7 @@ const OrderDetailsModal: React.FC<Props> = ({ open, order, onClose, getOrderType
               },
             },
           ]}
-          rowKey={(r) => r.product?._id || r.productName || Math.random().toString()}
+          rowKey={(r) => String(r.product?._id || r.productName || `${r.price}-${r.quantity}`)}
           pagination={false}
           size="small"
         />
@@ -225,7 +263,10 @@ const OrderDetailsModal: React.FC<Props> = ({ open, order, onClose, getOrderType
                 render: (r: { message?: string; note?: string }) => r.message || r.note || '-',
               }
             ]}
-            rowKey={(_r, i) => String(i)}
+            rowKey={(r: { timestamp?: string | Date; status?: string }) => {
+              const t = r.timestamp ? new Date(r.timestamp).getTime() : 0;
+              return String(`${t}-${r.status || ''}`);
+            }}
           />
         </Card>
       )}

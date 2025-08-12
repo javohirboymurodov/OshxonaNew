@@ -205,13 +205,31 @@ const OrdersPage: React.FC = () => {
     []
   );
 
-  const showOrderDetails = (order: TableOrder) => {
+  const showOrderDetails = async (order: TableOrder) => {
     setSelectedOrder(order as unknown as Order);
     setDetailsVisible(true);
-    // Belldagi notificationni kamaytirish uchun localStorage orqali ack yuboramiz
     const ackId = (order as unknown as { _id?: string; orderNumber?: string })._id || (order as unknown as { _id?: string; orderNumber?: string }).orderNumber;
     if (ackId) {
       try { localStorage.setItem('ackOrderId', String(ackId)); } catch { /* ignore */ }
+    }
+    // Full details (branch, dineInInfo, history...) ni olish
+    try {
+      const full = await apiService.getOrderById((order as unknown as { _id: string })._id);
+      if (full) {
+        const merged = {
+          ...(order as unknown as Record<string, unknown>),
+          ...(full as Record<string, unknown>),
+        } as Record<string, unknown>;
+        if (!merged.orderNumber) {
+          merged.orderNumber = (full as Record<string, unknown>)['orderNumber']
+            || (order as unknown as Record<string, unknown>)['orderNumber']
+            || (full as Record<string, unknown>)['orderId']
+            || '';
+        }
+        setSelectedOrder(merged as unknown as Order);
+      }
+    } catch (e) {
+      console.warn('Order details fetch failed', e);
     }
   };
 
@@ -244,7 +262,12 @@ const OrdersPage: React.FC = () => {
         </Col>
       </Row>
 
-      <OrdersStats stats={stats} />
+      <OrdersStats
+        stats={stats}
+        onSelectStatus={(s) =>
+          setFilters((prev) => ({ ...prev, status: prev.status === s ? '' : s }))
+        }
+      />
 
       <Card style={{ marginBottom: 24 }}>
         <Row gutter={16} align="middle">
@@ -324,7 +347,17 @@ const OrdersPage: React.FC = () => {
         />
       </Card>
 
-      <OrderDetailsModal open={detailsVisible} order={selectedOrder as unknown as DetailsOrder | null} onClose={() => setDetailsVisible(false)} getOrderTypeText={getOrderTypeText} getPaymentText={getPaymentMethodText} />
+      <OrderDetailsModal
+        open={detailsVisible}
+        order={selectedOrder as unknown as DetailsOrder | null}
+        onClose={() => setDetailsVisible(false)}
+        getOrderTypeText={getOrderTypeText}
+        getPaymentText={getPaymentMethodText}
+        onStatusUpdated={() => {
+          fetchOrders(pagination.current, pagination.pageSize);
+          fetchOrderStats();
+        }}
+      />
 
       {/* Legacy modal removed */}
 
