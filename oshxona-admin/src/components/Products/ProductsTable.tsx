@@ -7,10 +7,12 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TablePagination,
   IconButton,
   Avatar,
   Switch,
-  Tooltip
+  Tooltip,
+  TextField
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -18,6 +20,8 @@ import {
   Visibility as ViewIcon
 } from '@mui/icons-material';
 import { Product } from '../../hooks/useProducts';
+import apiService from '@/services/api';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ProductsTableProps {
   products: Product[];
@@ -25,6 +29,12 @@ interface ProductsTableProps {
   onView: (product: Product) => void;
   onDelete: (id: string) => void;
   onToggleStatus?: (id: string, next: boolean) => void;
+  page?: number;
+  rowsPerPage?: number;
+  total?: number;
+  onPageChange?: (event: unknown, page: number) => void;
+  onRowsPerPageChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  inventoryMap?: Record<string, { isAvailable?: boolean; stock?: number | null; dailyLimit?: number | null; soldToday?: number | null }>;
 }
 
 const getImageUrl = (imagePath: string | undefined): string | undefined => {
@@ -38,8 +48,18 @@ const ProductsTable: React.FC<ProductsTableProps> = ({
   onEdit,
   onView,
   onDelete,
-  onToggleStatus
+  onToggleStatus,
+  page = 0,
+  rowsPerPage = 10,
+  total = products.length,
+  onPageChange,
+  onRowsPerPageChange,
+  inventoryMap = {}
 }) => {
+  const { user } = useAuth() as { user?: { role?: string; branch?: string } };
+  const isSuper = String(user?.role || '').toLowerCase() === 'superadmin';
+  const branchId = isSuper ? undefined : user?.branch;
+
   return (
     <Paper>
       <TableContainer>
@@ -51,12 +71,13 @@ const ProductsTable: React.FC<ProductsTableProps> = ({
               <TableCell>Kategoriya</TableCell>
               <TableCell>Narx</TableCell>
               <TableCell>Holat</TableCell>
+              {!isSuper && <TableCell>Inventar</TableCell>}
               <TableCell>Yaratilgan</TableCell>
               <TableCell>Amallar</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {products.map((product) => (
+            {products.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((product) => (
               <TableRow key={product._id}>
                 <TableCell>
                   <Avatar 
@@ -81,6 +102,58 @@ const ProductsTable: React.FC<ProductsTableProps> = ({
                     />
                   </Tooltip>
                 </TableCell>
+                {(
+                  // Inventar ustunini ham admin, ham superadmin ko'radi
+                  true as boolean
+                ) && (
+                  <TableCell>
+                    <Tooltip title="Mavjud/yashirish">
+                      <Switch
+                        color="primary"
+                        checked={Boolean((inventoryMap as Record<string, { isAvailable?: boolean }>)[product._id]?.isAvailable)}
+                        onChange={async (e) => {
+                          try {
+                            const targetBranch = branchId || (user as { branch?: string } | undefined)?.branch || undefined;
+                            if (!targetBranch) return;
+                            await apiService.updateInventory(targetBranch, product._id, { isAvailable: e.target.checked });
+                          } catch (err) { console.error('Inventory toggle error', err); }
+                        }}
+                      />
+                    </Tooltip>
+                    <TextField
+                      type="number"
+                      size="small"
+                      sx={{ width: 90, ml: 1 }}
+                      placeholder="Stock"
+                      defaultValue={(inventoryMap as Record<string, { stock?: number | null }>)[product._id]?.stock ?? ''}
+                      onBlur={async (e) => {
+                        const val = e.target.value;
+                        const parsed = val === '' ? null : Number(val);
+                        try {
+                          const targetBranch = branchId || (user as { branch?: string } | undefined)?.branch || undefined;
+                          if (!targetBranch) return;
+                          await apiService.updateInventory(targetBranch as string, product._id, { stock: Number.isNaN(parsed as number) ? null : (parsed as number) });
+                        } catch (err) { console.error('Stock update error', err); }
+                      }}
+                    />
+                    <TextField
+                      type="number"
+                      size="small"
+                      sx={{ width: 90, ml: 1 }}
+                      placeholder="Kunlim"
+                      defaultValue={(inventoryMap as Record<string, { dailyLimit?: number | null }>)[product._id]?.dailyLimit ?? ''}
+                      onBlur={async (e) => {
+                        const val = e.target.value;
+                        const parsed = val === '' ? null : Number(val);
+                        try {
+                          const targetBranch = branchId || (user as { branch?: string } | undefined)?.branch || undefined;
+                          if (!targetBranch) return;
+                          await apiService.updateInventory(targetBranch as string, product._id, { dailyLimit: Number.isNaN(parsed as number) ? null : (parsed as number) });
+                        } catch (err) { console.error('DailyLimit update error', err); }
+                      }}
+                    />
+                  </TableCell>
+                )}
                 <TableCell>
                   {new Date(product.createdAt).toLocaleDateString('uz-UZ')}
                 </TableCell>
@@ -88,18 +161,31 @@ const ProductsTable: React.FC<ProductsTableProps> = ({
                   <IconButton onClick={() => onView(product)}>
                     <ViewIcon />
                   </IconButton>
-                  <IconButton onClick={() => onEdit(product)}>
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton onClick={() => onDelete(product._id)}>
-                    <DeleteIcon />
-                  </IconButton>
+                  {isSuper && (
+                    <>
+                      <IconButton onClick={() => onEdit(product)}>
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton onClick={() => onDelete(product._id)}>
+                        <DeleteIcon />
+                      </IconButton>
+                    </>
+                  )}
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </TableContainer>
+      <TablePagination
+        component="div"
+        count={total}
+        page={page}
+        onPageChange={onPageChange || (() => {})}
+        rowsPerPage={rowsPerPage}
+        onRowsPerPageChange={onRowsPerPageChange || (() => {})}
+        rowsPerPageOptions={[5, 10, 25, 50]}
+      />
     </Paper>
   );
 };

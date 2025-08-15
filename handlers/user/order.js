@@ -1,7 +1,10 @@
-const { User, Product, Category, Order, Cart } = require('../../models');
+const { User, Product, Category, Order, Cart, Branch } = require('../../models');
+const BranchProduct = require('../../models/BranchProduct');
 const DeliveryService = require('../../services/deliveryService');
-const { orderTypeKeyboard, paymentMethodKeyboard, orderConfirmKeyboard, mainMenuKeyboard } = require('../../keyboards/userKeyboards');
+const geoService = require('../../services/geoService');
+const { orderTypeKeyboard, paymentMethodKeyboard, orderConfirmKeyboard, mainMenuKeyboard, branchesKeyboard } = require('../../keyboards/userKeyboards');
 const Helpers = require('../../utils/helpers');
+const { notifyAdmins } = require('./order/notify');
 
 async function startOrder(ctx) {
   try {
@@ -36,6 +39,79 @@ async function startOrder(ctx) {
   }
 }
 
+// Filial tanlash bosqichi (pickup/dine_in uchun)
+async function askForBranchSelection(ctx, forType) {
+  try {
+    const branches = await Branch.find({ isActive: true }).select('name');
+    if (!branches || branches.length === 0) {
+      await ctx.reply('❌ Faol filial topilmadi.');
+      return;
+    }
+    const typeKey = forType === 'dine_in' ? 'dine' : forType; // callback uchun soddalashtirilgan
+    const inline = {
+      inline_keyboard: branches.map((b) => ([{ text: b.name, callback_data: `choose_branch_${typeKey}_${b._id}` }]))
+    };
+    const text = forType === 'pickup' ? '🏪 Qaysi filialdan olib ketasiz?' : '🏢 Qaysi filialga kelasiz?';
+    if (ctx.updateType === 'callback_query') {
+      await ctx.editMessageText(text, { reply_markup: inline });
+    } else {
+      await ctx.reply(text, { reply_markup: inline });
+    }
+  } catch (error) {
+    console.error('Ask branch selection error:', error);
+    await ctx.reply('❌ Filial tanlashda xatolik!');
+  }
+}
+
+// Filial tanlanganini qayta ishlash
+async function handleChooseBranch(ctx) {
+  try {
+    const data = String(ctx.callbackQuery?.data || '');
+    const branchMatch = data.match(/[0-9a-fA-F]{24}$/);
+    const branchId = branchMatch ? branchMatch[0] : '';
+    const type = data.includes('choose_branch_pickup_') ? 'pickup' : 'dine';
+    ctx.session.orderData = ctx.session.orderData || {};
+    ctx.session.orderData.branch = branchId;
+    // Filial tanlangach vaqt so'raladi yoki to'lovga o'tiladi
+    if (type === 'pickup' || type === 'dine') {
+      const normalized = type === 'dine' ? 'dine_in' : type;
+      ctx.session.orderType = normalized;
+      const { arrivalTimeKeyboard } = require('../../keyboards/userKeyboards');
+      await ctx.editMessageText(
+        normalized === 'pickup'
+          ? "⏰ Necha daqiqadan so'ng buyurtmani olib ketasiz?\n\nVaqtingizni tanlang:"
+          : "⏰ Necha daqiqadan so'ng restoranga kelasiz?\n\nVaqtingizni tanlang:",
+        { reply_markup: arrivalTimeKeyboard().reply_markup }
+      );
+    } else {
+      await askForPaymentMethod(ctx);
+    }
+    if (ctx.answerCbQuery) await ctx.answerCbQuery('✅ Filial tanlandi');
+  } catch (error) {
+    console.error('Handle choose branch error:', error);
+    await ctx.answerCbQuery('❌ Filialni tanlashda xatolik!');
+  }
+}
+
+// Eng yaqin filialni topish (Haversine)
+async function findNearestBranch(lat, lon) {
+  const branches = await Branch.find({ isActive: true });
+  let best = null;
+  let bestDist = Infinity;
+  for (const b of branches) {
+    const bl = b.address?.coordinates?.latitude;
+    const bo = b.address?.coordinates?.longitude;
+    if (typeof bl === 'number' && typeof bo === 'number') {
+      const d = geoService.calculateDistance(bl, bo, lat, lon);
+      if (d < bestDist) {
+        bestDist = d;
+        best = b;
+      }
+    }
+  }
+  return best;
+}
+
 async function handleOrderType(ctx) {
   try {
     let orderType = ctx.callbackQuery.data.split('_')[2];
@@ -66,15 +142,7 @@ async function handleDineInPreorder(ctx) {
       return;
     }
     ctx.session.orderType = 'dine_in';
-    const { arrivalTimeKeyboard } = require('../../keyboards/userKeyboards');
-    await ctx.editMessageText(
-      "⏰ Necha daqiqadan so'ng restoranga kelasiz?\n\n" +
-      "Vaqtingizni tanlang:",
-      {
-        parse_mode: 'Markdown',
-        reply_markup: arrivalTimeKeyboard().reply_markup
-      }
-    );
+    await askForBranchSelection(ctx, 'dine');
   } catch (error) {
     console.error('Handle dine in preorder error:', error);
     await ctx.answerCbQuery('Vaqt tanlashda xatolik!');
@@ -165,15 +233,17 @@ async function startOrderFlow(ctx, orderType, orderData = {}) {
     ctx.session.orderData = { ...ctx.session.orderData, ...orderData };
     if (orderType === 'delivery') {
       ctx.session.waitingFor = 'address';
-      return await ctx.reply('📍 Yetkazib berish manzilini kiriting yoki lokatsiya yuboring:');
+      return await ctx.reply('📍 Yetkazib berish manzilini kiriting yoki lokatsiya yuboring:', {
+        reply_markup: {
+          keyboard: [[{ text: '📍 Geo-joylashuvni yuborish', request_location: true }]],
+          resize_keyboard: true,
+          one_time_keyboard: true
+        }
+      });
     }
     if (orderType === 'pickup') {
-      ctx.session.waitingFor = 'arrival_time';
-      const { arrivalTimeKeyboard } = require('../../keyboards/userKeyboards');
-      return await ctx.reply(
-        "⏰ Necha daqiqadan so'ng buyurtmani olib ketasiz?\n\nVaqtingizni tanlang:",
-        { reply_markup: arrivalTimeKeyboard().reply_markup }
-      );
+      await askForBranchSelection(ctx, 'pickup');
+      return;
     }
   // Dine-in QR oqimida: telefon/ to'lovga yo'naltirish
   if (orderType === 'dine_in' || orderType === 'dine_in_qr') {
@@ -194,7 +264,18 @@ async function startOrderFlow(ctx, orderType, orderData = {}) {
       ctx.session.user = user;
     }
     if (user && user.phone) {
-      await askForPaymentMethod(ctx);
+      if (ctx.session.orderType === 'pickup' || ctx.session.orderType === 'dine_in') {
+        // Vaqt so'rash bosqichi
+        const { arrivalTimeKeyboard } = require('../../keyboards/userKeyboards');
+        await ctx.reply(
+          ctx.session.orderType === 'pickup'
+            ? "⏰ Necha daqiqadan so'ng buyurtmani olib ketasiz?\n\nVaqtingizni tanlang:"
+            : "⏰ Necha daqiqadan so'ng restoranga kelasiz?\n\nVaqtingizni tanlang:",
+          { reply_markup: arrivalTimeKeyboard().reply_markup }
+        );
+      } else {
+        await askForPaymentMethod(ctx);
+      }
     } else {
       await askForPhone(ctx);
     }
@@ -342,10 +423,40 @@ async function finalizeOrder(ctx) {
       }
     }
 
+    // Determine branch by order type
+    let branchId = (ctx.session?.orderData?.branch) || user.branch || undefined;
+    if (normalizedOrderType === 'delivery' && orderData?.location?.latitude && orderData?.location?.longitude) {
+      try {
+        const res = await DeliveryService.resolveBranchForLocation(orderData.location);
+        if (res.source === 'zone' && res.branchId) {
+          branchId = res.branchId;
+        } else if (res.source === 'radius' && res.branchId) {
+          // radius tekshiruvi (agar branch settings mavjud bo'lsa)
+          const b = await Branch.findById(res.branchId);
+          const maxKm = Number(b?.settings?.maxDeliveryDistance ?? 15);
+          const dist = res.distanceKm ?? 9999;
+          if (dist > maxKm) {
+            await ctx.reply(`❌ Manzil yetkazib berish radiusidan tashqarida ( ${dist.toFixed(2)} km > ${maxKm} km ).`);
+            return;
+          }
+          branchId = res.branchId;
+        } else {
+          await ctx.reply('❌ Sizning hududingizda yetkazib berish xizmati mavjud emas.');
+          return;
+        }
+      } catch (e) {
+        console.error('Resolve branch error:', e);
+      }
+    }
+    if ((normalizedOrderType === 'pickup' || normalizedOrderType === 'dine_in') && !branchId) {
+      await ctx.reply('❌ Filial tanlanmagan. Iltimos filialni tanlang.');
+      return;
+    }
+
     const order = new Order({
       orderId: 'ORD' + Date.now() + Math.random().toString(36).substr(2, 5).toUpperCase(),
       user: user._id,
-      branch: (ctx.session?.orderData?.branch) || user.branch || undefined,
+      branch: branchId,
       items: cart.items.map(item => ({
         product: item.product._id,
         productName: item.productName,
@@ -380,6 +491,37 @@ async function finalizeOrder(ctx) {
     await order.save();
     cart.isActive = false;
     await cart.save();
+
+    // Per-filial inventarni yangilash: soldToday va stock (agar mavjud bo'lsa)
+    try {
+      if (branchId) {
+        for (const item of cart.items) {
+          const productId = item.product._id || item.product;
+          const qty = Number(item.quantity) || 0;
+          // soldToday ni oshiramiz (upsert)
+          await BranchProduct.findOneAndUpdate(
+            { branch: branchId, product: productId },
+            { 
+              $inc: { soldToday: qty },
+              $setOnInsert: { branch: branchId, product: productId, lastResetAt: new Date() }
+            },
+            { new: true, upsert: true }
+          );
+          // stock null emas bo'lsa kamaytiramiz
+          try {
+            const inv = await BranchProduct.findOne({ branch: branchId, product: productId }).select('stock');
+            if (inv && inv.stock !== null && inv.stock !== undefined) {
+              await BranchProduct.updateOne(
+                { _id: inv._id },
+                { $inc: { stock: -qty } }
+              );
+            }
+          } catch (e) { /* ignore stock update errors */ }
+        }
+      }
+    } catch (invErr) {
+      console.error('Inventory update error:', invErr?.message || invErr);
+    }
     ctx.session.orderType = null;
     ctx.session.orderData = null;
     ctx.session.waitingFor = null;
@@ -412,6 +554,18 @@ async function finalizeOrder(ctx) {
         }
       );
     }
+    // Pickup: avtomatik completed (10s) agar status 'picked_up' bo'lsa
+    if (order.orderType === 'pickup') {
+      setTimeout(async () => {
+        try {
+          const fresh = await Order.findById(order._id);
+          if (fresh && fresh.status === 'picked_up') {
+            fresh.status = 'completed';
+            await fresh.save();
+          }
+        } catch {}
+      }, 10000);
+    }
     
     await notifyAdmins(order);
     
@@ -421,95 +575,7 @@ async function finalizeOrder(ctx) {
   }
 }
 
-async function notifyAdmins(order) {
-  try {
-    const admins = await User.find({ role: { $in: ['admin', 'superadmin'] } });
-    const OrderModel = require('../../models/Order');
-    const populatedOrder = await OrderModel.findById(order._id).populate('user');
-    // Emit to web admin panel (Socket.IO)
-    try {
-      const SocketManager = require('../../config/socketConfig');
-      const branchId = (order.branch && order.branch.toString) ? order.branch.toString() : 'default';
-      SocketManager.emitNewOrder(branchId, {
-        id: order._id,
-        orderId: order.orderId,
-        status: order.status,
-        total: order.total,
-        customer: { name: (populatedOrder.user && populatedOrder.user.firstName) ? populatedOrder.user.firstName : 'Mijoz' }
-      });
-    } catch (emitErr) {
-      console.error('Emit new order error:', emitErr?.message || emitErr);
-    }
-    for (const admin of admins) {
-      try {
-        const bot = global.botInstance;
-        if (!bot) {
-          console.error('Bot instance topilmadi!');
-          return;
-        }
-        if (!admin.telegramId || isNaN(Number(admin.telegramId))) {
-          console.error(`Admin telegramId noto'g'ri yoki yo'q:`, admin.telegramId);
-          continue;
-        }
-        let message = `\n🆕 **Yangi buyurtma!**\n\n`;
-        message += `📋 **Buyurtma №:** ${populatedOrder.orderId}\n`;
-        message += `👤 **Foydalanuvchi:** ${populatedOrder.user && populatedOrder.user.firstName ? populatedOrder.user.firstName : "Noma'lum"}\n`;
-        message += `📞 **Telefon:** ${populatedOrder.customerInfo && populatedOrder.customerInfo.phone ? populatedOrder.customerInfo.phone : 'Kiritilmagan'}\n`;
-        message += `💰 **Jami:** ${populatedOrder.total.toLocaleString()} so'm\n`;
-        message += `📅 **Sana:** ${populatedOrder.createdAt.toLocaleString('uz-UZ')}\n\n`;
-        message += `🍽️ **Mahsulotlar:**\n`;
-        populatedOrder.items.forEach((item, index) => {
-          message += `${index + 1}. ${item.productName} x${item.quantity} = ${item.totalPrice.toLocaleString()} so'm\n`;
-        });
-        message += `\n📝 **Buyurtma turi:** ${Helpers.getOrderTypeText(populatedOrder.orderType, 'uz')}`;
-        if (populatedOrder.orderType === 'dine_in') {
-          message += `\n⏰ **Kelish vaqti:** ${(populatedOrder.dineInInfo && populatedOrder.dineInInfo.arrivalTime) ? populatedOrder.dineInInfo.arrivalTime + ' daqiqa' : 'Kiritilmagan'}`;
-        } else if (populatedOrder.orderType === 'pickup') {
-          message += `\n⏰ **Olib ketish vaqti:** ${(populatedOrder.dineInInfo && populatedOrder.dineInInfo.arrivalTime) ? populatedOrder.dineInInfo.arrivalTime + ' daqiqa' : 'Kiritilmagan'}`;
-        } else if (populatedOrder.orderType === 'dine_in_qr' || (populatedOrder.orderType === 'dine_in' && populatedOrder.dineInInfo && populatedOrder.dineInInfo.tableNumber)) {
-          // Stol buyurtmasi (QR)
-          message += `\n🍽️ **Stol:** ${(populatedOrder.dineInInfo && populatedOrder.dineInInfo.tableNumber) ? populatedOrder.dineInInfo.tableNumber : ''}`;
-        } else if (populatedOrder.orderType === 'delivery') {
-          let manzilText = 'Kiritilmagan';
-          if (populatedOrder.deliveryInfo && populatedOrder.deliveryInfo.address) {
-            manzilText = populatedOrder.deliveryInfo.address;
-          } else if (
-            populatedOrder.deliveryInfo &&
-            populatedOrder.deliveryInfo.location &&
-            populatedOrder.deliveryInfo.location.latitude &&
-            populatedOrder.deliveryInfo.location.longitude
-          ) {
-            manzilText = `https://maps.google.com/?q=${populatedOrder.deliveryInfo.location.latitude},${populatedOrder.deliveryInfo.location.longitude}`;
-          }
-          message += `\n📍 **Manzil:** ${manzilText}`;
-        }
-        message += `\n💳 **To'lov:** ${Helpers.getPaymentMethodText(populatedOrder.paymentMethod, 'uz') || 'Kiritilmagan'}`;
-        await bot.telegram.sendMessage(admin.telegramId, message, {
-          parse_mode: 'Markdown',
-          reply_markup: {
-            inline_keyboard: [
-              [
-                { text: '✅ Tasdiqlash', callback_data: `admin_quick_confirmed_${populatedOrder._id}` },
-                { text: '👨‍🍳 Tayyorlash', callback_data: `admin_quick_preparing_${populatedOrder._id}` }
-              ],
-              [
-                { text: '🎯 Tayyor', callback_data: `admin_quick_ready_${populatedOrder._id}` },
-                { text: '🚚 Yetkazildi', callback_data: `admin_quick_delivered_${populatedOrder._id}` }
-              ],
-              [
-                { text: '❌ Bekor', callback_data: `admin_quick_cancelled_${populatedOrder._id}` }
-              ]
-            ]
-          }
-        });
-      } catch (error) {
-        console.error(`Admin ${admin.telegramId} ga xabar yuborishda xatolik:`, error);
-      }
-    }
-  } catch (error) {
-    console.error('Notify admins error:', error);
-  }
-}
+// notifyAdmins moved to handlers/user/order/notify.js
 
 async function continueOrderProcess(ctx) {
   try {
@@ -631,7 +697,9 @@ async function handleDineInTableInput(ctx) {
         orderId: order.orderId,
         customer: { name: order.user?.firstName || 'Mijoz' },
         total: order.total,
-        sound: true
+        sound: true,
+        orderType: order.orderType,
+        tableNumber: tableNumber
       });
     } catch (error) {
       console.error('Emit dine_in_arrived error:', error);
@@ -651,6 +719,9 @@ module.exports = {
   handleOrderType,
   handleDineInPreorder,
   handleArrivalTime,
+  // Filial tanlash oqimi
+  askForBranchSelection,
+  handleChooseBranch,
   handleDineInQR,
   startOrderFlow,
   askForPhone,

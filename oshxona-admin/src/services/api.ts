@@ -148,6 +148,19 @@ class ApiService {
     return response.data;
   }
 
+  // Inventory (per-branch) methods
+  async updateInventory(branchId: string, productId: string, payload: Partial<{ isAvailable: boolean; stock: number | null; dailyLimit: number | null; priceOverride: number | null; resetSoldToday: boolean }>) {
+    const response = await this.api.patch(`/admin/branches/${branchId}/products/${productId}`, payload);
+    return response.data;
+  }
+
+  async getInventory(branchId: string, productIds?: string[]) {
+    const qp = new URLSearchParams();
+    if (productIds && productIds.length) qp.set('productIds', productIds.join(','));
+    const response = await this.api.get(`/admin/branches/${branchId}/inventory${qp.toString() ? `?${qp.toString()}` : ''}`);
+    return response.data.data;
+  }
+
   // Category methods
   async getCategories(page = 1, limit = 10, search?: string) {
     let url = `/categories?page=${page}&limit=${limit}`;
@@ -202,6 +215,7 @@ class ApiService {
       dateTo?: string;
       search?: string;
       courier?: 'assigned' | 'unassigned';
+      branch?: string;
     }
   ) {
     let url = `/orders?page=${page}&limit=${limit}`;
@@ -211,6 +225,7 @@ class ApiService {
     if (filters?.dateTo) url += `&dateTo=${encodeURIComponent(filters.dateTo)}`;
     if (filters?.search) url += `&search=${encodeURIComponent(filters.search)}`;
     if (filters?.courier) url += `&courier=${filters.courier}`;
+    if (filters?.branch) url += `&branch=${encodeURIComponent(filters.branch)}`;
     const response = await this.api.get(url);
     return response.data.data;
   }
@@ -250,8 +265,17 @@ class ApiService {
 
   // Branch methods
   async getBranches() {
-    const response = await this.api.get('/superadmin/branches');
-    return response.data.data;
+    try {
+      const response = await this.api.get('/superadmin/branches');
+      return response.data.data;
+    } catch (e: any) {
+      if (e?.response?.status === 403) {
+        // Adminlar uchun fallback
+        const alt = await this.api.get('/admin/branches');
+        return alt.data.data;
+      }
+      throw e;
+    }
   }
 
   async createBranch(branchData: any) {
@@ -309,8 +333,9 @@ class ApiService {
   }
 
   // Dashboard methods
-  async getDashboardStats() {
-    const response = await this.api.get('/dashboard/stats');
+  async getDashboardStats(params?: { branch?: string }) {
+    const qp = params?.branch ? `?branch=${encodeURIComponent(params.branch)}` : '';
+    const response = await this.api.get(`/dashboard/stats${qp}`);
     return response.data.data;
   }
 

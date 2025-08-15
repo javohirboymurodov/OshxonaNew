@@ -9,6 +9,7 @@ import UsersTable, { User as TableUser } from '@/components/Users/UsersTable';
 import UserDetailsModal from '@/components/Users/UserDetailsModal';
 import UserFormModal from '@/components/Users/UserFormModal';
 import apiService from '@/services/api';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 const { Title } = Typography;
 const { Search } = Input;
@@ -79,14 +80,24 @@ const UsersPage: React.FC = () => {
     data?: { users?: User[]; pagination?: { total?: number; current?: number; pageSize?: number } };
   };
 
-  const fetchUsers = async (page = 1, pageSize = 15) => {
-    setLoading(true);
-    try {
-      const payload: UsersListResponse = await apiService.getUsers(page, pageSize, {
+  const queryClient = useQueryClient();
+  const usersKey = ['users', {
+    page: pagination.current,
+    pageSize: pagination.pageSize,
+    search: filters.search,
+    role: filters.role,
+    status: filters.status,
+    startDate: filters.dateRange?.[0]?.toISOString?.(),
+    endDate: filters.dateRange?.[1]?.toISOString?.(),
+  }];
+
+  const usersQuery = useQuery({
+    queryKey: usersKey,
+    queryFn: async () => {
+      const payload: UsersListResponse = await apiService.getUsers(pagination.current, pagination.pageSize, {
         search: filters.search || undefined,
         role: filters.role || undefined,
         status: filters.status || undefined,
-        // Backend may support date range in the future; keep UI state only for now
         ...(filters.dateRange && filters.dateRange[0] && filters.dateRange[1]
           ? {
               startDate: dayjs(filters.dateRange[0]).toDate().toISOString(),
@@ -94,44 +105,43 @@ const UsersPage: React.FC = () => {
             }
           : {}),
       });
-
       const list: User[] = (payload?.users || payload?.data?.users || payload?.items || []) ?? [];
       const pag = payload?.pagination || payload?.data?.pagination || {};
+      setPagination((prev) => ({ ...prev, total: Number(pag?.total || list.length || 0) }));
+      return list;
+    },
+    keepPreviousData: true,
+  });
 
-        setUsers(list);
-      setPagination({ current: page, pageSize, total: Number(pag?.total || list.length || 0) });
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      message.error('Foydalanuvchilarni yuklashda xatolik!');
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    setUsers(usersQuery.data || []);
+    setLoading(usersQuery.isLoading);
+  }, [usersQuery.data, usersQuery.isLoading]);
 
   type UserStatsApi = { stats?: Partial<UserStatsShape> } | Partial<UserStatsShape> | undefined;
 
-  const fetchUserStats = async () => {
-    try {
+  const statsQuery = useQuery({
+    queryKey: ['users-stats'],
+    queryFn: async () => {
       const data: UserStatsApi = await apiService.getUserStats();
       const maybeWithStats = (data || {}) as { stats?: Partial<UserStatsShape> };
       const s: Partial<UserStatsShape> = maybeWithStats.stats ?? ((data || {}) as Partial<UserStatsShape>);
-        setStats({
+      return {
           total: Number(s.total) || 0,
           active: Number(s.active) || 0,
           blocked: Number(s.blocked) || 0,
           admins: Number(s.admins) || 0,
           couriers: Number(s.couriers) || 0,
           newThisMonth: Number(s.newThisMonth) || 0,
-        });
-    } catch (error) {
-      console.error('Error fetching user stats:', error);
-      setStats(defaultStats);
+      } as UserStatsShape;
     }
-  };
+  });
+
+  useEffect(() => { if (statsQuery.data) setStats(statsQuery.data); }, [statsQuery.data]);
 
   useEffect(() => {
-    fetchUsers(1, pagination.pageSize);
-    fetchUserStats();
+    queryClient.invalidateQueries({ queryKey: usersKey });
+    queryClient.invalidateQueries({ queryKey: ['users-stats'] });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
@@ -141,7 +151,13 @@ const UsersPage: React.FC = () => {
   };
 
   const editUser = (user: User) => {
-    setSelectedUser(user);
+    // Map to form-friendly initial values (ensure branchId is prefilled for admin)
+    const mapped: any = {
+      ...user,
+      role: user.role,
+      branchId: (user as any)?.branch?._id || (user as any)?.branch || undefined,
+    };
+    setSelectedUser(mapped);
     setEditVisible(true);
   };
 
@@ -154,8 +170,8 @@ const UsersPage: React.FC = () => {
         await apiService.blockUser(user._id);
         message.success('Foydalanuvchi bloklandi!');
       }
-      fetchUsers(pagination.current, pagination.pageSize);
-      fetchUserStats();
+      queryClient.invalidateQueries({ queryKey: usersKey });
+      queryClient.invalidateQueries({ queryKey: ['users-stats'] });
     } catch (error) {
       console.error('Error toggling user block:', error);
       message.error('Amal bajarilmadi!');
@@ -167,8 +183,8 @@ const UsersPage: React.FC = () => {
       await apiService.createUser(values);
         message.success('Foydalanuvchi yaratildi!');
         setCreateVisible(false);
-        fetchUsers(pagination.current, pagination.pageSize);
-        fetchUserStats();
+        queryClient.invalidateQueries({ queryKey: usersKey });
+        queryClient.invalidateQueries({ queryKey: ['users-stats'] });
     } catch (error) {
       console.error('Error creating user:', error);
       message.error('Foydalanuvchi yaratishda xatolik!');
@@ -181,7 +197,7 @@ const UsersPage: React.FC = () => {
       await apiService.updateUser(selectedUser._id, values);
         message.success('Foydalanuvchi yangilandi!');
         setEditVisible(false);
-        fetchUsers(pagination.current, pagination.pageSize);
+        queryClient.invalidateQueries({ queryKey: usersKey });
     } catch (error) {
       console.error('Error updating user:', error);
       message.error('Foydalanuvchini yangilashda xatolik!');
@@ -199,7 +215,7 @@ const UsersPage: React.FC = () => {
           <Space>
             <Button icon={<FilterOutlined />} onClick={() => setFiltersVisible(true)}>Filtrlar</Button>
             <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateVisible(true)}>Yangi admin/kuryer</Button>
-            <Button icon={<ReloadOutlined />} onClick={() => { fetchUsers(pagination.current, pagination.pageSize); fetchUserStats(); }}>Yangilash</Button>
+            <Button icon={<ReloadOutlined />} onClick={() => { queryClient.invalidateQueries({ queryKey: usersKey }); queryClient.invalidateQueries({ queryKey: ['users-stats'] }); }}>Yangilash</Button>
           </Space>
         </Col>
       </Row>
@@ -252,7 +268,7 @@ const UsersPage: React.FC = () => {
           data={users}
           loading={loading}
           pagination={pagination}
-          onChangePage={(p, ps) => fetchUsers(p, ps)}
+          onChangePage={(p, ps) => setPagination({ ...pagination, current: p, pageSize: ps })}
           onShowDetails={showUserDetails}
           onEdit={editUser}
           onToggleBlock={toggleUserBlock}

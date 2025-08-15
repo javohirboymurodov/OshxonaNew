@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 
 const productSchema = new mongoose.Schema({
+  // Branch ownership: mahsulot qaysi filialga tegishli
+  branch: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch' },
   name: { type: String },
   nameRu: String,
   nameEn: String,
@@ -62,6 +64,7 @@ const productSchema = new mongoose.Schema({
 
 // Indexlar
 productSchema.index({ categoryId: 1 });
+productSchema.index({ branch: 1 });
 productSchema.index({ isActive: 1, isAvailable: 1 });
 productSchema.index({ isPopular: 1 });
 productSchema.index({ price: 1 });

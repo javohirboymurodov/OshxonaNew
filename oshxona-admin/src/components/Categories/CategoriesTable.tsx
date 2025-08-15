@@ -12,9 +12,10 @@ interface Props {
   onEdit: (category: Category) => void;
   onDelete: (id: string) => void;
   onReorder?: (ids: string[]) => void;
+  isSuper?: boolean;
 }
 
-const CategoriesTable: React.FC<Props> = ({ loading, data, onToggleStatus, onToggleVisibility, onEdit, onDelete, onReorder }) => {
+const CategoriesTable: React.FC<Props> = ({ loading, data, onToggleStatus, onToggleVisibility, onEdit, onDelete, onReorder, isSuper }) => {
   // Optional: simple up/down buttons for reorder
   const columns: ColumnsType<Category> = [
     { title: "Nom (O'zbek)", dataIndex: 'nameUz', key: 'nameUz' },
@@ -43,11 +44,11 @@ const CategoriesTable: React.FC<Props> = ({ loading, data, onToggleStatus, onTog
       sorter: (a, b) => (a.sortOrder || 0) - (b.sortOrder || 0),
       width: 90
     },
-    {
+    ...(isSuper ? [{
       title: 'Amallar',
       key: 'actions',
       width: 160,
-      render: (_, record) => (
+      render: (_: any, record: Category) => (
         <Space>
           <Tooltip title="Tahrirlash">
             <Button icon={<EditOutlined />} size="small" onClick={() => onEdit(record)} />
@@ -83,7 +84,7 @@ const CategoriesTable: React.FC<Props> = ({ loading, data, onToggleStatus, onTog
           )}
         </Space>
       )
-    },
+    }] : []),
     {
       title: 'Statistika',
       key: 'stats',

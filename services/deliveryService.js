@@ -1,4 +1,4 @@
-const { DeliveryZone, Order } = require('../models');
+const { DeliveryZone, Order, Branch } = require('../models');
 const geoService = require('./geoService');
 
 class DeliveryService {
@@ -120,6 +120,31 @@ class DeliveryService {
         message: 'Standart yetkazib berish narxi'
       };
     }
+  }
+
+  // Zona topilsa, zone.branch asosida filialni qaytaradi; bo'lmasa eng yaqin filial
+  static async resolveBranchForLocation(userLocation) {
+    // 1) Try zone first
+    const zone = await this.findDeliveryZone(userLocation.latitude, userLocation.longitude);
+    if (zone && zone.branch) {
+      return { branchId: String(zone.branch), source: 'zone', zone };
+    }
+    // 2) Fallback: nearest branch
+    const branches = await Branch.find({ isActive: true });
+    let best = null;
+    let bestDist = Infinity;
+    for (const b of branches) {
+      const bl = b.address?.coordinates?.latitude;
+      const bo = b.address?.coordinates?.longitude;
+      if (typeof bl === 'number' && typeof bo === 'number') {
+        const d = geoService.calculateDistance(bl, bo, userLocation.latitude, userLocation.longitude);
+        if (d < bestDist) {
+          bestDist = d;
+          best = b;
+        }
+      }
+    }
+    return best ? { branchId: String(best._id), source: 'radius', distanceKm: bestDist } : { branchId: null, source: 'none' };
   }
   
   // Kuryer tayinlash

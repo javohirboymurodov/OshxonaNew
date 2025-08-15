@@ -1,0 +1,360 @@
+[{
+  "_id": {
+    "$oid": "688de56d86e2c5b1364c8874"
+  },
+  "name": "Pepperoni Pizza",
+  "categoryId": {
+    "$oid": "688de56d86e2c5b1364c8869"
+  },
+  "description": "Mazali pepperoni va pishloq bilan",
+  "price": 55000,
+  "preparationTime": 15,
+  "images": [],
+  "ingredients": [],
+  "allergens": [],
+  "isActive": true,
+  "isAvailable": true,
+  "isPopular": false,
+  "isFeatured": false,
+  "isNewProduct": false,
+  "sortOrder": 0,
+  "stats": {
+    "orderCount": 0,
+    "totalRevenue": 0,
+    "averageRating": 0,
+    "reviewCount": 0,
+    "viewCount": 39
+  },
+  "tags": [],
+  "unit": "portion",
+  "minOrderQuantity": 1,
+  "maxOrderQuantity": 50,
+  "createdAt": {
+    "$date": "2025-08-02T10:16:13.264Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-13T06:15:01.407Z"
+  },
+  "__v": 0,
+  "image": "/uploads/product_1754906657240_ctxlvqyixyw.jpg"
+},
+{
+  "_id": {
+    "$oid": "688de56d86e2c5b1364c8876"
+  },
+  "name": "Cheeseburger",
+  "categoryId": {
+    "$oid": "688de56d86e2c5b1364c886d"
+  },
+  "description": "Mazali go'sht va pishloq bilan",
+  "price": 35000,
+  "preparationTime": 15,
+  "images": [],
+  "ingredients": [],
+  "allergens": [],
+  "isActive": true,
+  "isAvailable": true,
+  "isPopular": false,
+  "isFeatured": false,
+  "isNewProduct": false,
+  "sortOrder": 0,
+  "stats": {
+    "orderCount": 0,
+    "totalRevenue": 0,
+    "averageRating": 0,
+    "reviewCount": 0,
+    "viewCount": 18
+  },
+  "tags": [],
+  "unit": "portion",
+  "minOrderQuantity": 1,
+  "maxOrderQuantity": 50,
+  "createdAt": {
+    "$date": "2025-08-02T10:16:13.267Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-11T14:21:37.367Z"
+  },
+  "__v": 0,
+  "image": "/uploads/product_1754906940400_ngos5c5x6d.jpg"
+},
+{
+  "_id": {
+    "$oid": "688de56d86e2c5b1364c8878"
+  },
+  "name": "Coca Cola",
+  "categoryId": {
+    "$oid": "688de56d86e2c5b1364c8870"
+  },
+  "description": "Sovuq gazli ichimlik",
+  "price": 10000,
+  "preparationTime": 15,
+  "images": [],
+  "ingredients": [],
+  "allergens": [],
+  "isActive": true,
+  "isAvailable": true,
+  "isPopular": false,
+  "isFeatured": false,
+  "isNewProduct": false,
+  "sortOrder": 0,
+  "stats": {
+    "orderCount": 0,
+    "totalRevenue": 0,
+    "averageRating": 0,
+    "reviewCount": 0,
+    "viewCount": 8
+  },
+  "tags": [],
+  "unit": "portion",
+  "minOrderQuantity": 1,
+  "maxOrderQuantity": 50,
+  "createdAt": {
+    "$date": "2025-08-02T10:16:13.271Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-11T15:02:12.230Z"
+  },
+  "__v": 0,
+  "image": "/uploads/product_1754906763115_rzgitv92w0g.webp"
+},
+{
+  "_id": {
+    "$oid": "688de56d86e2c5b1364c887a"
+  },
+  "name": "Tiramisu",
+  "categoryId": {
+    "$oid": "688de56d86e2c5b1364c8872"
+  },
+  "description": "Italiyancha mashhur desert",
+  "price": 25000,
+  "preparationTime": 15,
+  "images": [],
+  "ingredients": [],
+  "allergens": [],
+  "isActive": true,
+  "isAvailable": true,
+  "isPopular": false,
+  "isFeatured": false,
+  "isNewProduct": false,
+  "sortOrder": 0,
+  "stats": {
+    "orderCount": 0,
+    "totalRevenue": 0,
+    "averageRating": 0,
+    "reviewCount": 0,
+    "viewCount": 3
+  },
+  "tags": [],
+  "unit": "portion",
+  "minOrderQuantity": 1,
+  "maxOrderQuantity": 50,
+  "createdAt": {
+    "$date": "2025-08-02T10:16:13.274Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-11T13:23:27.952Z"
+  },
+  "__v": 0,
+  "image": "/uploads/product_1754907087418_ycojrp0e96a.jpg"
+},
+{
+  "_id": {
+    "$oid": "688e2e718595285610fefae0"
+  },
+  "name": "maxito",
+  "categoryId": {
+    "$oid": "688de56d86e2c5b1364c8870"
+  },
+  "description": "maxito muzdek va yoqimli tam",
+  "price": 23233,
+  "preparationTime": 15,
+  "image": "/uploads/product_1754907020505_76rvka4u6fl.jpg",
+  "images": [],
+  "ingredients": [],
+  "allergens": [],
+  "isActive": true,
+  "isAvailable": true,
+  "isPopular": false,
+  "isFeatured": false,
+  "isNewProduct": false,
+  "sortOrder": 0,
+  "stats": {
+    "orderCount": 0,
+    "totalRevenue": 0,
+    "averageRating": 0,
+    "reviewCount": 0,
+    "viewCount": 5
+  },
+  "tags": [],
+  "unit": "portion",
+  "minOrderQuantity": 1,
+  "maxOrderQuantity": 50,
+  "createdAt": {
+    "$date": "2025-08-02T15:27:45.120Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-11T13:50:47.230Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6896f0b503c86fb04af22a76"
+  },
+  "name": "Hamburger",
+  "categoryId": {
+    "$oid": "688de56d86e2c5b1364c886d"
+  },
+  "description": "Mazalai va yoqimli",
+  "price": 20000,
+  "preparationTime": 15,
+  "image": "/uploads/product_1754906837558_7l1s1ek164d.jpg",
+  "images": [],
+  "ingredients": [],
+  "allergens": [],
+  "isActive": true,
+  "isAvailable": true,
+  "isPopular": false,
+  "isFeatured": false,
+  "isNewProduct": false,
+  "sortOrder": 0,
+  "stats": {
+    "orderCount": 0,
+    "totalRevenue": 0,
+    "averageRating": 0,
+    "reviewCount": 0,
+    "viewCount": 9
+  },
+  "tags": [],
+  "unit": "portion",
+  "minOrderQuantity": 1,
+  "maxOrderQuantity": 50,
+  "createdAt": {
+    "$date": "2025-08-09T06:54:45.131Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-13T05:56:56.116Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68977b264448489b5beb64b5"
+  },
+  "name": "Tort",
+  "categoryId": {
+    "$oid": "688de56d86e2c5b1364c8872"
+  },
+  "description": "Shirin mazali",
+  "price": 24000,
+  "preparationTime": 15,
+  "image": "/uploads/product_1754906909257_2nh8w55c2bh.jpg",
+  "images": [],
+  "ingredients": [],
+  "allergens": [],
+  "isActive": true,
+  "isAvailable": true,
+  "isPopular": false,
+  "isFeatured": false,
+  "isNewProduct": false,
+  "sortOrder": 0,
+  "stats": {
+    "orderCount": 0,
+    "totalRevenue": 0,
+    "averageRating": 0,
+    "reviewCount": 0,
+    "viewCount": 10
+  },
+  "tags": [],
+  "unit": "portion",
+  "minOrderQuantity": 1,
+  "maxOrderQuantity": 50,
+  "createdAt": {
+    "$date": "2025-08-09T16:45:26.777Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-11T10:08:29.264Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "689968acee0bafbcbab1e2c1"
+  },
+  "name": "mastava",
+  "categoryId": {
+    "$oid": "688e326380e53056e8c3bfc3"
+  },
+  "description": "dcwdcesc",
+  "price": 20000,
+  "preparationTime": 15,
+  "image": "/uploads/product_1754906869165_ih5154jr1b9.jpg",
+  "images": [],
+  "ingredients": [],
+  "allergens": [],
+  "isActive": true,
+  "isAvailable": true,
+  "isPopular": false,
+  "isFeatured": false,
+  "isNewProduct": false,
+  "sortOrder": 0,
+  "stats": {
+    "orderCount": 0,
+    "totalRevenue": 0,
+    "averageRating": 0,
+    "reviewCount": 0,
+    "viewCount": 1
+  },
+  "tags": [],
+  "unit": "portion",
+  "minOrderQuantity": 1,
+  "maxOrderQuantity": 50,
+  "createdAt": {
+    "$date": "2025-08-11T03:51:08.992Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-11T10:26:59.152Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6899b7e443c061821dbd80d7"
+  },
+  "name": "Tandir jiz",
+  "categoryId": {
+    "$oid": "688e32a480e53056e8c3bfda"
+  },
+  "description": "ewedwedw",
+  "price": 250000,
+  "preparationTime": 15,
+  "image": "/uploads/product_1754904548730_90tlj9zlekm.jpg",
+  "images": [],
+  "ingredients": [],
+  "allergens": [],
+  "isActive": true,
+  "isAvailable": true,
+  "isPopular": false,
+  "isFeatured": false,
+  "isNewProduct": false,
+  "sortOrder": 0,
+  "stats": {
+    "orderCount": 0,
+    "totalRevenue": 0,
+    "averageRating": 0,
+    "reviewCount": 0,
+    "viewCount": 0
+  },
+  "tags": [],
+  "unit": "portion",
+  "minOrderQuantity": 1,
+  "maxOrderQuantity": 50,
+  "createdAt": {
+    "$date": "2025-08-11T09:29:08.748Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-11T10:03:21.579Z"
+  },
+  "__v": 0
+}]

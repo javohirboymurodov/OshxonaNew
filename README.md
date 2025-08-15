@@ -67,6 +67,7 @@ npm run dev        # Bot server (port 5000)
 npm run api        # API server (port 5001)  
 npm run admin:dev  # Admin panel (port 3000)
 npm run user:dev   # User frontend (port 3001)
+npm run smoke      # API smoke tests (requires ADMIN_TOKEN, SUPERADMIN_TOKEN)
 ```
 
 ### 4. Access Applications
@@ -114,7 +115,7 @@ npm run user:dev   # User frontend (port 3001)
 
 ### 🔄 IN PROGRESS  
 - 🌐 **User Web Interface** - Next.js frontend
-- 📈 **Analytics Dashboard** - Advanced reporting
+- 📈 **Analytics Dashboard** - Advanced reporting (orders by hour, branch segmentation, courier performance, category share)
 - 🔔 **Push Notifications** - Web push support
 
 ### ⏳ PLANNED
@@ -152,7 +153,7 @@ docker-compose logs -f
 docker-compose down
 ```
 
-## 📚 OPTIMIZATION FEATURES
+## 📚 OPTIMIZATION & ROADMAP
 
 ### ⚡ Real-time Communication
 - Socket.IO integration for live order updates  
@@ -171,6 +172,13 @@ docker-compose down
 - Database query optimization
 - Lazy loading and code splitting
 - Image optimization and WebP support
+- Materialized snapshots for heavy analytics (background jobs)
+- Short-term caching (15–60s) for dashboard endpoints
+
+### 🧭 Planned Enhancements
+- Introduce Redis for caching dashboard stats and charts
+- Add BullMQ for background aggregation jobs
+- Courier module improvements (availability map, zones, assignment scoring)
 
 ### 🔐 Security Features
 - JWT-based authentication

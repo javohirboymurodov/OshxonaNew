@@ -93,7 +93,10 @@ const StatisticsHandlers = require('./handlers/admin/statisticsHandlers');
 // ========================================
 require('./bot/user')(bot);
 require('./bot/profile')(bot);
-require('./bot/courier')(bot);
+// Legacy courier registration (kept if needed)
+try { require('./bot/courier')(bot); } catch {}
+// New modular courier
+try { require('./bot/courier/index')(bot); } catch {}
 
 // ========================================
 // 🔘 BOT CALLBACKS
@@ -497,12 +500,18 @@ bot.action(/^(add_to_cart_[0-9a-fA-F]{24}|add_cart_[0-9a-fA-F]{24}_\d+)$/, async
   await addToCart(ctx);
 });
 
-// Reply keyboard orqali kelgan kontaktni saqlash va keyboardni yopish
+// Reply keyboard orqali kelgan kontaktni saqlash va keyboardni yopish (user va courier onboarding)
 bot.on('contact', async (ctx) => {
   try {
     const contact = ctx.message && ctx.message.contact;
     const phone = contact && contact.phone_number ? contact.phone_number : '';
     if (!phone) return;
+    // If courier binding flow
+    if (ctx.session?.courierBind) {
+      const { bindByPhone } = require('./bot/courier/handlers');
+      const bound = await bindByPhone(ctx, phone);
+      if (bound) return;
+    }
     await handlePhoneInput(ctx, phone);
   } catch (error) {
     console.error('❌ contact handler error:', error);
@@ -693,41 +702,69 @@ bot.on('location', async (ctx) => {
   try {
     const user = await User.findOne({ telegramId: ctx.from.id });
     if (!user) return;
+    if (user.role !== 'courier') return; // faqat kuryer lokatsiyasini shu handler qayta ishlaydi
 
     const { latitude, longitude } = ctx.message.location || {};
-
-    // 1) Courier location updates
-    if (user.role === 'courier') {
-      user.courierInfo.currentLocation = {
-        latitude,
-        longitude,
-        updatedAt: new Date()
-      };
-      await user.save();
-      await ctx.reply('📍 Joylashuv yangilandi!');
-      return;
-    }
-
-    // 2) User delivery flow: waiting for address/location
-    if (ctx.session?.waitingFor === 'address' && ctx.session.orderType === 'delivery') {
-      ctx.session.orderData = ctx.session.orderData || {};
-      ctx.session.orderData.location = { latitude, longitude };
-      ctx.session.waitingFor = null;
-
-      // If user has phone → ask payment; else ask phone
-      if (user.phone) {
-        await askForPaymentMethod(ctx);
-      } else {
-        const { askForPhone } = require('./handlers/user/order');
-        await askForPhone(ctx);
+    user.courierInfo = user.courierInfo || {};
+    user.courierInfo.currentLocation = { latitude, longitude, updatedAt: new Date() };
+    await user.save();
+    // Branch adminlariga broadkast
+    try {
+      const SocketManager = require('./config/socketConfig');
+      const branchId = user.branch || user.courierInfo?.branch;
+      if (branchId) {
+        SocketManager.emitCourierLocationToBranch(branchId, {
+          courierId: user._id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          phone: user.phone,
+          location: { latitude, longitude },
+          isOnline: Boolean(user.courierInfo?.isOnline),
+          isAvailable: Boolean(user.courierInfo?.isAvailable),
+          updatedAt: new Date()
+        });
       }
-      return;
+    } catch {}
+    try {
+      const { replyKeyboardMain } = require('./bot/courier/keyboards');
+      await ctx.reply('✅ Joylashuv qabul qilindi', { reply_markup: replyKeyboardMain() });
+    } catch {
+      await ctx.reply('✅ Joylashuv qabul qilindi');
     }
-
-    // Otherwise ignore silently
   } catch (error) {
-    console.error('❌ Location update error:', error);
-    await ctx.reply('❌ Joylashuvni qayta ishlashda xatolik!');
+    console.error('❌ Location update error (courier):', error);
+  }
+});
+
+// Live location yangilanishlari (edited_message)
+bot.on('edited_message', async (ctx) => {
+  try {
+    const msg = ctx.update.edited_message;
+    if (!msg || !msg.location) return;
+    const user = await User.findOne({ telegramId: msg.from.id });
+    if (!user || user.role !== 'courier') return;
+    const { latitude, longitude } = msg.location || {};
+    user.courierInfo = user.courierInfo || {};
+    user.courierInfo.currentLocation = { latitude, longitude, updatedAt: new Date() };
+    await user.save();
+    try {
+      const SocketManager = require('./config/socketConfig');
+      const branchId = user.branch || user.courierInfo?.branch;
+      if (branchId) {
+        SocketManager.emitCourierLocationToBranch(branchId, {
+          courierId: user._id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          phone: user.phone,
+          location: { latitude, longitude },
+          isOnline: Boolean(user.courierInfo?.isOnline),
+          isAvailable: Boolean(user.courierInfo?.isAvailable),
+          updatedAt: new Date()
+        });
+      }
+    } catch {}
+  } catch (e) {
+    console.error('❌ Live location update error:', e);
   }
 });
 
@@ -878,3 +915,58 @@ process.env.NTBA_FIX_350 = 1;
 // ========================================
 
 module.exports = { bot, SocketManager };
+
+// ========================================
+// ⏱️ STALE COURIER CHECKER (5 minutes)
+// ========================================
+
+const COURIER_STALE_MS = Number(process.env.COURIER_STALE_MS || 5 * 60 * 1000);
+const COURIER_CHECK_INTERVAL_MS = Number(process.env.COURIER_CHECK_INTERVAL_MS || 60 * 1000);
+
+function emitCourierStateToBranch(user, isStaleForced) {
+  try {
+    const branchId = user.branch || user.courierInfo?.branch;
+    if (!branchId) return;
+    const loc = user.courierInfo?.currentLocation;
+    SocketManager.emitCourierLocationToBranch(branchId, {
+      courierId: user._id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      phone: user.phone,
+      location: loc && loc.latitude && loc.longitude ? { latitude: loc.latitude, longitude: loc.longitude } : null,
+      isOnline: Boolean(user.courierInfo?.isOnline),
+      isAvailable: Boolean(user.courierInfo?.isAvailable),
+      isStale: Boolean(isStaleForced),
+      updatedAt: loc?.updatedAt || new Date()
+    });
+  } catch (e) {
+    console.error('emitCourierStateToBranch error:', e?.message || e);
+  }
+}
+
+setInterval(async () => {
+  try {
+    const now = Date.now();
+    const couriers = await User.find({ role: 'courier', 'courierInfo.isOnline': true }).select('firstName lastName phone branch telegramId courierInfo');
+    for (const u of couriers) {
+      const ts = u?.courierInfo?.currentLocation?.updatedAt ? new Date(u.courierInfo.currentLocation.updatedAt).getTime() : 0;
+      const isStale = !ts || now - ts > COURIER_STALE_MS;
+      if (isStale) {
+        emitCourierStateToBranch(u, true);
+        // Eslatma yuborish (spamni cheklash uchun)
+        const notifiedAt = u?.courierInfo?.staleNotifiedAt ? new Date(u.courierInfo.staleNotifiedAt).getTime() : 0;
+        if (u.telegramId && (!notifiedAt || now - notifiedAt > COURIER_STALE_MS)) {
+          try {
+            await bot.telegram.sendMessage(u.telegramId, '⚠️ Joylashuvingiz 5 daqiqadan buyon yangilanmadi. Iltimos, live lokatsiyani qayta ulashing yoki “🛑 Ishni tugatish” tugmasini bosing.');
+            u.courierInfo.staleNotifiedAt = new Date();
+            await u.save();
+          } catch (e) {
+            console.error('Notify stale courier error:', e?.message || e);
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Stale courier checker error:', e?.message || e);
+  }
+}, COURIER_CHECK_INTERVAL_MS);

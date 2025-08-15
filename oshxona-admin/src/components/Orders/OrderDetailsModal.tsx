@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, Row, Col, Card, Descriptions, Typography, Table, Space, Button, Tag, message as antdMessage } from 'antd';
+import { Modal, Row, Col, Card, Descriptions, Typography, Table, Space, Button, Tag, message as antdMessage, List, Avatar, Tooltip } from 'antd';
 import dayjs from 'dayjs';
 import { PhoneOutlined, EnvironmentOutlined } from '@ant-design/icons';
 
@@ -23,7 +23,7 @@ export interface Order {
   totalAmount?: number; total?: number;
   orderType: string; paymentMethod: string;
   deliveryAddress?: string;
-  deliveryInfo?: { address?: string; location?: { latitude: number; longitude: number }; estimatedTime?: string | Date };
+  deliveryInfo?: { address?: string; location?: { latitude: number; longitude: number }; estimatedTime?: string | Date; courier?: { _id?: string; firstName?: string; lastName?: string; phone?: string; courierInfo?: { totalDeliveries?: number; rating?: number } } | null };
   deliveryMeta?: { distanceKm?: number | null; etaMinutes?: number | null; deliveryFee?: number | null; preparationMinutes?: number | null; isFreeDelivery?: boolean };
   statusHistory?: Array<{ status: string; timestamp?: string | Date; message?: string; note?: string; updatedBy?: string }>;
   createdAt: string; updatedAt: string;
@@ -41,11 +41,15 @@ interface Props {
 }
 
 const OrderDetailsModal: React.FC<Props> = ({ open, order, onClose, getOrderTypeText, getPaymentText, onStatusUpdated }) => {
+  // hooks must be top-level
+  const [messageApi, contextHolder] = antdMessage.useMessage();
+  const [isUpdating, setIsUpdating] = React.useState(false);
+  const [hasAssigned, setHasAssigned] = React.useState(Boolean(order?.deliveryInfo?.courier));
+  React.useEffect(() => { setHasAssigned(Boolean(order?.deliveryInfo?.courier)); }, [order?.deliveryInfo?.courier, order?._id]);
   if (!order) return null;
   const fullName = [order.user?.firstName, order.user?.lastName].filter(Boolean).join(' ') || order.customerInfo?.name || '-';
   const phone = order.user?.phone || order.customerInfo?.phone || "Ko'rsatilmagan";
   // AntD message konteksti (React 19 bilan to'g'ri)
-  const [messageApi, contextHolder] = antdMessage.useMessage();
 
   const getStatusConfig = (status: string) => {
     const map: Record<string, { color: string; text: string }> = {
@@ -85,28 +89,32 @@ const OrderDetailsModal: React.FC<Props> = ({ open, order, onClose, getOrderType
   };
 
   const updateStatus = async (s: string) => {
+    if (isUpdating) return;
+    setIsUpdating(true);
     try {
       const { default: apiService } = await import('@/services/api');
       await apiService.updateOrderStatus(order._id, s);
       messageApi.success('Holat yangilandi');
-      if (onStatusUpdated) onStatusUpdated(s);
+      onStatusUpdated?.(s);
       onClose();
     } catch {
       messageApi.error('Holatni yangilashda xatolik');
+    } finally {
+      setIsUpdating(false);
     }
   };
 
   const displayOrderNumber = String((order as unknown as { orderNumber?: string; orderId?: string }).orderNumber || (order as unknown as { orderNumber?: string; orderId?: string }).orderId || '');
 
   const resolvedItems: OrderItem[] = (() => {
-    const anyOrder = order as unknown as Record<string, any>;
+    const anyOrder = order as unknown as Record<string, unknown>;
     const raw = anyOrder.items || anyOrder.orderItems || anyOrder.products || [];
-    return (raw as any[]).map((it) => ({
-      product: it.product || undefined,
-      productName: it.productName || it.name || it.title || it.product?.name,
-      quantity: Number(it.quantity ?? it.qty ?? 0),
-      price: Number(it.price ?? it.unitPrice ?? it.product?.price ?? 0),
-      total: Number(it.total ?? it.totalPrice ?? (Number(it.price ?? 0) * Number(it.quantity ?? 0))),
+    return (raw as Array<Record<string, unknown>>).map((it) => ({
+      product: (it.product as { _id: string; name: string; price?: number }) || undefined,
+      productName: (it.productName as string) || (it.name as string) || (it.title as string) || (((it.product as unknown) as { name?: string })?.name || ''),
+      quantity: Number((it.quantity as number) ?? (it.qty as number) ?? 0),
+      price: Number((it.price as number) ?? (it.unitPrice as number) ?? (((it.product as unknown) as { price?: number })?.price ?? 0)),
+      total: Number((it.total as number) ?? (it.totalPrice as number) ?? (Number((it.price as number) ?? 0) * Number((it.quantity as number) ?? 0))),
     }));
   })();
 
@@ -130,7 +138,9 @@ const OrderDetailsModal: React.FC<Props> = ({ open, order, onClose, getOrderType
             <Space size={[8,8]} wrap>
               <Tag color={getStatusConfig(String(order.status || 'pending')).color}>{getStatusConfig(String(order.status || 'pending')).text}</Tag>
               {getNextStatuses(String(order.status || 'pending'), order.orderType).map((s) => (
-                <Button key={s} size="small" type="primary" onClick={() => updateStatus(s)}>{getStatusConfig(s).text}</Button>
+                <Button key={s} size="small" type="primary" loading={isUpdating} disabled={isUpdating} onClick={() => updateStatus(s)}>
+                  {getStatusConfig(s).text}
+                </Button>
               ))}
             </Space>
           }>
@@ -139,8 +149,8 @@ const OrderDetailsModal: React.FC<Props> = ({ open, order, onClose, getOrderType
               <Descriptions.Item label="Turi">{getOrderTypeText(order.orderType)}</Descriptions.Item>
               <Descriptions.Item label="To'lov">{getPaymentText(order.paymentMethod)}</Descriptions.Item>
               {order.branch && (
-                <Descriptions.Item label="Filial">
-                  {typeof order.branch === 'string' ? order.branch : (order.branch?.name || order.branch?.title || '-')}
+            <Descriptions.Item label="Filial">
+                  {typeof order.branch === 'string' ? order.branch : (order.branch?.name || ((order.branch as unknown) as { title?: string })?.title || '-')}
                 </Descriptions.Item>
               )}
               {(order.orderType === 'dine_in' || order.orderType === 'table') && (
@@ -270,7 +280,71 @@ const OrderDetailsModal: React.FC<Props> = ({ open, order, onClose, getOrderType
           />
         </Card>
       )}
+
+      {order.orderType === 'delivery' && !hasAssigned && !order.deliveryInfo?.courier && (
+      <Card title="Kuryer takliflari" style={{ marginTop: 16 }} extra={
+          <Tooltip title="Yuqori ball – yaxshi mos kuryer (yaqinlik, reyting, band emasligi)">
+            <Text type="secondary">Tavsiya</Text>
+          </Tooltip>
+        }>
+          <SuggestCouriers orderId={order._id} onAssigned={() => setHasAssigned(true)} />
+        </Card>
+      )}
+
+      {order.deliveryInfo?.courier && (
+        <Card title="Kuryer ma'lumotlari" style={{ marginTop: 16 }}>
+          <Descriptions column={2} size="small">
+            <Descriptions.Item label="FIO">{`${order.deliveryInfo.courier.firstName || ''} ${order.deliveryInfo.courier.lastName || ''}`.trim()}</Descriptions.Item>
+            <Descriptions.Item label="Telefon">{order.deliveryInfo.courier.phone || '-'}</Descriptions.Item>
+          </Descriptions>
+        </Card>
+      )}
     </Modal>
+  );
+};
+
+type SuggestItem = { id: string; name: string; phone?: string; distanceKm?: number | null; rating?: number; isAvailable?: boolean; load?: number; score: number };
+const SuggestCouriers: React.FC<{ orderId: string; onAssigned?: () => void }> = ({ orderId, onAssigned }) => {
+  const [loading, setLoading] = React.useState(false);
+  const [items, setItems] = React.useState<SuggestItem[]>([]);
+  const load = async (): Promise<void> => {
+    setLoading(true);
+    try {
+      const { default: apiService } = await import('@/services/api');
+      const data = await apiService.get(`/couriers/suggest/${encodeURIComponent(orderId)}`) as unknown as { suggestions?: SuggestItem[]; data?: { suggestions?: SuggestItem[] } };
+      setItems((data?.suggestions || data?.data?.suggestions || []) as SuggestItem[]);
+    } catch {
+      setItems([]);
+    }
+    setLoading(false);
+  };
+  React.useEffect(() => { void load(); }, [orderId]); // eslint-disable-line react-hooks/exhaustive-deps
+  const assign = async (courierId: string): Promise<void> => {
+    try {
+      const { default: apiService } = await import('@/services/api');
+      await apiService.assignCourier(orderId, courierId);
+      const { message: msg } = await import('antd');
+      msg.success('Kuryer tayinlandi');
+      onAssigned?.();
+    } catch {
+      const { message: msg } = await import('antd');
+      msg.error('Kuryer tayinlashda xatolik');
+    }
+  };
+  return (
+    <List
+      loading={loading}
+      dataSource={items}
+      renderItem={(it) => (
+        <List.Item actions={[<Button key="assign" type="link" onClick={() => assign(it.id)}>Saqlash</Button>]}> 
+          <List.Item.Meta
+            avatar={<Avatar>{(it.name || 'K')[0]}</Avatar>}
+            title={<>{it.name} {it.isAvailable ? <Tag color="blue">Mavjud</Tag> : <Tag color="orange">Band</Tag>} <Tag color="gold">⭐ {Number(it.rating||0).toFixed(1)}</Tag> <Tag>Score {it.score.toFixed(2)}</Tag></>}
+            description={<Text type="secondary">{it.phone || ''} {it.distanceKm!=null?` • ${it.distanceKm} km`: ''} {it.load!=null?` • load ${it.load}`:''}</Text>}
+          />
+        </List.Item>
+      )}
+    />
   );
 };
 

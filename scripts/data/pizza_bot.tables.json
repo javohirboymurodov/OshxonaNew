@@ -1,0 +1,52 @@
+[{
+  "_id": {
+    "$oid": "6899e8488737aff6bc483276"
+  },
+  "branch": {
+    "$oid": "688de56d86e2c5b1364c8865"
+  },
+  "number": 2,
+  "qrCode": "table_2_b_688de56d86e2c5b1364c8865",
+  "capacity": 4,
+  "location": "xcdscdsc",
+  "isActive": true,
+  "isOccupied": false,
+  "stats": {
+    "totalSessions": 0,
+    "totalRevenue": 0,
+    "averageSessionTime": 0
+  },
+  "createdAt": {
+    "$date": "2025-08-11T12:55:36.925Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-11T12:55:36.925Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "689ad1a2a5efc65007b255ff"
+  },
+  "branch": {
+    "$oid": "688de56d86e2c5b1364c8862"
+  },
+  "number": 3,
+  "qrCode": "table_3_b_688de56d86e2c5b1364c8862",
+  "capacity": 4,
+  "location": "cvvervrf",
+  "isActive": true,
+  "isOccupied": false,
+  "stats": {
+    "totalSessions": 0,
+    "totalRevenue": 0,
+    "averageSessionTime": 0
+  },
+  "createdAt": {
+    "$date": "2025-08-12T05:31:14.187Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-12T05:31:14.187Z"
+  },
+  "__v": 0
+}]

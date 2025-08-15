@@ -1,0 +1,2673 @@
+[{
+  "_id": {
+    "$oid": "6863c63666343c6f09567ba2"
+  },
+  "user": {
+    "$oid": "6863bf83af0aebfb0143f37d"
+  },
+  "items": [],
+  "total": 0,
+  "isActive": true,
+  "updatedAt": {
+    "$date": "2025-07-23T09:49:59.602Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-01T11:27:50.526Z"
+  },
+  "__v": 14
+},
+{
+  "_id": {
+    "$oid": "6864481b21ae620623161210"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6863bf6d43d93b120409688c"
+      },
+      "productName": "Sho'rva",
+      "quantity": 1,
+      "price": 18000,
+      "totalPrice": 18000,
+      "_id": {
+        "$oid": "68644fde1fd6f034c79d1e7c"
+      }
+    }
+  ],
+  "total": 18000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-03T05:51:16.578Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-01T20:42:03.785Z"
+  },
+  "__v": 3
+},
+{
+  "_id": {
+    "$oid": "68661d7750c541d1d4b8ce88"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6863c21c10f5d7909514a5f6"
+      },
+      "productName": "Kabob",
+      "quantity": 1,
+      "price": 5000,
+      "totalPrice": 5000,
+      "_id": {
+        "$oid": "68661d7750c541d1d4b8ce89"
+      }
+    }
+  ],
+  "total": 5000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-03T06:58:35.557Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-03T06:04:39.213Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68662c6e44d42565bd9b4c4e"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6863bf6d43d93b120409688c"
+      },
+      "productName": "Sho'rva",
+      "quantity": 1,
+      "price": 18000,
+      "totalPrice": 18000,
+      "_id": {
+        "$oid": "68662c6e44d42565bd9b4c4f"
+      }
+    }
+  ],
+  "total": 18000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-03T07:08:51.293Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-03T07:08:30.903Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68662cdd44d42565bd9b4c72"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6863c21c10f5d7909514a5f6"
+      },
+      "productName": "Kabob",
+      "quantity": 1,
+      "price": 5000,
+      "totalPrice": 5000,
+      "_id": {
+        "$oid": "68662cdd44d42565bd9b4c73"
+      }
+    }
+  ],
+  "total": 5000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-03T07:15:55.159Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-03T07:10:21.999Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68662e5b3361ec1cee688cda"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6863bf6d43d93b1204096887"
+      },
+      "productName": "Osh",
+      "quantity": 1,
+      "price": 25000,
+      "totalPrice": 25000,
+      "_id": {
+        "$oid": "68662e5b3361ec1cee688cdb"
+      }
+    }
+  ],
+  "total": 25000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-03T07:17:10.696Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-03T07:16:43.547Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68662ea43361ec1cee688cfe"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "686424fd10f5d7909514a5f8"
+      },
+      "productName": "Kоmpot",
+      "quantity": 1,
+      "price": 5000,
+      "totalPrice": 5000,
+      "_id": {
+        "$oid": "68662ea43361ec1cee688cff"
+      }
+    }
+  ],
+  "total": 5000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-03T07:38:54.894Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-03T07:17:56.889Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6866352adbd3fcfe4ec4591f"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6863bf6d43d93b120409688c"
+      },
+      "productName": "Sho'rva",
+      "quantity": 1,
+      "price": 18000,
+      "totalPrice": 18000,
+      "_id": {
+        "$oid": "6866352adbd3fcfe4ec45920"
+      }
+    }
+  ],
+  "total": 18000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-03T07:46:18.133Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-03T07:45:46.370Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68664216e79aad86ba401a75"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "686424aa10f5d7909514a5f7"
+      },
+      "productName": "Tabaka",
+      "quantity": 1,
+      "price": 50000,
+      "totalPrice": 50000,
+      "_id": {
+        "$oid": "6866434189c3ddf99f33c735"
+      }
+    }
+  ],
+  "total": 50000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-03T08:46:17.615Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-03T08:40:54.839Z"
+  },
+  "__v": 2
+},
+{
+  "_id": {
+    "$oid": "686644ddeab332f5fd8fb31d"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6863bf6d43d93b1204096887"
+      },
+      "productName": "Osh",
+      "quantity": 1,
+      "price": 25000,
+      "totalPrice": 25000,
+      "_id": {
+        "$oid": "686644ddeab332f5fd8fb31e"
+      }
+    }
+  ],
+  "total": 25000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-03T08:53:00.057Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-03T08:52:45.512Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "686646df2acce47b82c21c65"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "686424aa10f5d7909514a5f7"
+      },
+      "productName": "Tabaka",
+      "quantity": 1,
+      "price": 50000,
+      "totalPrice": 50000,
+      "_id": {
+        "$oid": "686646df2acce47b82c21c66"
+      }
+    }
+  ],
+  "total": 50000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-03T09:01:42.195Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-03T09:01:19.349Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68664c0e6373f8fa01257615"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6863bf6d43d93b120409688c"
+      },
+      "productName": "Sho'rva",
+      "quantity": 1,
+      "price": 18000,
+      "totalPrice": 18000,
+      "_id": {
+        "$oid": "68664c0e6373f8fa01257616"
+      }
+    }
+  ],
+  "total": 18000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-03T09:23:47.461Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-03T09:23:26.878Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68664d75887ee0e67d5c478a"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6863bf6d43d93b1204096887"
+      },
+      "productName": "Osh",
+      "quantity": 1,
+      "price": 25000,
+      "totalPrice": 25000,
+      "_id": {
+        "$oid": "68664d75887ee0e67d5c478b"
+      }
+    }
+  ],
+  "total": 25000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-03T09:30:05.882Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-03T09:29:25.977Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68665897698744890b08500a"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6863c21c10f5d7909514a5f6"
+      },
+      "productName": "Kabob",
+      "quantity": 2,
+      "price": 27000,
+      "totalPrice": 54000,
+      "_id": {
+        "$oid": "68665897698744890b08500b"
+      }
+    }
+  ],
+  "total": 54000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-03T10:18:05.659Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-03T10:16:55.138Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68665904698744890b08502b"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6863bf6d43d93b120409688c"
+      },
+      "productName": "Sho'rva",
+      "quantity": 2,
+      "price": 18000,
+      "totalPrice": 36000,
+      "_id": {
+        "$oid": "68665904698744890b08502c"
+      }
+    }
+  ],
+  "total": 36000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-03T10:18:53.984Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-03T10:18:44.683Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6866595f698744890b08504c"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "686424fd10f5d7909514a5f8"
+      },
+      "productName": "Kоmpot",
+      "quantity": 2,
+      "price": 5000,
+      "totalPrice": 10000,
+      "_id": {
+        "$oid": "6866595f698744890b08504d"
+      }
+    },
+    {
+      "product": {
+        "$oid": "6863bf6d43d93b1204096887"
+      },
+      "productName": "Osh",
+      "quantity": 1,
+      "price": 25000,
+      "totalPrice": 25000,
+      "_id": {
+        "$oid": "6866596d698744890b08505f"
+      }
+    }
+  ],
+  "total": 35000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-03T10:20:44.359Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-03T10:20:15.924Z"
+  },
+  "__v": 1
+},
+{
+  "_id": {
+    "$oid": "68665a730762903225d02454"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "686424aa10f5d7909514a5f7"
+      },
+      "productName": "Tabaka",
+      "quantity": 1,
+      "price": 50000,
+      "totalPrice": 50000,
+      "_id": {
+        "$oid": "68665a730762903225d02455"
+      }
+    },
+    {
+      "product": {
+        "$oid": "6863bf6d43d93b120409688c"
+      },
+      "productName": "Sho'rva",
+      "quantity": 2,
+      "price": 18000,
+      "totalPrice": 36000,
+      "_id": {
+        "$oid": "68665a7d0762903225d02465"
+      }
+    },
+    {
+      "product": {
+        "$oid": "6863bf6d43d93b1204096887"
+      },
+      "productName": "Osh",
+      "quantity": 1,
+      "price": 25000,
+      "totalPrice": 25000,
+      "_id": {
+        "$oid": "68665a810762903225d02476"
+      }
+    }
+  ],
+  "total": 111000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-03T10:25:34.231Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-03T10:24:51.691Z"
+  },
+  "__v": 2
+},
+{
+  "_id": {
+    "$oid": "686660bcd5604d2b01a0c90d"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "686424aa10f5d7909514a5f7"
+      },
+      "productName": "Tabaka",
+      "quantity": 1,
+      "price": 50000,
+      "totalPrice": 50000,
+      "_id": {
+        "$oid": "686660bcd5604d2b01a0c90e"
+      }
+    }
+  ],
+  "total": 50000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-03T10:52:05.582Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-03T10:51:40.656Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68666316adaa5c5f3caf3445"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6863c21c10f5d7909514a5f6"
+      },
+      "productName": "Kabob",
+      "quantity": 1,
+      "price": 27000,
+      "totalPrice": 27000,
+      "_id": {
+        "$oid": "68666316adaa5c5f3caf3446"
+      }
+    }
+  ],
+  "total": 27000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-03T11:02:05.915Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-03T11:01:42.633Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "687cd764e5f767c523bdb023"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6863bf6d43d93b120409688c"
+      },
+      "productName": "Sho'rva",
+      "quantity": 1,
+      "price": 18000,
+      "totalPrice": 18000,
+      "_id": {
+        "$oid": "687cd764e5f767c523bdb024"
+      }
+    }
+  ],
+  "total": 18000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-20T11:48:22.945Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-20T11:47:48.486Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "687cd7f1e5f767c523bdb04c"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6863c21c10f5d7909514a5f6"
+      },
+      "productName": "Kabob",
+      "quantity": 1,
+      "price": 27000,
+      "totalPrice": 27000,
+      "_id": {
+        "$oid": "687cd7f1e5f767c523bdb04d"
+      }
+    }
+  ],
+  "total": 27000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-20T11:52:36.462Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-20T11:50:09.615Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "687cdb5f934464c2b7d9619b"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "686424aa10f5d7909514a5f7"
+      },
+      "productName": "Tabaka",
+      "quantity": 2,
+      "price": 50000,
+      "totalPrice": 100000,
+      "_id": {
+        "$oid": "687cdb5f934464c2b7d9619c"
+      }
+    }
+  ],
+  "total": 100000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-20T12:05:05.166Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-20T12:04:47.646Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "687cdc2563181b8e832769a5"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6863bf6d43d93b1204096887"
+      },
+      "productName": "Osh",
+      "quantity": 2,
+      "price": 25000,
+      "totalPrice": 50000,
+      "_id": {
+        "$oid": "687cdc2563181b8e832769a6"
+      }
+    }
+  ],
+  "total": 50000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-20T12:08:21.854Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-20T12:08:05.511Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "687cdf961e757b5d0610f3e2"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "686424fd10f5d7909514a5f8"
+      },
+      "productName": "Kоmpot",
+      "quantity": 2,
+      "price": 5000,
+      "totalPrice": 10000,
+      "_id": {
+        "$oid": "687cdf961e757b5d0610f3e3"
+      }
+    }
+  ],
+  "total": 10000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-20T12:23:17.450Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-20T12:22:46.137Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "687ce05846b508963c47b932"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6863bf6d43d93b120409688c"
+      },
+      "productName": "Sho'rva",
+      "quantity": 1,
+      "price": 18000,
+      "totalPrice": 18000,
+      "_id": {
+        "$oid": "687ce05846b508963c47b933"
+      }
+    }
+  ],
+  "total": 18000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-20T12:26:22.206Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-20T12:26:00.243Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "687ce0ec112475cb4169c5a7"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "686424aa10f5d7909514a5f7"
+      },
+      "productName": "Tabaka",
+      "quantity": 1,
+      "price": 50000,
+      "totalPrice": 50000,
+      "_id": {
+        "$oid": "687ce0ec112475cb4169c5a8"
+      }
+    }
+  ],
+  "total": 50000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-20T12:28:42.582Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-20T12:28:28.294Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "687ce58bf78b52069f0716e7"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "686424aa10f5d7909514a5f7"
+      },
+      "productName": "Tabaka",
+      "quantity": 1,
+      "price": 50000,
+      "totalPrice": 50000,
+      "_id": {
+        "$oid": "687ce58bf78b52069f0716e8"
+      }
+    }
+  ],
+  "total": 50000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-20T12:56:58.956Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-20T12:48:11.385Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "687cea7fbf4af4b95720492d"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "686424fd10f5d7909514a5f8"
+      },
+      "productName": "Kоmpot",
+      "quantity": 1,
+      "price": 5000,
+      "totalPrice": 5000,
+      "_id": {
+        "$oid": "687cea7fbf4af4b95720492e"
+      }
+    },
+    {
+      "product": {
+        "$oid": "6863bf6d43d93b120409688c"
+      },
+      "productName": "Sho'rva",
+      "quantity": 1,
+      "price": 18000,
+      "totalPrice": 18000,
+      "_id": {
+        "$oid": "687cec02eec3421adce1ed52"
+      }
+    }
+  ],
+  "total": 23000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-20T13:15:58.639Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-20T13:09:19.270Z"
+  },
+  "__v": 1
+},
+{
+  "_id": {
+    "$oid": "687cedde51ba242959d436fe"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6863bf6d43d93b120409688c"
+      },
+      "productName": "Sho'rva",
+      "quantity": 1,
+      "price": 18000,
+      "totalPrice": 18000,
+      "_id": {
+        "$oid": "687cedde51ba242959d436ff"
+      }
+    },
+    {
+      "product": {
+        "$oid": "6863bf6d43d93b1204096887"
+      },
+      "productName": "Osh",
+      "quantity": 2,
+      "price": 25000,
+      "totalPrice": 50000,
+      "_id": {
+        "$oid": "687cee9dfcfd38aafadbe4e0"
+      }
+    }
+  ],
+  "total": 68000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-20T13:29:14.537Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-20T13:23:42.554Z"
+  },
+  "__v": 1
+},
+{
+  "_id": {
+    "$oid": "687cef3b3ab8b70b692545ba"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "686424fd10f5d7909514a5f8"
+      },
+      "productName": "Kоmpot",
+      "quantity": 1,
+      "price": 5000,
+      "totalPrice": 5000,
+      "_id": {
+        "$oid": "687cf17e7835f071ac2812cf"
+      }
+    }
+  ],
+  "total": 5000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-20T13:39:22.563Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-20T13:29:31.927Z"
+  },
+  "__v": 9
+},
+{
+  "_id": {
+    "$oid": "687cf1977835f071ac2812f0"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "686424aa10f5d7909514a5f7"
+      },
+      "productName": "Tabaka",
+      "quantity": 1,
+      "price": 50000,
+      "totalPrice": 50000,
+      "_id": {
+        "$oid": "687cf1977835f071ac2812f1"
+      }
+    }
+  ],
+  "total": 50000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-20T13:39:48.892Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-20T13:39:35.569Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "687cf1b37835f071ac281312"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6863bf6d43d93b1204096887"
+      },
+      "productName": "Osh",
+      "quantity": 1,
+      "price": 25000,
+      "totalPrice": 25000,
+      "_id": {
+        "$oid": "687cf1b37835f071ac281313"
+      }
+    }
+  ],
+  "total": 25000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-20T13:40:14.806Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-20T13:40:03.527Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "687cf2b70b867ea3918acd41"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6863bf6d43d93b120409688c"
+      },
+      "productName": "Sho'rva",
+      "quantity": 1,
+      "price": 18000,
+      "totalPrice": 18000,
+      "_id": {
+        "$oid": "687cf2b70b867ea3918acd42"
+      }
+    }
+  ],
+  "total": 18000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-20T13:44:52.303Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-20T13:44:23.431Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "687cf2fe0b867ea3918acd67"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6863bf6d43d93b120409688c"
+      },
+      "productName": "Sho'rva",
+      "quantity": 1,
+      "price": 18000,
+      "totalPrice": 18000,
+      "_id": {
+        "$oid": "687cf2fe0b867ea3918acd68"
+      }
+    }
+  ],
+  "total": 18000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-20T13:45:47.217Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-20T13:45:34.791Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "687cf3ff2aeecee14ff7df03"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "686424fd10f5d7909514a5f8"
+      },
+      "productName": "Kоmpot",
+      "quantity": 1,
+      "price": 5000,
+      "totalPrice": 5000,
+      "_id": {
+        "$oid": "687cf71d26e37bfc2f90ed24"
+      }
+    }
+  ],
+  "total": 5000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-20T14:03:24.882Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-20T13:49:51.925Z"
+  },
+  "__v": 5
+},
+{
+  "_id": {
+    "$oid": "687cf73b26e37bfc2f90ed45"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6863bf6d43d93b120409688c"
+      },
+      "productName": "Sho'rva",
+      "quantity": 1,
+      "price": 18000,
+      "totalPrice": 18000,
+      "_id": {
+        "$oid": "687cf73b26e37bfc2f90ed46"
+      }
+    }
+  ],
+  "total": 18000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-20T14:04:08.044Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-20T14:03:39.711Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "687cf76c26e37bfc2f90ed65"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "686424fd10f5d7909514a5f8"
+      },
+      "productName": "Kоmpot",
+      "quantity": 1,
+      "price": 5000,
+      "totalPrice": 5000,
+      "_id": {
+        "$oid": "687cf76c26e37bfc2f90ed66"
+      }
+    }
+  ],
+  "total": 5000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-20T14:04:48.830Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-20T14:04:28.037Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "687cf7a004141ba128f0f70a"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6863bf6d43d93b120409688c"
+      },
+      "productName": "Sho'rva",
+      "quantity": 1,
+      "price": 18000,
+      "totalPrice": 18000,
+      "_id": {
+        "$oid": "687cf9f179a42fd33d0ab4a2"
+      }
+    }
+  ],
+  "total": 18000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-20T14:15:25.651Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-20T14:05:20.790Z"
+  },
+  "__v": 1
+},
+{
+  "_id": {
+    "$oid": "687cfb1fae36c91b80fbc491"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6863bf6d43d93b1204096890"
+      },
+      "productName": "Ko'k choy",
+      "quantity": 1,
+      "price": 5000,
+      "totalPrice": 5000,
+      "_id": {
+        "$oid": "687cfb1fae36c91b80fbc492"
+      }
+    }
+  ],
+  "total": 5000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-20T14:20:27.847Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-20T14:20:15.241Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "687cfb8e15346a2c7e77596e"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "686424aa10f5d7909514a5f7"
+      },
+      "productName": "Tabaka",
+      "quantity": 1,
+      "price": 50000,
+      "totalPrice": 50000,
+      "_id": {
+        "$oid": "687cfb8e15346a2c7e77596f"
+      }
+    }
+  ],
+  "total": 50000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-20T14:22:16.174Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-20T14:22:06.042Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "687cfe254dcca997840b61ce"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6863c21c10f5d7909514a5f6"
+      },
+      "productName": "Kabob",
+      "quantity": 1,
+      "price": 27000,
+      "totalPrice": 27000,
+      "_id": {
+        "$oid": "687cfe254dcca997840b61cf"
+      }
+    }
+  ],
+  "total": 27000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-20T14:33:22.175Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-20T14:33:09.793Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "688367349d565eaf401e5f38"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "68821f06bef64aad6a2ab986"
+      },
+      "productName": "nomi",
+      "quantity": 1,
+      "price": 30000,
+      "totalPrice": 30000,
+      "_id": {
+        "$oid": "688367349d565eaf401e5f39"
+      }
+    }
+  ],
+  "total": 30000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-25T11:20:52.391Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-25T11:15:00.709Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6883b5b21733115fe875e673"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6863bf6d43d93b120409688c"
+      },
+      "productName": "Sho'rva",
+      "quantity": 2,
+      "price": 18000,
+      "totalPrice": 36000,
+      "_id": {
+        "$oid": "6883b5b21733115fe875e674"
+      }
+    }
+  ],
+  "total": 36000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-25T16:50:59.775Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-25T16:49:54.955Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6883b6351733115fe875e699"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6863c21c10f5d7909514a5f6"
+      },
+      "productName": "Kabob",
+      "quantity": 2,
+      "price": 27000,
+      "totalPrice": 54000,
+      "_id": {
+        "$oid": "6883b6351733115fe875e69a"
+      }
+    }
+  ],
+  "total": 54000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-25T16:52:52.687Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-25T16:52:05.884Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6883b6721733115fe875e6b9"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6863bf6d43d93b1204096887"
+      },
+      "productName": "Osh",
+      "quantity": 1,
+      "price": 25000,
+      "totalPrice": 25000,
+      "_id": {
+        "$oid": "6883b6721733115fe875e6ba"
+      }
+    }
+  ],
+  "total": 25000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-25T16:53:52.107Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-25T16:53:06.839Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6887b0c3b63e05c6fecc3706"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6863bf6d43d93b120409688c"
+      },
+      "productName": "Sho'rva",
+      "quantity": 1,
+      "price": 18000,
+      "totalPrice": 18000,
+      "_id": {
+        "$oid": "6887b0c3b63e05c6fecc3707"
+      }
+    }
+  ],
+  "total": 18000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-28T17:19:05.038Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-28T17:17:55.589Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6887b6234b1698920ffc9b29"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6887a8b1a37c73125e6fb363"
+      },
+      "productName": "bitta maxsulot",
+      "quantity": 1,
+      "price": 40000,
+      "totalPrice": 40000,
+      "_id": {
+        "$oid": "6887b6234b1698920ffc9b2a"
+      }
+    }
+  ],
+  "total": 40000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-28T17:41:06.010Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-28T17:40:51.264Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6887b7093eb674838642008b"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6863bf6d43d93b120409688c"
+      },
+      "productName": "Sho'rva",
+      "quantity": 1,
+      "price": 18000,
+      "totalPrice": 18000,
+      "_id": {
+        "$oid": "6887b7093eb674838642008c"
+      }
+    }
+  ],
+  "total": 18000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-28T17:45:12.005Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-28T17:44:41.224Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6887b9501ffd659e74eaa4ae"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6863bf6d43d93b120409688c"
+      },
+      "productName": "Sho'rva",
+      "quantity": 1,
+      "price": 18000,
+      "totalPrice": 18000,
+      "_id": {
+        "$oid": "6887b9501ffd659e74eaa4af"
+      }
+    }
+  ],
+  "total": 18000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-28T17:54:47.389Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-28T17:54:24.979Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6887bc483f7f1bac5b1c92ec"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6863c21c10f5d7909514a5f6"
+      },
+      "productName": "Kabob",
+      "quantity": 1,
+      "price": 27000,
+      "totalPrice": 27000,
+      "_id": {
+        "$oid": "6887bc483f7f1bac5b1c92ed"
+      }
+    },
+    {
+      "product": {
+        "$oid": "6880b4b36c64ed6a830d4ae0"
+      },
+      "productName": "Palov",
+      "quantity": 1,
+      "price": 25000,
+      "totalPrice": 25000,
+      "_id": {
+        "$oid": "6887bc533f7f1bac5b1c92fc"
+      }
+    }
+  ],
+  "total": 52000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-07-28T18:07:28.237Z"
+  },
+  "createdAt": {
+    "$date": "2025-07-28T18:07:04.354Z"
+  },
+  "__v": 1
+},
+{
+  "_id": {
+    "$oid": "688e312b80e53056e8c3bf33"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8874"
+      },
+      "productName": "Pepperoni Pizza",
+      "quantity": 2,
+      "price": 55000,
+      "totalPrice": 110000,
+      "_id": {
+        "$oid": "688e312b80e53056e8c3bf34"
+      }
+    }
+  ],
+  "total": 110000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-08-02T15:40:14.328Z"
+  },
+  "createdAt": {
+    "$date": "2025-08-02T15:39:23.764Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6896ec02728cf3860dd70f4c"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8878"
+      },
+      "productName": "Coca Cola",
+      "quantity": 2,
+      "price": 10000,
+      "totalPrice": 20000,
+      "_id": {
+        "$oid": "6896ec02728cf3860dd70f4d"
+      }
+    }
+  ],
+  "total": 20000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-08-09T06:45:36.826Z"
+  },
+  "createdAt": {
+    "$date": "2025-08-09T06:34:42.763Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6896f11e03c86fb04af22a8b"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6896f0b503c86fb04af22a76"
+      },
+      "productName": "test",
+      "quantity": 1,
+      "price": 19999,
+      "totalPrice": 19999,
+      "_id": {
+        "$oid": "68970eece3c6acf6c5071ea6"
+      }
+    }
+  ],
+  "total": 19999,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-08-09T09:03:53.927Z"
+  },
+  "createdAt": {
+    "$date": "2025-08-09T06:56:30.935Z"
+  },
+  "__v": 5
+},
+{
+  "_id": {
+    "$oid": "68971e97f304869be517438b"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8874"
+      },
+      "productName": "Pepperoni Pizza",
+      "quantity": 1,
+      "price": 55000,
+      "totalPrice": 55000,
+      "_id": {
+        "$oid": "68971e97f304869be517438c"
+      }
+    }
+  ],
+  "total": 55000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-08-09T11:10:16.858Z"
+  },
+  "createdAt": {
+    "$date": "2025-08-09T10:10:31.300Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68972d33d31b37f8d0935fc1"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8878"
+      },
+      "productName": "Coca Cola",
+      "quantity": 1,
+      "price": 10000,
+      "totalPrice": 10000,
+      "_id": {
+        "$oid": "68972d33d31b37f8d0935fc2"
+      }
+    }
+  ],
+  "total": 10000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-08-09T11:20:36.806Z"
+  },
+  "createdAt": {
+    "$date": "2025-08-09T11:12:51.159Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6897303002d5ca3b50d8c436"
+  },
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c887a"
+      },
+      "productName": "Tiramisu",
+      "quantity": 1,
+      "price": 25000,
+      "totalPrice": 25000,
+      "_id": {
+        "$oid": "6897303002d5ca3b50d8c437"
+      }
+    }
+  ],
+  "total": 25000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-08-09T11:26:16.579Z"
+  },
+  "createdAt": {
+    "$date": "2025-08-09T11:25:36.939Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68978fa5badd410f8d6f869b"
+  },
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8876"
+      },
+      "productName": "Cheeseburger",
+      "quantity": 2,
+      "price": 35000,
+      "totalPrice": 70000,
+      "_id": {
+        "$oid": "689838e72f3cd07991fd628e"
+      }
+    }
+  ],
+  "total": 70000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-08-10T06:16:18.145Z"
+  },
+  "createdAt": {
+    "$date": "2025-08-09T18:12:53.168Z"
+  },
+  "__v": 7
+},
+{
+  "_id": {
+    "$oid": "68978fd9badd410f8d6f86b2"
+  },
+  "user": {
+    "$oid": "68978f17badd410f8d6f8682"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8876"
+      },
+      "productName": "Cheeseburger",
+      "quantity": 2,
+      "price": 35000,
+      "totalPrice": 70000,
+      "_id": {
+        "$oid": "68978fd9badd410f8d6f86b3"
+      }
+    },
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c887a"
+      },
+      "productName": "Tiramisu",
+      "quantity": 1,
+      "price": 25000,
+      "totalPrice": 25000,
+      "_id": {
+        "$oid": "689791331d2d4e1fecf97e7b"
+      }
+    }
+  ],
+  "total": 95000,
+  "isActive": true,
+  "updatedAt": {
+    "$date": "2025-08-09T18:19:37.449Z"
+  },
+  "createdAt": {
+    "$date": "2025-08-09T18:13:45.126Z"
+  },
+  "__v": 1
+},
+{
+  "_id": {
+    "$oid": "68983a00c3b26e0841f69d11"
+  },
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6896f0b503c86fb04af22a76"
+      },
+      "productName": "test",
+      "quantity": 2,
+      "price": 19999,
+      "totalPrice": 39998,
+      "_id": {
+        "$oid": "68983a00c3b26e0841f69d12"
+      }
+    }
+  ],
+  "total": 39998,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-08-10T06:19:59.152Z"
+  },
+  "createdAt": {
+    "$date": "2025-08-10T06:19:44.305Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68983a2fc3b26e0841f69d32"
+  },
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8876"
+      },
+      "productName": "Cheeseburger",
+      "quantity": 1,
+      "price": 35000,
+      "totalPrice": 35000,
+      "_id": {
+        "$oid": "68983a2fc3b26e0841f69d33"
+      }
+    },
+    {
+      "product": {
+        "$oid": "68977b264448489b5beb64b5"
+      },
+      "productName": "Tort",
+      "quantity": 2,
+      "price": 24000,
+      "totalPrice": 48000,
+      "_id": {
+        "$oid": "689848df5002467946de376e"
+      }
+    }
+  ],
+  "total": 83000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-08-10T07:24:14.625Z"
+  },
+  "createdAt": {
+    "$date": "2025-08-10T06:20:31.034Z"
+  },
+  "__v": 3
+},
+{
+  "_id": {
+    "$oid": "6898544e15592a191a1d9239"
+  },
+  "user": {
+    "$oid": "6898542a15592a191a1d922a"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8876"
+      },
+      "productName": "Cheeseburger",
+      "quantity": 2,
+      "price": 35000,
+      "totalPrice": 70000,
+      "_id": {
+        "$oid": "6898544e15592a191a1d923a"
+      }
+    }
+  ],
+  "total": 70000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-08-10T08:13:21.790Z"
+  },
+  "createdAt": {
+    "$date": "2025-08-10T08:11:58.609Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "689869e3997ca792b64ac272"
+  },
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688e2e718595285610fefae0"
+      },
+      "productName": "wdwdd",
+      "quantity": 1,
+      "price": 23233,
+      "totalPrice": 23233,
+      "_id": {
+        "$oid": "6899b18043c061821dbd712f"
+      }
+    }
+  ],
+  "total": 23233,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-08-11T09:06:09.772Z"
+  },
+  "createdAt": {
+    "$date": "2025-08-10T09:44:03.756Z"
+  },
+  "__v": 3
+},
+{
+  "_id": {
+    "$oid": "68986d45c51575cc7e8bd0c9"
+  },
+  "user": {
+    "$oid": "68986a02997ca792b64ac27a"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8874"
+      },
+      "productName": "Pepperoni Pizza",
+      "quantity": 2,
+      "price": 55000,
+      "totalPrice": 110000,
+      "_id": {
+        "$oid": "68986d45c51575cc7e8bd0ca"
+      }
+    },
+    {
+      "product": {
+        "$oid": "688e2e718595285610fefae0"
+      },
+      "productName": "wdwdd",
+      "quantity": 1,
+      "price": 2323232,
+      "totalPrice": 2323232,
+      "_id": {
+        "$oid": "68986e09c51575cc7e8bd1ca"
+      }
+    }
+  ],
+  "total": 2433232,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-08-10T10:03:15.863Z"
+  },
+  "createdAt": {
+    "$date": "2025-08-10T09:58:29.018Z"
+  },
+  "__v": 1
+},
+{
+  "_id": {
+    "$oid": "6899c55c43c061821dbd8e81"
+  },
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8878"
+      },
+      "productName": "Coca Cola",
+      "quantity": 2,
+      "price": 10000,
+      "totalPrice": 20000,
+      "_id": {
+        "$oid": "6899c55c43c061821dbd8e82"
+      }
+    },
+    {
+      "product": {
+        "$oid": "6896f0b503c86fb04af22a76"
+      },
+      "productName": "Hamburger",
+      "quantity": 2,
+      "price": 20000,
+      "totalPrice": 40000,
+      "_id": {
+        "$oid": "6899c56743c061821dbd8e92"
+      }
+    },
+    {
+      "product": {
+        "$oid": "689968acee0bafbcbab1e2c1"
+      },
+      "productName": "mastava",
+      "quantity": 2,
+      "price": 20000,
+      "totalPrice": 40000,
+      "_id": {
+        "$oid": "6899c57943c061821dbd8ea4"
+      }
+    }
+  ],
+  "total": 100000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-08-11T10:27:35.678Z"
+  },
+  "createdAt": {
+    "$date": "2025-08-11T10:26:36.946Z"
+  },
+  "__v": 2
+},
+{
+  "_id": {
+    "$oid": "6899c6db43c061821dbd8fad"
+  },
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8874"
+      },
+      "productName": "Pepperoni Pizza",
+      "quantity": 1,
+      "price": 55000,
+      "totalPrice": 55000,
+      "_id": {
+        "$oid": "6899c6db43c061821dbd8fae"
+      }
+    }
+  ],
+  "total": 55000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-08-11T10:33:07.825Z"
+  },
+  "createdAt": {
+    "$date": "2025-08-11T10:32:59.347Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6899c9ab43c061821dbd91a5"
+  },
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8874"
+      },
+      "productName": "Pepperoni Pizza",
+      "quantity": 1,
+      "price": 55000,
+      "totalPrice": 55000,
+      "_id": {
+        "$oid": "6899c9ab43c061821dbd91a6"
+      }
+    }
+  ],
+  "total": 55000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-08-11T10:45:13.872Z"
+  },
+  "createdAt": {
+    "$date": "2025-08-11T10:44:59.777Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6899ec38ed0ae68ea36c2bb7"
+  },
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6896f0b503c86fb04af22a76"
+      },
+      "productName": "Hamburger",
+      "quantity": 1,
+      "price": 20000,
+      "totalPrice": 20000,
+      "_id": {
+        "$oid": "6899eeef4d9b10ed98cc505e"
+      }
+    }
+  ],
+  "total": 20000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-08-11T13:24:10.774Z"
+  },
+  "createdAt": {
+    "$date": "2025-08-11T13:12:24.488Z"
+  },
+  "__v": 2
+},
+{
+  "_id": {
+    "$oid": "6899eed84d9b10ed98cc5029"
+  },
+  "user": {
+    "$oid": "6899eea84d9b10ed98cc4dc7"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c887a"
+      },
+      "productName": "Tiramisu",
+      "quantity": 1,
+      "price": 25000,
+      "totalPrice": 25000,
+      "_id": {
+        "$oid": "6899eed84d9b10ed98cc502a"
+      }
+    },
+    {
+      "product": {
+        "$oid": "688e2e718595285610fefae0"
+      },
+      "productName": "maxito",
+      "quantity": 1,
+      "price": 23233,
+      "totalPrice": 23233,
+      "_id": {
+        "$oid": "6899ef774d9b10ed98cc52c6"
+      }
+    }
+  ],
+  "total": 48233,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-08-11T13:27:19.393Z"
+  },
+  "createdAt": {
+    "$date": "2025-08-11T13:23:36.563Z"
+  },
+  "__v": 1
+},
+{
+  "_id": {
+    "$oid": "6899ef974d9b10ed98cc52dd"
+  },
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8874"
+      },
+      "productName": "Pepperoni Pizza",
+      "quantity": 1,
+      "price": 55000,
+      "totalPrice": 55000,
+      "_id": {
+        "$oid": "6899ef974d9b10ed98cc52de"
+      }
+    }
+  ],
+  "total": 55000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-08-11T13:26:54.205Z"
+  },
+  "createdAt": {
+    "$date": "2025-08-11T13:26:47.949Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6899f1f43ef71de1dfa429df"
+  },
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6896f0b503c86fb04af22a76"
+      },
+      "productName": "Hamburger",
+      "quantity": 1,
+      "price": 20000,
+      "totalPrice": 20000,
+      "_id": {
+        "$oid": "6899f1f43ef71de1dfa429e0"
+      }
+    }
+  ],
+  "total": 20000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-08-11T13:36:57.776Z"
+  },
+  "createdAt": {
+    "$date": "2025-08-11T13:36:52.242Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6899f4dbd395f476f696d12c"
+  },
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8874"
+      },
+      "productName": "Pepperoni Pizza",
+      "quantity": 1,
+      "price": 55000,
+      "totalPrice": 55000,
+      "_id": {
+        "$oid": "6899f4dbd395f476f696d12d"
+      }
+    }
+  ],
+  "total": 55000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-08-11T13:49:28.095Z"
+  },
+  "createdAt": {
+    "$date": "2025-08-11T13:49:16.003Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6899f53bd395f476f696d150"
+  },
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688e2e718595285610fefae0"
+      },
+      "productName": "maxito",
+      "quantity": 1,
+      "price": 23233,
+      "totalPrice": 23233,
+      "_id": {
+        "$oid": "6899f53bd395f476f696d151"
+      }
+    }
+  ],
+  "total": 23233,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-08-11T13:50:56.562Z"
+  },
+  "createdAt": {
+    "$date": "2025-08-11T13:50:51.234Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6899f7d46f3b46d018ac1095"
+  },
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8878"
+      },
+      "productName": "Coca Cola",
+      "quantity": 1,
+      "price": 10000,
+      "totalPrice": 10000,
+      "_id": {
+        "$oid": "6899f7d46f3b46d018ac1096"
+      }
+    }
+  ],
+  "total": 10000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-08-11T14:02:01.481Z"
+  },
+  "createdAt": {
+    "$date": "2025-08-11T14:01:56.086Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6899f8056f3b46d018ac10bc"
+  },
+  "user": {
+    "$oid": "6899eea84d9b10ed98cc4dc7"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8878"
+      },
+      "productName": "Coca Cola",
+      "quantity": 5,
+      "price": 10000,
+      "totalPrice": 50000,
+      "_id": {
+        "$oid": "6899f8056f3b46d018ac10bd"
+      }
+    }
+  ],
+  "total": 50000,
+  "isActive": true,
+  "updatedAt": {
+    "$date": "2025-08-11T14:02:45.608Z"
+  },
+  "createdAt": {
+    "$date": "2025-08-11T14:02:45.608Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6899f96a780f192176fa2c94"
+  },
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8874"
+      },
+      "productName": "Pepperoni Pizza",
+      "quantity": 1,
+      "price": 55000,
+      "totalPrice": 55000,
+      "_id": {
+        "$oid": "6899f96a780f192176fa2c95"
+      }
+    }
+  ],
+  "total": 55000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-08-11T14:11:24.300Z"
+  },
+  "createdAt": {
+    "$date": "2025-08-11T14:08:42.905Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6899fa46e646bc836418619e"
+  },
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8876"
+      },
+      "productName": "Cheeseburger",
+      "quantity": 1,
+      "price": 35000,
+      "totalPrice": 35000,
+      "_id": {
+        "$oid": "6899fa46e646bc836418619f"
+      }
+    }
+  ],
+  "total": 35000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-08-11T14:12:33.001Z"
+  },
+  "createdAt": {
+    "$date": "2025-08-11T14:12:22.646Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6899fc744a75a68bdc0d6e48"
+  },
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8876"
+      },
+      "productName": "Cheeseburger",
+      "quantity": 1,
+      "price": 35000,
+      "totalPrice": 35000,
+      "_id": {
+        "$oid": "6899fc744a75a68bdc0d6e49"
+      }
+    }
+  ],
+  "total": 35000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-08-11T14:21:51.518Z"
+  },
+  "createdAt": {
+    "$date": "2025-08-11T14:21:40.970Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "689a01f8cf74f059f6f5f068"
+  },
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8878"
+      },
+      "productName": "Coca Cola",
+      "quantity": 1,
+      "price": 10000,
+      "totalPrice": 10000,
+      "_id": {
+        "$oid": "689a01f8cf74f059f6f5f069"
+      }
+    }
+  ],
+  "total": 10000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-08-11T14:45:22.339Z"
+  },
+  "createdAt": {
+    "$date": "2025-08-11T14:45:12.711Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "689a0229cf74f059f6f5f110"
+  },
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6896f0b503c86fb04af22a76"
+      },
+      "productName": "Hamburger",
+      "quantity": 1,
+      "price": 20000,
+      "totalPrice": 20000,
+      "_id": {
+        "$oid": "689a0229cf74f059f6f5f111"
+      }
+    }
+  ],
+  "total": 20000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-08-11T14:46:13.743Z"
+  },
+  "createdAt": {
+    "$date": "2025-08-11T14:46:01.343Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "689a05fc548a1b026f335040"
+  },
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8878"
+      },
+      "productName": "Coca Cola",
+      "quantity": 1,
+      "price": 10000,
+      "totalPrice": 10000,
+      "_id": {
+        "$oid": "689a05fc548a1b026f335041"
+      }
+    }
+  ],
+  "total": 10000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-08-11T15:02:26.498Z"
+  },
+  "createdAt": {
+    "$date": "2025-08-11T15:02:20.239Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "689a08eb488b93e366bd8238"
+  },
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6896f0b503c86fb04af22a76"
+      },
+      "productName": "Hamburger",
+      "quantity": 1,
+      "price": 20000,
+      "totalPrice": 20000,
+      "_id": {
+        "$oid": "689c29299ae945f7b26a8594"
+      }
+    }
+  ],
+  "total": 20000,
+  "isActive": false,
+  "updatedAt": {
+    "$date": "2025-08-13T05:58:23.054Z"
+  },
+  "createdAt": {
+    "$date": "2025-08-11T15:14:51.886Z"
+  },
+  "__v": 2
+},
+{
+  "_id": {
+    "$oid": "689c2d6918cb6ab2179b9a45"
+  },
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8874"
+      },
+      "productName": "Pepperoni Pizza",
+      "quantity": 1,
+      "price": 55000,
+      "totalPrice": 55000,
+      "_id": {
+        "$oid": "689c2d6918cb6ab2179b9a46"
+      }
+    }
+  ],
+  "total": 55000,
+  "isActive": true,
+  "updatedAt": {
+    "$date": "2025-08-13T06:15:05.768Z"
+  },
+  "createdAt": {
+    "$date": "2025-08-13T06:15:05.768Z"
+  },
+  "__v": 0
+}]

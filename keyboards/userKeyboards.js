@@ -10,6 +10,7 @@ const mainMenuKeyboard = Markup.inlineKeyboard([
     Markup.button.callback('📋 Buyurtmalarim', 'my_orders')
   ],
   [
+    Markup.button.callback('🏬 Filiallar', 'show_branches'),
     Markup.button.callback('👤 Profil', 'my_profile'),
     Markup.button.callback('📞 Bog\'lanish', 'contact')
   ],
@@ -47,6 +48,37 @@ function categoriesKeyboard(categories) {
   ]);
   
   return Markup.inlineKeyboard(keyboard);
+}
+
+function branchesKeyboard(branches = [], page = 1, pageSize = 10) {
+  const start = (page - 1) * pageSize;
+  const end = start + pageSize;
+  const pageBranches = branches.slice(start, end);
+
+  const rows = [];
+  for (let i = 0; i < pageBranches.length; i += 2) {
+    const left = pageBranches[i];
+    const right = pageBranches[i + 1];
+    const row = [];
+    if (left) row.push(Markup.button.callback(left.name || left.title || 'Filial', `branch_${left._id}`));
+    if (right) row.push(Markup.button.callback(right.name || right.title || 'Filial', `branch_${right._id}`));
+    rows.push(row);
+  }
+
+  const totalPages = Math.ceil((branches.length || 0) / pageSize) || 1;
+  const nav = [];
+  if (page > 1) nav.push(Markup.button.callback('⬅️', `branches_page_${page - 1}`));
+  nav.push(Markup.button.callback(`${page}/${totalPages}`, 'noop'));
+  if (page < totalPages) nav.push(Markup.button.callback('➡️', `branches_page_${page + 1}`));
+  if (totalPages > 1) rows.push(nav);
+
+  // Top actions
+  rows.unshift([
+    Markup.button.callback('🔙 Asosiy menu', 'back_to_main'),
+    Markup.button.callback('🏠 Eng yaqin filial', 'nearest_branch')
+  ]);
+
+  return Markup.inlineKeyboard(rows);
 }
 
 function productKeyboard(product, categoryId) {
@@ -221,6 +253,7 @@ function backToMyOrdersKeyboard() {
 module.exports = {
   mainMenuKeyboard,
   categoriesKeyboard,
+  branchesKeyboard,
   productKeyboard,
   orderTypeKeyboard,
   paymentMethodKeyboard,

@@ -68,7 +68,7 @@ async function createSuperAdmin() {
     }
 
     // Create SuperAdmin
-    const superAdminPassword = process.env.SUPERADMIN_PASSWORD || 'admin123';
+    const superAdminPassword = process.env.SUPERADMIN_PASSWORD || 'admin';
     const superAdminEmail = process.env.SUPERADMIN_EMAIL || 'super@admin.uz';
 
     const superAdmin = new User({

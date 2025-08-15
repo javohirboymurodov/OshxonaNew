@@ -1,7 +1,9 @@
 const mongoose = require('mongoose');
 const fs = require('fs');
 const path = require('path');
-const { Category, Product } = require('../../models');
+const { Category, Product, Branch } = require('../../models');
+const { branchesKeyboard } = require('../../keyboards/userKeyboards');
+const geoService = require('../../services/geoService');
 const { backToMainKeyboard, categoriesKeyboard, quantityKeyboard } = require('../../keyboards/userKeyboards');
 
 async function showCategories(ctx) {
@@ -41,6 +43,96 @@ Qaysi kategoriyadan buyurtma bermoqchisiz?
   }
 }
 
+// Filiallar ro'yxati (inline, pagination)
+async function showBranches(ctx, page = 1) {
+  try {
+    const branches = await Branch.find({ isActive: true }).select('name title address');
+    await ctx.reply('Filialni tanlang yoki "Eng yaqin filial" tugmasini bosing:', { reply_markup: branchesKeyboard(branches, page).reply_markup });
+  } catch (e) {
+    console.error('Show branches error:', e);
+    await ctx.reply('❌ Filiallarni ko\'rsatishda xatolik');
+  }
+}
+
+function formatWorkingHours(branch) {
+  try {
+    const days = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+    const d = new Date();
+    const key = days[d.getDay()];
+    const wh = branch?.workingHours?.[key];
+    if (wh && wh.isOpen !== false && wh.open && wh.close) return `${wh.open}-${wh.close}`;
+    return '10:00-22:00';
+  } catch {
+    return '10:00-22:00';
+  }
+}
+
+function buildYandexLink(lat, lon) {
+  if (typeof lat === 'number' && typeof lon === 'number') {
+    return `https://yandex.uz/maps/?pt=${lon},${lat}&z=16&l=map`;
+  }
+  return 'https://yandex.uz/maps/';
+}
+
+async function showBranchDetails(ctx, branch, nearby = []) {
+  const name = branch.name || branch.title || 'Filial';
+  const lat = branch.address?.coordinates?.latitude;
+  const lon = branch.address?.coordinates?.longitude;
+  const addressText = [branch.address?.city, branch.address?.district, branch.address?.street].filter(Boolean).join(', ');
+  const hours = formatWorkingHours(branch);
+  const link = buildYandexLink(lat, lon);
+  const count = nearby.length;
+  const nearForKeyboard = nearby.length ? nearby : [branch];
+  const text = `🏠 <b>${name}</b>\n\n📍 ${addressText || 'Manzil mavjud emas'}\n\n🕒 ${hours}\n\n<b>Yandex xarita:</b> ${link}\n${count ? `Yaqin filiallar: ${count}` : ''}`;
+  try {
+    await ctx.replyWithHTML(text, { reply_markup: branchesKeyboard(nearForKeyboard, 1).reply_markup });
+  } catch (e) {
+    await ctx.reply(text, { reply_markup: branchesKeyboard(nearForKeyboard, 1).reply_markup });
+  }
+}
+
+async function showBranchDetailsById(ctx, branchId) {
+  try {
+    const branch = await Branch.findById(branchId);
+    if (!branch) return await ctx.answerCbQuery('Filial topilmadi');
+    await showBranchDetails(ctx, branch, []);
+  } catch (e) {
+    console.error('showBranchDetailsById error:', e);
+    await ctx.answerCbQuery('Xatolik');
+  }
+}
+
+async function handleNearestBranchLocation(ctx, lat, lon) {
+  try {
+    console.log('[nearest_branch] location received:', lat, lon);
+    const branches = await Branch.find({ isActive: true });
+    let nearest = null; let best = Infinity;
+    const scored = [];
+    for (const b of branches) {
+      const bl = b.address?.coordinates?.latitude;
+      const bo = b.address?.coordinates?.longitude;
+      if (typeof bl === 'number' && typeof bo === 'number') {
+        const d = geoService.calculateDistance(bl, bo, lat, lon);
+        scored.push({ branch: b, dist: d });
+        if (d < best) { best = d; nearest = b; }
+      }
+    }
+    console.log('[nearest_branch] candidates:', scored.length, 'bestKm:', best);
+    scored.sort((a, b) => a.dist - b.dist);
+    const nearby = scored.slice(0, 10).map(s => s.branch);
+    try { await ctx.reply('✅ Lokatsiya qabul qilindi', { reply_markup: { remove_keyboard: true } }); } catch {}
+    if (nearest) {
+      console.log('[nearest_branch] nearest:', nearest?._id?.toString?.() || 'none');
+      await showBranchDetails(ctx, nearest, nearby);
+    } else {
+      await ctx.reply('❌ Faol filial topilmadi');
+    }
+  } catch (e) {
+    console.error('handleNearestBranchLocation error:', e);
+    await ctx.reply('❌ Xatolik');
+  }
+}
+
 async function showCategoryProducts(ctx) {
   try {
     console.log('=== showCategoryProducts called ===');
@@ -64,11 +156,34 @@ async function showCategoryProducts(ctx) {
       return await ctx.answerCbQuery('Kategoriya topilmadi!');
     }
 
-    const products = await Product.find({
-      categoryId: categoryId,
-      isActive: true,
-      isAvailable: true
-    }).sort({ sortOrder: 1, createdAt: -1 });
+    // Filial kontekstini aniqlash: session.orderData.branch yoki QR/nearest
+    let branchId = ctx.session?.orderData?.branch;
+    if (!branchId && ctx.session?.orderType === 'dine_in_qr') {
+      // QR oqimida orderData.branch bo'lishi kerak, bo'lmasa fallback yo'q
+      branchId = ctx.session?.orderData?.branch;
+    }
+    // Agar hamon aniqlanmagan bo'lsa, mavjud active branchlardan birini tanlamaymiz; public endpoint filialsiz ishlamaydi
+    let products = [];
+    if (branchId) {
+      const base = process.env.API_BASE_URL || 'http://localhost:5000/api';
+      const url = `${base}/products?public=true&branch=${encodeURIComponent(branchId)}&category=${encodeURIComponent(categoryId)}`;
+      try {
+        const resp = await fetch(url);
+        const json = await resp.json();
+        const data = json?.data;
+        products = (data?.items || data || []).sort?.((a,b) => (a.sortOrder||0)-(b.sortOrder||0)) || [];
+      } catch (e) {
+        console.error('Public products fetch error:', e?.message || e);
+        products = [];
+      }
+    } else {
+      // Fallback: eski logika (faqat dev uchun)
+      products = await Product.find({
+        categoryId: categoryId,
+        isActive: true,
+        isAvailable: true
+      }).sort({ sortOrder: 1, createdAt: -1 });
+    }
 
     let message = `${category.emoji || '📂'} **${category.name}**\n\n`;
     const keyboard = [];
@@ -116,11 +231,27 @@ async function showProductDetails(ctx) {
       return await ctx.answerCbQuery('Noto\'g\'ri mahsulot ID!');
     }
     
-    const product = await Product.findById(productId);
-
-    if (!product) {
+    // Filial kontekstida bitta mahsulotni olish
+    const productDoc = await Product.findById(productId);
+    if (!productDoc) {
       return await ctx.answerCbQuery('Mahsulot topilmadi!');
     }
+    const branchId = ctx.session?.orderData?.branch;
+    let product = productDoc;
+    if (branchId) {
+      try {
+        const base = process.env.API_BASE_URL || 'http://localhost:5000/api';
+        const url = `${base}/products/${productId}?public=true&branch=${encodeURIComponent(branchId)}`;
+        const resp = await fetch(url);
+        const json = await resp.json();
+        product = json.data || productDoc;
+      } catch (e) {
+        // Agar filialda mavjud bo'lmasa, xabar beramiz
+        return await ctx.answerCbQuery('Ushbu mahsulot tanlangan filialda hozircha mavjud emas.');
+      }
+    }
+
+    if (!product) return await ctx.answerCbQuery('Mahsulot topilmadi!');
 
     if (typeof product.incrementViewCount === 'function') {
       await product.incrementViewCount();
@@ -311,5 +442,8 @@ module.exports = {
   showCategoryProducts,
   showProductDetails,
   selectCategory,
-  changeProductQuantity
+  changeProductQuantity,
+  showBranches,
+  handleNearestBranchLocation,
+  showBranchDetailsById
 };

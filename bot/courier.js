@@ -1,6 +1,8 @@
 // Courier interface handlers
 module.exports = function registerCourier(bot) {
   const { User, Order } = require('../models');
+  let geoService;
+  try { geoService = require('../services/geoService'); } catch {}
 
   const isCourier = async (telegramId) => {
     const allowList = (process.env.COURIER_IDS || '').split(',').map((s) => parseInt(s.trim(), 10)).filter(Boolean);
@@ -93,6 +95,74 @@ module.exports = function registerCourier(bot) {
       orders.forEach((o, i) => { text += `${i + 1}. #${o.orderId} – ${o.status}\n`; });
       await ctx.reply(text);
       await ctx.answerCbQuery();
+    } catch (e) {
+      await ctx.answerCbQuery('❌ Xatolik');
+    }
+  });
+
+  function buildOrderInfoText(prefix, order, customer) {
+    const idLine = `#${order.orderId}`;
+    const name = `${customer?.firstName || ''} ${customer?.lastName || ''}`.trim() || (order.customerInfo?.name || 'Mijoz');
+    const phone = customer?.phone || order.customerInfo?.phone || '';
+    let locationLines = '';
+    try {
+      const loc = order?.deliveryInfo?.location;
+      if (loc?.latitude && loc?.longitude) {
+        const link = geoService?.generateMapLink
+          ? geoService.generateMapLink(loc.latitude, loc.longitude)
+          : `https://maps.google.com/?q=${loc.latitude},${loc.longitude}`;
+        locationLines = `\n📍 Manzil: ${link}`;
+      }
+    } catch {}
+    return `${prefix} ${idLine}\n👤 ${name}${phone ? `\n📞 ${phone}` : ''}${locationLines}`;
+  }
+
+  // Accept assigned order
+  bot.action(/^courier_accept_([0-9a-fA-F]{24})$/, async (ctx) => {
+    try {
+      const { user, allowed } = await isCourier(ctx.from.id);
+      if (!allowed) return await ctx.answerCbQuery('❌ Ruxsat yo\'q');
+      const orderId = ctx.match[1];
+      const order = await Order.findById(orderId).populate('user', 'firstName lastName phone');
+      if (!order) return await ctx.answerCbQuery('❌ Buyurtma topilmadi');
+      order.deliveryInfo = order.deliveryInfo || {};
+      order.deliveryInfo.courier = user._id;
+      order.status = 'on_delivery';
+      await order.save();
+      const text = buildOrderInfoText('✅ Buyurtma qabul qilindi:', order, order.user);
+      const keyboard = { inline_keyboard: [[{ text: "🚗 Yo'ldaman", callback_data: `courier_onway_${order._id}` }],[{ text: '📦 Yetkazdim', callback_data: `courier_delivered_${order._id}` }]] };
+      try { await ctx.editMessageText(text, { disable_web_page_preview: true, reply_markup: keyboard }); } catch { await ctx.reply(text, { disable_web_page_preview: true, reply_markup: keyboard }); }
+    } catch (e) {
+      await ctx.answerCbQuery('❌ Xatolik');
+    }
+  });
+
+  // Mark as on the way
+  bot.action(/^courier_onway_([0-9a-fA-F]{24})$/, async (ctx) => {
+    try {
+      const { allowed } = await isCourier(ctx.from.id);
+      if (!allowed) return await ctx.answerCbQuery('❌ Ruxsat yo\'q');
+      const orderId = ctx.match[1];
+      const order = await Order.findByIdAndUpdate(orderId, { $set: { status: 'on_delivery' } }, { new: true }).populate('user', 'firstName lastName phone');
+      if (!order) return await ctx.answerCbQuery('❌ Buyurtma topilmadi');
+      const text = buildOrderInfoText("🚗 Yo'ldaman:", order, order.user);
+      const keyboard = { inline_keyboard: [[{ text: '📦 Yetkazdim', callback_data: `courier_delivered_${order._id}` }]] };
+      try { await ctx.editMessageText(text, { disable_web_page_preview: true, reply_markup: keyboard }); } catch { await ctx.reply(text, { disable_web_page_preview: true, reply_markup: keyboard }); }
+    } catch (e) {
+      await ctx.answerCbQuery('❌ Xatolik');
+    }
+  });
+
+  // Mark as delivered
+  bot.action(/^courier_delivered_([0-9a-fA-F]{24})$/, async (ctx) => {
+    try {
+      const { allowed } = await isCourier(ctx.from.id);
+      if (!allowed) return await ctx.answerCbQuery('❌ Ruxsat yo\'q');
+      const orderId = ctx.match[1];
+      const order = await Order.findByIdAndUpdate(orderId, { $set: { status: 'delivered' } }, { new: true }).populate('user', 'firstName lastName phone');
+      if (!order) return await ctx.answerCbQuery('❌ Buyurtma topilmadi');
+      const text = buildOrderInfoText('✅ Yetkazildi:', order, order.user);
+      try { await ctx.editMessageText(text, { disable_web_page_preview: true }); } catch { await ctx.reply(text, { disable_web_page_preview: true }); }
     } catch (e) {
       await ctx.answerCbQuery('❌ Xatolik');
     }

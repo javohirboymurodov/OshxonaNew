@@ -1,0 +1,176 @@
+[{
+  "_id": {
+    "$oid": "688de56d86e2c5b1364c8869"
+  },
+  "name": "Pizza",
+  "nameUz": "Pitsa",
+  "nameRu": "Пицца",
+  "nameEn": "Pizza",
+  "emoji": "🍕",
+  "description": "Mazali pitsalar",
+  "descriptionRu": "",
+  "descriptionEn": "",
+  "isActive": true,
+  "isVisible": true,
+  "sortOrder": 1,
+  "stats": {
+    "totalProducts": 1,
+    "activeProducts": 2,
+    "totalOrders": 1,
+    "totalViews": 10,
+    "totalRevenue": 0,
+    "popularityScore": 0
+  },
+  "createdAt": {
+    "$date": "2025-08-02T10:16:13.251Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-13T05:58:43.198Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "688de56d86e2c5b1364c886d"
+  },
+  "name": "Burger",
+  "nameUz": "Burger",
+  "nameRu": "Бургер",
+  "nameEn": "Burger",
+  "emoji": "🍔",
+  "description": "Yangi burgerlar",
+  "descriptionRu": "",
+  "descriptionEn": "",
+  "isActive": true,
+  "isVisible": true,
+  "sortOrder": 2,
+  "stats": {
+    "totalProducts": 2,
+    "activeProducts": 0,
+    "totalOrders": 0,
+    "totalViews": 0,
+    "totalRevenue": 0,
+    "popularityScore": 0
+  },
+  "createdAt": {
+    "$date": "2025-08-02T10:16:13.255Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-13T05:58:43.206Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "688de56d86e2c5b1364c8870"
+  },
+  "name": "Ichimliklar",
+  "nameUz": "Ichimliklar",
+  "nameRu": "Напитки",
+  "nameEn": "Drinks",
+  "emoji": "🥤",
+  "description": "Sovuq ichimliklar",
+  "descriptionRu": "",
+  "descriptionEn": "",
+  "isActive": true,
+  "isVisible": true,
+  "sortOrder": 3,
+  "stats": {
+    "totalProducts": 2,
+    "activeProducts": 0,
+    "totalOrders": 0,
+    "totalViews": 0,
+    "totalRevenue": 0,
+    "popularityScore": 0
+  },
+  "createdAt": {
+    "$date": "2025-08-02T10:16:13.259Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-13T05:58:43.204Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "688de56d86e2c5b1364c8872"
+  },
+  "name": "Desertlar",
+  "nameUz": "Desertlar",
+  "nameRu": "Десерты",
+  "nameEn": "Desserts",
+  "emoji": "🍰",
+  "description": "Shirin desertlar",
+  "descriptionRu": "",
+  "descriptionEn": "",
+  "isActive": true,
+  "isVisible": true,
+  "sortOrder": 4,
+  "stats": {
+    "totalProducts": 2,
+    "activeProducts": 0,
+    "totalOrders": 0,
+    "totalViews": 0,
+    "totalRevenue": 0,
+    "popularityScore": 0
+  },
+  "createdAt": {
+    "$date": "2025-08-02T10:16:13.261Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-13T05:58:43.200Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "688e326380e53056e8c3bfc3"
+  },
+  "name": "🥣suyuq",
+  "emoji": "📂",
+  "isActive": true,
+  "isVisible": true,
+  "sortOrder": 5,
+  "stats": {
+    "totalProducts": 1,
+    "totalOrders": 0,
+    "totalViews": 0
+  },
+  "createdAt": {
+    "$date": "2025-08-02T15:44:35.792Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-13T05:58:43.209Z"
+  },
+  "__v": 0,
+  "description": "dwcfeeefjd",
+  "nameEn": "Suyuq",
+  "nameRu": "suyuq",
+  "nameUz": "Suyuq"
+},
+{
+  "_id": {
+    "$oid": "688e32a480e53056e8c3bfda"
+  },
+  "name": "🥩 Go'shtli ovqatlar",
+  "emoji": "📂",
+  "isActive": true,
+  "isVisible": true,
+  "sortOrder": 6,
+  "stats": {
+    "totalProducts": 1,
+    "totalOrders": 0,
+    "totalViews": 0
+  },
+  "createdAt": {
+    "$date": "2025-08-02T15:45:40.413Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-13T05:58:43.213Z"
+  },
+  "__v": 0,
+  "description": "sdfgb",
+  "nameEn": "Go'shtli ovqatla",
+  "nameRu": "Go'shtli ovqatla",
+  "nameUz": "Go'shtli ovqatla"
+}]

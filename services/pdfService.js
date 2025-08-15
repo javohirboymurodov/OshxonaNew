@@ -1,6 +1,7 @@
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
+const { PassThrough } = require('stream');
 
 class PDFService {
   // Buyurtma cheki yaratish
@@ -260,6 +261,56 @@ class PDFService {
     };
     
     return methods[method] || method;
+  }
+
+  // Stol QR kodining PDF faylini yaratish (buffer/stream)
+  // qrPngBuffer: QRCode.toBuffer() natijasi
+  static generateTableQrPdf({ tableNumber, link, qrPngBuffer }) {
+    return new Promise((resolve, reject) => {
+      try {
+        const doc = new PDFDocument({ size: 'A4', margin: 50 });
+        const stream = new PassThrough();
+        const filename = `table_${tableNumber}_qr.pdf`;
+
+        doc.pipe(stream);
+
+        // Sarlavha
+        doc.fontSize(22).font('Helvetica-Bold').text('Stol uchun QR kod', { align: 'center' });
+        doc.moveDown();
+        doc.fontSize(16).font('Helvetica').text(`Stol raqami: ${tableNumber}`, { align: 'center' });
+        doc.moveDown();
+
+        // QR rasm (bufferdan bevosita)
+        const pageWidth = doc.page.width;
+        const qrSize = 300;
+        const x = (pageWidth - qrSize) / 2;
+        try {
+          doc.image(qrPngBuffer, x, doc.y, { width: qrSize, height: qrSize });
+        } catch {}
+        doc.moveDown(2);
+
+        // Link va izoh
+        doc.fontSize(12).text('Quyidagi QR kodni skaner qiling yoki linkdan foydalaning:', { align: 'center' });
+        doc.moveDown(0.5);
+        if (link) {
+          doc.font('Helvetica-Oblique').fillColor('blue').text(link, { align: 'center', link });
+          doc.fillColor('black').font('Helvetica');
+        }
+        doc.moveDown(2);
+        doc.text('QR kodni chop etib stol ustiga yopishtiring. Mijoz shu QR orqali botni ochadi va stol raqami bilan buyurtma qiladi.', {
+          align: 'center'
+        });
+
+        doc.end();
+
+        const buffers = [];
+        stream.on('data', (chunk) => buffers.push(chunk));
+        stream.on('end', () => resolve({ filename, buffer: Buffer.concat(buffers) }));
+        stream.on('error', reject);
+      } catch (e) {
+        reject(e);
+      }
+    });
   }
 }
 

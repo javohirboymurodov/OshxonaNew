@@ -60,7 +60,29 @@ const BranchModal: React.FC<Props> = ({ open, initialValues, onCancel, onSubmit,
 
         <Row gutter={16}>
           <Col span={12}>
-            <Form.Item label="Yetkazib berish radiusi (km)" name="deliveryRadius" rules={[{ required: true, message: 'Radiusni kiriting!' }]}>
+            <Form.Item label="Latitude" name={['address','coordinates','latitude']} rules={[{ required: true, message: 'Latitude kiriting!' }]}> 
+              <Input placeholder="41.3111" />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item label="Longitude" name={['address','coordinates','longitude']} rules={[{ required: true, message: 'Longitude kiriting!' }]}> 
+              <Input placeholder="69.2797" />
+            </Form.Item>
+          </Col>
+        </Row>
+
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item
+              label={
+                <span>
+                  Yetkazib berish radiusi (km)
+                </span>
+              }
+              tooltip="Agar DeliveryZone sozlangan bo'lsa, zona ustuvor ishlaydi. Radius faqat zona yo'qligida qo'llanadi."
+              name="deliveryRadius"
+              rules={[{ required: true, message: 'Radiusni kiriting!' }]}
+            >
               <InputNumber placeholder="15" style={{ width: '100%' }} min={1} max={50} />
             </Form.Item>
           </Col>

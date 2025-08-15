@@ -1,0 +1,2255 @@
+[{
+  "_id": {
+    "$oid": "688b4723885a211fa7ee1e7e"
+  },
+  "orderNumber": "ORD-0001",
+  "items": [
+    {
+      "product": {
+        "$oid": "688b4723885a211fa7ee1e7a"
+      },
+      "quantity": 2,
+      "price": 45000,
+      "_id": {
+        "$oid": "688b4723885a211fa7ee1e7f"
+      }
+    }
+  ],
+  "totalAmount": 25375,
+  "status": "assigned",
+  "orderType": "delivery",
+  "createdAt": {
+    "$date": "2025-07-14T01:30:18.591Z"
+  },
+  "__v": 0,
+  "branch": {
+    "$oid": "688b6fe0ccd9e178be11ba89"
+  },
+  "updatedAt": {
+    "$date": "2025-08-12T04:26:28.610Z"
+  },
+  "deliveryInfo": {
+    "courier": {
+      "$oid": "68997f3784bd3c0dbc6cc2a3"
+    }
+  }
+},
+{
+  "_id": {
+    "$oid": "688e315e80e53056e8c3bf43"
+  },
+  "orderId": "ORD17541492143202ZCFK",
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8874"
+      },
+      "productName": "Pepperoni Pizza",
+      "quantity": 2,
+      "price": 55000,
+      "totalPrice": 110000,
+      "_id": {
+        "$oid": "688e315e80e53056e8c3bf44"
+      },
+      "selectedOptions": []
+    }
+  ],
+  "orderType": "pickup",
+  "customerInfo": {
+    "name": "...",
+    "phone": "+998903307393"
+  },
+  "dineInInfo": {
+    "arrivalTime": "1"
+  },
+  "subtotal": 110000,
+  "deliveryFee": 0,
+  "serviceFee": 0,
+  "discount": 0,
+  "total": 110000,
+  "paymentMethod": "cash",
+  "paymentStatus": "pending",
+  "status": "completed",
+  "statusHistory": [
+    {
+      "status": "confirmed",
+      "timestamp": {
+        "$date": "2025-08-02T15:41:42.840Z"
+      },
+      "note": "Admin tomonidan tasdiqlandi",
+      "updatedBy": "admin",
+      "_id": {
+        "$oid": "688e31b680e53056e8c3bf66"
+      }
+    },
+    {
+      "status": "preparing",
+      "timestamp": {
+        "$date": "2025-08-02T15:41:49.837Z"
+      },
+      "note": "Tayyorlash boshlandi",
+      "updatedBy": "admin",
+      "_id": {
+        "$oid": "688e31bd80e53056e8c3bf70"
+      }
+    },
+    {
+      "status": "ready",
+      "timestamp": {
+        "$date": "2025-08-02T15:42:02.560Z"
+      },
+      "note": "Buyurtma tayyor",
+      "updatedBy": "admin",
+      "_id": {
+        "$oid": "688e31ca80e53056e8c3bf80"
+      }
+    },
+    {
+      "status": "completed",
+      "timestamp": {
+        "$date": "2025-08-02T15:42:08.232Z"
+      },
+      "note": "Buyurtma yakunlandi",
+      "updatedBy": "admin",
+      "_id": {
+        "$oid": "688e31d080e53056e8c3bf8e"
+      }
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-08-02T15:40:14.324Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-02T15:42:08.233Z"
+  },
+  "__v": 4
+},
+{
+  "_id": {
+    "$oid": "6896ee90de4d36b0da45d99d"
+  },
+  "orderId": "ORD1754721936776B7Z7L",
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8878"
+      },
+      "productName": "Coca Cola",
+      "quantity": 2,
+      "price": 10000,
+      "totalPrice": 20000,
+      "_id": {
+        "$oid": "6896ee90de4d36b0da45d99e"
+      },
+      "selectedOptions": []
+    }
+  ],
+  "orderType": "delivery",
+  "customerInfo": {
+    "name": "...",
+    "phone": "+998903307393"
+  },
+  "deliveryInfo": {
+    "address": "",
+    "location": {
+      "latitude": 41.502636,
+      "longitude": 64.494987
+    }
+  },
+  "subtotal": 20000,
+  "deliveryFee": 0,
+  "serviceFee": 0,
+  "discount": 0,
+  "total": 20000,
+  "paymentMethod": "cash",
+  "paymentStatus": "pending",
+  "status": "cancelled",
+  "statusHistory": [
+    {
+      "status": "cancelled",
+      "timestamp": {
+        "$date": "2025-08-09T11:14:38.966Z"
+      },
+      "_id": {
+        "$oid": "68972d9ed31b37f8d093601a"
+      }
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-08-09T06:45:36.786Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-09T11:14:38.966Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68970ef9e3c6acf6c5071eb6"
+  },
+  "orderId": "ORD175473023390943LD1",
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6896f0b503c86fb04af22a76"
+      },
+      "productName": "test",
+      "quantity": 1,
+      "price": 19999,
+      "totalPrice": 19999,
+      "_id": {
+        "$oid": "68970ef9e3c6acf6c5071eb7"
+      },
+      "selectedOptions": []
+    }
+  ],
+  "orderType": "pickup",
+  "customerInfo": {
+    "name": "...",
+    "phone": "+998903307393"
+  },
+  "dineInInfo": {
+    "arrivalTime": "30"
+  },
+  "subtotal": 19999,
+  "deliveryFee": 0,
+  "serviceFee": 0,
+  "discount": 0,
+  "total": 19999,
+  "paymentMethod": "cash",
+  "paymentStatus": "pending",
+  "status": "delivered",
+  "statusHistory": [
+    {
+      "status": "confirmed",
+      "timestamp": {
+        "$date": "2025-08-09T11:14:25.579Z"
+      },
+      "_id": {
+        "$oid": "68972d91d31b37f8d0936000"
+      }
+    },
+    {
+      "status": "preparing",
+      "timestamp": {
+        "$date": "2025-08-09T22:02:17.593Z"
+      },
+      "_id": {
+        "$oid": "6897c5697561de848ed8729d"
+      }
+    },
+    {
+      "status": "ready",
+      "timestamp": {
+        "$date": "2025-08-09T22:02:23.855Z"
+      },
+      "_id": {
+        "$oid": "6897c56f7561de848ed872c1"
+      }
+    },
+    {
+      "status": "delivered",
+      "timestamp": {
+        "$date": "2025-08-09T22:02:29.411Z"
+      },
+      "_id": {
+        "$oid": "6897c5757561de848ed872e7"
+      }
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-08-09T09:03:53.914Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-09T22:02:29.412Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68972c98d31b37f8d0935f80"
+  },
+  "orderId": "ORD1754737816834AIWMD",
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8874"
+      },
+      "productName": "Pepperoni Pizza",
+      "quantity": 1,
+      "price": 55000,
+      "totalPrice": 55000,
+      "_id": {
+        "$oid": "68972c98d31b37f8d0935f81"
+      },
+      "selectedOptions": []
+    }
+  ],
+  "orderType": "pickup",
+  "customerInfo": {
+    "name": "...",
+    "phone": "+998903307393"
+  },
+  "dineInInfo": {
+    "arrivalTime": "30"
+  },
+  "subtotal": 55000,
+  "deliveryFee": 0,
+  "serviceFee": 0,
+  "discount": 0,
+  "total": 55000,
+  "paymentMethod": "cash",
+  "paymentStatus": "pending",
+  "status": "delivered",
+  "statusHistory": [
+    {
+      "status": "confirmed",
+      "timestamp": {
+        "$date": "2025-08-09T11:12:22.968Z"
+      },
+      "_id": {
+        "$oid": "68972d16d31b37f8d0935fa0"
+      }
+    },
+    {
+      "status": "preparing",
+      "timestamp": {
+        "$date": "2025-08-09T11:14:01.357Z"
+      },
+      "_id": {
+        "$oid": "68972d79d31b37f8d0935fcc"
+      }
+    },
+    {
+      "status": "ready",
+      "timestamp": {
+        "$date": "2025-08-09T11:14:10.474Z"
+      },
+      "_id": {
+        "$oid": "68972d82d31b37f8d0935fe5"
+      }
+    },
+    {
+      "status": "delivered",
+      "timestamp": {
+        "$date": "2025-08-09T11:15:00.926Z"
+      },
+      "_id": {
+        "$oid": "68972db4d31b37f8d0936035"
+      }
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-08-09T11:10:16.847Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-09T11:15:00.926Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68972f0415681a657782e146"
+  },
+  "orderId": "ORD1754738436783EBZNP",
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8878"
+      },
+      "productName": "Coca Cola",
+      "quantity": 1,
+      "price": 10000,
+      "totalPrice": 10000,
+      "_id": {
+        "$oid": "68972f0415681a657782e147"
+      },
+      "selectedOptions": []
+    }
+  ],
+  "orderType": "dine_in",
+  "customerInfo": {
+    "name": "...",
+    "phone": "+998903307393"
+  },
+  "dineInInfo": {
+    "arrivalTime": "45",
+    "tableNumber": "8"
+  },
+  "subtotal": 10000,
+  "deliveryFee": 0,
+  "serviceFee": 0,
+  "discount": 0,
+  "total": 10000,
+  "paymentMethod": "cash",
+  "paymentStatus": "pending",
+  "status": "delivered",
+  "statusHistory": [
+    {
+      "status": "confirmed",
+      "timestamp": {
+        "$date": "2025-08-09T11:21:19.732Z"
+      },
+      "_id": {
+        "$oid": "68972f2f15681a657782e166"
+      }
+    },
+    {
+      "status": "preparing",
+      "timestamp": {
+        "$date": "2025-08-09T11:21:29.685Z"
+      },
+      "_id": {
+        "$oid": "68972f3915681a657782e184"
+      }
+    },
+    {
+      "status": "ready",
+      "timestamp": {
+        "$date": "2025-08-09T11:22:14.049Z"
+      },
+      "_id": {
+        "$oid": "68972f6615681a657782e1aa"
+      }
+    },
+    {
+      "status": "delivered",
+      "timestamp": {
+        "$date": "2025-08-12T04:26:06.011Z"
+      },
+      "updatedBy": "689865b230a4bd7e9c0b4d29",
+      "_id": {
+        "$oid": "689ac25e0a96b683bee346a3"
+      }
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-08-09T11:20:36.795Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-12T04:26:06.012Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6897305802d5ca3b50d8c449"
+  },
+  "orderId": "ORD1754738776561071BZ",
+  "user": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c887a"
+      },
+      "productName": "Tiramisu",
+      "quantity": 1,
+      "price": 25000,
+      "totalPrice": 25000,
+      "_id": {
+        "$oid": "6897305802d5ca3b50d8c44a"
+      },
+      "selectedOptions": []
+    }
+  ],
+  "orderType": "delivery",
+  "customerInfo": {
+    "name": "...",
+    "phone": "+998903307393"
+  },
+  "deliveryInfo": {
+    "address": "",
+    "location": {
+      "latitude": 41.298529,
+      "longitude": 69.346353
+    }
+  },
+  "subtotal": 25000,
+  "deliveryFee": 0,
+  "serviceFee": 0,
+  "discount": 0,
+  "total": 25000,
+  "paymentMethod": "cash",
+  "paymentStatus": "pending",
+  "status": "confirmed",
+  "statusHistory": [
+    {
+      "status": "confirmed",
+      "timestamp": {
+        "$date": "2025-08-09T17:10:12.189Z"
+      },
+      "_id": {
+        "$oid": "689780f4b5c361ca7189f703"
+      }
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-08-09T11:26:16.572Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-09T17:10:12.190Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "689839322f3cd07991fd629e"
+  },
+  "orderId": "ORD1754806578132Z2P89",
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8876"
+      },
+      "productName": "Cheeseburger",
+      "quantity": 2,
+      "price": 35000,
+      "totalPrice": 70000,
+      "_id": {
+        "$oid": "689839322f3cd07991fd629f"
+      },
+      "selectedOptions": []
+    }
+  ],
+  "orderType": "pickup",
+  "customerInfo": {
+    "name": "Javohir",
+    "phone": "+998909335873"
+  },
+  "dineInInfo": {
+    "arrivalTime": "45"
+  },
+  "subtotal": 70000,
+  "deliveryFee": 0,
+  "serviceFee": 0,
+  "discount": 0,
+  "total": 70000,
+  "paymentMethod": "cash",
+  "paymentStatus": "pending",
+  "status": "delivered",
+  "statusHistory": [
+    {
+      "status": "confirmed",
+      "timestamp": {
+        "$date": "2025-08-10T06:16:59.493Z"
+      },
+      "_id": {
+        "$oid": "6898395b2f3cd07991fd63bd"
+      }
+    },
+    {
+      "status": "preparing",
+      "timestamp": {
+        "$date": "2025-08-10T06:17:04.045Z"
+      },
+      "_id": {
+        "$oid": "689839602f3cd07991fd63e4"
+      }
+    },
+    {
+      "status": "ready",
+      "timestamp": {
+        "$date": "2025-08-10T06:17:08.165Z"
+      },
+      "_id": {
+        "$oid": "689839642f3cd07991fd640d"
+      }
+    },
+    {
+      "status": "delivered",
+      "timestamp": {
+        "$date": "2025-08-10T06:17:12.631Z"
+      },
+      "_id": {
+        "$oid": "689839682f3cd07991fd6438"
+      }
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-08-10T06:16:18.138Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-10T06:17:12.631Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68983a0fc3b26e0841f69d22"
+  },
+  "orderId": "ORD1754806799142V7CHU",
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6896f0b503c86fb04af22a76"
+      },
+      "productName": "test",
+      "quantity": 2,
+      "price": 19999,
+      "totalPrice": 39998,
+      "_id": {
+        "$oid": "68983a0fc3b26e0841f69d23"
+      },
+      "selectedOptions": []
+    }
+  ],
+  "orderType": "pickup",
+  "customerInfo": {
+    "name": "Javohir",
+    "phone": "+998909335873"
+  },
+  "dineInInfo": {
+    "arrivalTime": "2"
+  },
+  "subtotal": 39998,
+  "deliveryFee": 0,
+  "serviceFee": 0,
+  "discount": 0,
+  "total": 39998,
+  "paymentMethod": "cash",
+  "paymentStatus": "pending",
+  "status": "preparing",
+  "statusHistory": [
+    {
+      "status": "confirmed",
+      "timestamp": {
+        "$date": "2025-08-11T05:51:18.265Z"
+      },
+      "updatedBy": "688af2f50f610f5d50d5a41b",
+      "_id": {
+        "$oid": "689984d63a6bef6eec923874"
+      }
+    },
+    {
+      "status": "preparing",
+      "timestamp": {
+        "$date": "2025-08-11T05:51:22.576Z"
+      },
+      "updatedBy": "688af2f50f610f5d50d5a41b",
+      "_id": {
+        "$oid": "689984da3a6bef6eec9238bb"
+      }
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-08-10T06:19:59.147Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-11T05:51:22.576Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6898491e5002467946de3782"
+  },
+  "orderId": "ORD1754810654614WOTXO",
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8876"
+      },
+      "productName": "Cheeseburger",
+      "quantity": 1,
+      "price": 35000,
+      "totalPrice": 35000,
+      "_id": {
+        "$oid": "6898491e5002467946de3783"
+      },
+      "selectedOptions": []
+    },
+    {
+      "product": {
+        "$oid": "68977b264448489b5beb64b5"
+      },
+      "productName": "Tort",
+      "quantity": 2,
+      "price": 24000,
+      "totalPrice": 48000,
+      "_id": {
+        "$oid": "6898491e5002467946de3784"
+      },
+      "selectedOptions": []
+    }
+  ],
+  "orderType": "dine_in",
+  "customerInfo": {
+    "name": "Javohir",
+    "phone": "+998909335873"
+  },
+  "dineInInfo": {
+    "arrivalTime": "1",
+    "tableNumber": "9"
+  },
+  "subtotal": 83000,
+  "deliveryFee": 0,
+  "serviceFee": 0,
+  "discount": 0,
+  "total": 83000,
+  "paymentMethod": "cash",
+  "paymentStatus": "pending",
+  "status": "arrived",
+  "statusHistory": [],
+  "createdAt": {
+    "$date": "2025-08-10T07:24:14.619Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-10T07:24:42.781Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "689854a115592a191a1d9263"
+  },
+  "orderId": "ORD175481360178240ZJW",
+  "user": {
+    "$oid": "6898542a15592a191a1d922a"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8876"
+      },
+      "productName": "Cheeseburger",
+      "quantity": 2,
+      "price": 35000,
+      "totalPrice": 70000,
+      "_id": {
+        "$oid": "689854a115592a191a1d9264"
+      },
+      "selectedOptions": []
+    }
+  ],
+  "orderType": "delivery",
+  "customerInfo": {
+    "name": "🧚🧚🧚🧚🧚🧚🧚🐾",
+    "phone": "+998903414394"
+  },
+  "deliveryInfo": {
+    "address": "",
+    "location": {
+      "latitude": 38.931454,
+      "longitude": 66.6545
+    },
+    "courier": {
+      "$oid": "68997f3784bd3c0dbc6cc2a3"
+    }
+  },
+  "subtotal": 70000,
+  "deliveryFee": 0,
+  "serviceFee": 0,
+  "discount": 0,
+  "total": 70000,
+  "paymentMethod": "cash",
+  "paymentStatus": "pending",
+  "status": "assigned",
+  "statusHistory": [
+    {
+      "status": "confirmed",
+      "timestamp": {
+        "$date": "2025-08-11T04:41:43.461Z"
+      },
+      "updatedBy": "688af2f50f610f5d50d5a41b",
+      "_id": {
+        "$oid": "68997487b90657063bb30374"
+      }
+    },
+    {
+      "status": "preparing",
+      "timestamp": {
+        "$date": "2025-08-11T04:41:46.181Z"
+      },
+      "updatedBy": "688af2f50f610f5d50d5a41b",
+      "_id": {
+        "$oid": "6899748ab90657063bb303b6"
+      }
+    },
+    {
+      "status": "ready",
+      "timestamp": {
+        "$date": "2025-08-11T04:41:50.230Z"
+      },
+      "updatedBy": "688af2f50f610f5d50d5a41b",
+      "_id": {
+        "$oid": "6899748eb90657063bb303fa"
+      }
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-08-10T08:13:21.787Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-11T05:47:17.813Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68986e63c51575cc7e8bd255"
+  },
+  "orderId": "ORD1754820195854NICF9",
+  "user": {
+    "$oid": "68986a02997ca792b64ac27a"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8874"
+      },
+      "productName": "Pepperoni Pizza",
+      "quantity": 2,
+      "price": 55000,
+      "totalPrice": 110000,
+      "_id": {
+        "$oid": "68986e63c51575cc7e8bd256"
+      },
+      "selectedOptions": []
+    },
+    {
+      "product": {
+        "$oid": "688e2e718595285610fefae0"
+      },
+      "productName": "wdwdd",
+      "quantity": 1,
+      "price": 2323232,
+      "totalPrice": 2323232,
+      "_id": {
+        "$oid": "68986e63c51575cc7e8bd257"
+      },
+      "selectedOptions": []
+    }
+  ],
+  "orderType": "dine_in",
+  "customerInfo": {
+    "name": "64-maktab. Turdiyeva Dilfuza",
+    "phone": "+998919457310"
+  },
+  "dineInInfo": {
+    "arrivalTime": "45"
+  },
+  "subtotal": 2433232,
+  "deliveryFee": 0,
+  "serviceFee": 0,
+  "discount": 0,
+  "total": 2433232,
+  "paymentMethod": "cash",
+  "paymentStatus": "pending",
+  "status": "delivered",
+  "statusHistory": [
+    {
+      "status": "confirmed",
+      "timestamp": {
+        "$date": "2025-08-11T04:41:31.538Z"
+      },
+      "updatedBy": "688af2f50f610f5d50d5a41b",
+      "_id": {
+        "$oid": "6899747bb90657063bb302f0"
+      }
+    },
+    {
+      "status": "preparing",
+      "timestamp": {
+        "$date": "2025-08-11T04:41:37.611Z"
+      },
+      "updatedBy": "688af2f50f610f5d50d5a41b",
+      "_id": {
+        "$oid": "68997481b90657063bb30331"
+      }
+    },
+    {
+      "status": "ready",
+      "timestamp": {
+        "$date": "2025-08-11T04:42:37.214Z"
+      },
+      "updatedBy": "688af2f50f610f5d50d5a41b",
+      "_id": {
+        "$oid": "689974bdb90657063bb30442"
+      }
+    },
+    {
+      "status": "delivered",
+      "timestamp": {
+        "$date": "2025-08-12T04:26:03.490Z"
+      },
+      "updatedBy": "689865b230a4bd7e9c0b4d29",
+      "_id": {
+        "$oid": "689ac25b0a96b683bee3468e"
+      }
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-08-10T10:03:15.859Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-12T04:26:03.491Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6899b28143c061821dbd7488"
+  },
+  "orderId": "ORD1754903169764C5K1Q",
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688e2e718595285610fefae0"
+      },
+      "productName": "wdwdd",
+      "quantity": 1,
+      "price": 23233,
+      "totalPrice": 23233,
+      "_id": {
+        "$oid": "6899b28143c061821dbd7489"
+      },
+      "selectedOptions": []
+    }
+  ],
+  "orderType": "pickup",
+  "customerInfo": {
+    "name": "Javohir",
+    "phone": "+998909335873"
+  },
+  "dineInInfo": {
+    "arrivalTime": "2"
+  },
+  "subtotal": 23233,
+  "deliveryFee": 0,
+  "serviceFee": 0,
+  "discount": 0,
+  "total": 23233,
+  "paymentMethod": "cash",
+  "paymentStatus": "pending",
+  "status": "preparing",
+  "statusHistory": [
+    {
+      "status": "confirmed",
+      "timestamp": {
+        "$date": "2025-08-11T09:17:06.563Z"
+      },
+      "updatedBy": "688af2f50f610f5d50d5a41b",
+      "_id": {
+        "$oid": "6899b51243c061821dbd755a"
+      }
+    },
+    {
+      "status": "preparing",
+      "timestamp": {
+        "$date": "2025-08-11T09:22:26.347Z"
+      },
+      "updatedBy": "688af2f50f610f5d50d5a41b",
+      "_id": {
+        "$oid": "6899b65243c061821dbd7d40"
+      }
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-08-11T09:06:09.768Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-11T09:22:26.347Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6899c59743c061821dbd8ebb"
+  },
+  "orderId": "ORD1754908055670LYELT",
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8878"
+      },
+      "productName": "Coca Cola",
+      "quantity": 2,
+      "price": 10000,
+      "totalPrice": 20000,
+      "_id": {
+        "$oid": "6899c59743c061821dbd8ebc"
+      },
+      "selectedOptions": []
+    },
+    {
+      "product": {
+        "$oid": "6896f0b503c86fb04af22a76"
+      },
+      "productName": "Hamburger",
+      "quantity": 2,
+      "price": 20000,
+      "totalPrice": 40000,
+      "_id": {
+        "$oid": "6899c59743c061821dbd8ebd"
+      },
+      "selectedOptions": []
+    },
+    {
+      "product": {
+        "$oid": "689968acee0bafbcbab1e2c1"
+      },
+      "productName": "mastava",
+      "quantity": 2,
+      "price": 20000,
+      "totalPrice": 40000,
+      "_id": {
+        "$oid": "6899c59743c061821dbd8ebe"
+      },
+      "selectedOptions": []
+    }
+  ],
+  "orderType": "dine_in",
+  "customerInfo": {
+    "name": "Javohir",
+    "phone": "+998909335873"
+  },
+  "dineInInfo": {
+    "arrivalTime": "2",
+    "tableNumber": "9"
+  },
+  "subtotal": 100000,
+  "deliveryFee": 0,
+  "serviceFee": 0,
+  "discount": 0,
+  "total": 100000,
+  "paymentMethod": "cash",
+  "paymentStatus": "pending",
+  "status": "arrived",
+  "statusHistory": [],
+  "createdAt": {
+    "$date": "2025-08-11T10:27:35.675Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-11T10:27:48.429Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6899c6e343c061821dbd8fbd"
+  },
+  "orderId": "ORD1754908387819S8AR2",
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8874"
+      },
+      "productName": "Pepperoni Pizza",
+      "quantity": 1,
+      "price": 55000,
+      "totalPrice": 55000,
+      "_id": {
+        "$oid": "6899c6e343c061821dbd8fbe"
+      },
+      "selectedOptions": []
+    }
+  ],
+  "orderType": "dine_in",
+  "customerInfo": {
+    "name": "Javohir",
+    "phone": "+998909335873"
+  },
+  "dineInInfo": {
+    "arrivalTime": "45",
+    "tableNumber": "9"
+  },
+  "subtotal": 55000,
+  "deliveryFee": 0,
+  "serviceFee": 0,
+  "discount": 0,
+  "total": 55000,
+  "paymentMethod": "cash",
+  "paymentStatus": "pending",
+  "status": "delivered",
+  "statusHistory": [
+    {
+      "status": "confirmed",
+      "timestamp": {
+        "$date": "2025-08-11T10:33:24.956Z"
+      },
+      "updatedBy": "688af2f50f610f5d50d5a41b",
+      "_id": {
+        "$oid": "6899c6f443c061821dbd900f"
+      }
+    },
+    {
+      "status": "confirmed",
+      "timestamp": {
+        "$date": "2025-08-11T10:33:30.163Z"
+      },
+      "updatedBy": "688af2f50f610f5d50d5a41b",
+      "_id": {
+        "$oid": "6899c6fa43c061821dbd9015"
+      }
+    },
+    {
+      "status": "preparing",
+      "timestamp": {
+        "$date": "2025-08-11T10:33:40.893Z"
+      },
+      "updatedBy": "688af2f50f610f5d50d5a41b",
+      "_id": {
+        "$oid": "6899c70443c061821dbd9067"
+      }
+    },
+    {
+      "status": "preparing",
+      "timestamp": {
+        "$date": "2025-08-11T10:33:49.496Z"
+      },
+      "updatedBy": "688af2f50f610f5d50d5a41b",
+      "_id": {
+        "$oid": "6899c70d43c061821dbd906f"
+      }
+    },
+    {
+      "status": "ready",
+      "timestamp": {
+        "$date": "2025-08-11T10:33:54.064Z"
+      },
+      "updatedBy": "688af2f50f610f5d50d5a41b",
+      "_id": {
+        "$oid": "6899c71243c061821dbd90c5"
+      }
+    },
+    {
+      "status": "ready",
+      "timestamp": {
+        "$date": "2025-08-11T10:33:59.910Z"
+      },
+      "updatedBy": "688af2f50f610f5d50d5a41b",
+      "_id": {
+        "$oid": "6899c71743c061821dbd90cf"
+      }
+    },
+    {
+      "status": "delivered",
+      "timestamp": {
+        "$date": "2025-08-11T10:34:10.988Z"
+      },
+      "updatedBy": "688af2f50f610f5d50d5a41b",
+      "_id": {
+        "$oid": "6899c72243c061821dbd9129"
+      }
+    },
+    {
+      "status": "delivered",
+      "timestamp": {
+        "$date": "2025-08-11T10:34:38.974Z"
+      },
+      "updatedBy": "688af2f50f610f5d50d5a41b",
+      "_id": {
+        "$oid": "6899c73e43c061821dbd9140"
+      }
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-08-11T10:33:07.821Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-11T10:34:38.975Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6899c9b943c061821dbd91b5"
+  },
+  "orderId": "ORD1754909113868QZCKM",
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8874"
+      },
+      "productName": "Pepperoni Pizza",
+      "quantity": 1,
+      "price": 55000,
+      "totalPrice": 55000,
+      "_id": {
+        "$oid": "6899c9b943c061821dbd91b6"
+      },
+      "selectedOptions": []
+    }
+  ],
+  "orderType": "dine_in",
+  "customerInfo": {
+    "name": "Javohir",
+    "phone": "+998909335873"
+  },
+  "dineInInfo": {
+    "arrivalTime": "1"
+  },
+  "subtotal": 55000,
+  "deliveryFee": 0,
+  "serviceFee": 0,
+  "discount": 0,
+  "total": 55000,
+  "paymentMethod": "cash",
+  "paymentStatus": "pending",
+  "status": "delivered",
+  "statusHistory": [
+    {
+      "status": "confirmed",
+      "timestamp": {
+        "$date": "2025-08-11T10:45:25.703Z"
+      },
+      "updatedBy": "688af2f50f610f5d50d5a41b",
+      "_id": {
+        "$oid": "6899c9c543c061821dbd920f"
+      }
+    },
+    {
+      "status": "preparing",
+      "timestamp": {
+        "$date": "2025-08-11T10:45:47.982Z"
+      },
+      "updatedBy": "688af2f50f610f5d50d5a41b",
+      "_id": {
+        "$oid": "6899c9db43c061821dbd934b"
+      }
+    },
+    {
+      "status": "ready",
+      "timestamp": {
+        "$date": "2025-08-11T10:45:53.831Z"
+      },
+      "updatedBy": "688af2f50f610f5d50d5a41b",
+      "_id": {
+        "$oid": "6899c9e143c061821dbd93a5"
+      }
+    },
+    {
+      "status": "delivered",
+      "timestamp": {
+        "$date": "2025-08-11T12:00:03.585Z"
+      },
+      "updatedBy": "688af2f50f610f5d50d5a41b",
+      "_id": {
+        "$oid": "6899db434e3496b1308f8ba5"
+      }
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-08-11T10:45:13.870Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-11T12:00:03.588Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6899eefa4d9b10ed98cc5070"
+  },
+  "orderId": "ORD1754918650756QIPOB",
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6896f0b503c86fb04af22a76"
+      },
+      "productName": "Hamburger",
+      "quantity": 1,
+      "price": 20000,
+      "totalPrice": 20000,
+      "_id": {
+        "$oid": "6899eefa4d9b10ed98cc5071"
+      },
+      "selectedOptions": []
+    }
+  ],
+  "orderType": "dine_in",
+  "customerInfo": {
+    "name": "Javohir",
+    "phone": "+998909335873"
+  },
+  "dineInInfo": {
+    "arrivalTime": "60"
+  },
+  "subtotal": 20000,
+  "deliveryFee": 0,
+  "serviceFee": 0,
+  "discount": 0,
+  "total": 20000,
+  "paymentMethod": "cash",
+  "paymentStatus": "pending",
+  "status": "confirmed",
+  "statusHistory": [
+    {
+      "status": "confirmed",
+      "timestamp": {
+        "$date": "2025-08-11T13:24:23.516Z"
+      },
+      "updatedBy": "688af2f50f610f5d50d5a41b",
+      "_id": {
+        "$oid": "6899ef074d9b10ed98cc516e"
+      }
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-08-11T13:24:10.768Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-11T13:24:23.518Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6899ef9e4d9b10ed98cc52f1"
+  },
+  "orderId": "ORD1754918814192L3MDX",
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "branch": {
+    "$oid": "688de56d86e2c5b1364c8865"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8874"
+      },
+      "productName": "Pepperoni Pizza",
+      "quantity": 1,
+      "price": 55000,
+      "totalPrice": 55000,
+      "_id": {
+        "$oid": "6899ef9e4d9b10ed98cc52f2"
+      },
+      "selectedOptions": []
+    }
+  ],
+  "orderType": "dine_in",
+  "customerInfo": {
+    "name": "Javohir",
+    "phone": "+998909335873"
+  },
+  "dineInInfo": {
+    "tableNumber": "5"
+  },
+  "subtotal": 55000,
+  "deliveryFee": 0,
+  "serviceFee": 0,
+  "discount": 0,
+  "total": 55000,
+  "paymentMethod": "cash",
+  "paymentStatus": "pending",
+  "status": "arrived",
+  "statusHistory": [],
+  "createdAt": {
+    "$date": "2025-08-11T13:26:54.199Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-11T13:28:23.845Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6899efb74d9b10ed98cc5302"
+  },
+  "orderId": "ORD1754918839382WOWXV",
+  "user": {
+    "$oid": "6899eea84d9b10ed98cc4dc7"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c887a"
+      },
+      "productName": "Tiramisu",
+      "quantity": 1,
+      "price": 25000,
+      "totalPrice": 25000,
+      "_id": {
+        "$oid": "6899efb74d9b10ed98cc5303"
+      },
+      "selectedOptions": []
+    },
+    {
+      "product": {
+        "$oid": "688e2e718595285610fefae0"
+      },
+      "productName": "maxito",
+      "quantity": 1,
+      "price": 23233,
+      "totalPrice": 23233,
+      "_id": {
+        "$oid": "6899efb74d9b10ed98cc5304"
+      },
+      "selectedOptions": []
+    }
+  ],
+  "orderType": "delivery",
+  "customerInfo": {
+    "name": "Ravshanbekovna🦋",
+    "phone": "+998950007822"
+  },
+  "deliveryInfo": {
+    "address": "Hdhrbakabd",
+    "courier": {
+      "$oid": "68997f3784bd3c0dbc6cc2a3"
+    }
+  },
+  "subtotal": 48233,
+  "deliveryFee": 0,
+  "serviceFee": 0,
+  "discount": 0,
+  "total": 48233,
+  "paymentMethod": "card",
+  "paymentStatus": "pending",
+  "status": "assigned",
+  "statusHistory": [
+    {
+      "status": "confirmed",
+      "timestamp": {
+        "$date": "2025-08-11T13:27:59.305Z"
+      },
+      "updatedBy": "688af2f50f610f5d50d5a41b",
+      "_id": {
+        "$oid": "6899efdf4d9b10ed98cc53e8"
+      }
+    },
+    {
+      "status": "preparing",
+      "timestamp": {
+        "$date": "2025-08-11T13:31:06.392Z"
+      },
+      "updatedBy": "688af2f50f610f5d50d5a41b",
+      "_id": {
+        "$oid": "6899f09a3ef71de1dfa426bf"
+      }
+    },
+    {
+      "status": "ready",
+      "timestamp": {
+        "$date": "2025-08-11T13:31:20.979Z"
+      },
+      "updatedBy": "688af2f50f610f5d50d5a41b",
+      "_id": {
+        "$oid": "6899f0a83ef71de1dfa42712"
+      }
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-08-11T13:27:19.387Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-11T13:33:10.783Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6899f1f93ef71de1dfa429ef"
+  },
+  "orderId": "ORD1754919417760N5V6S",
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "branch": {
+    "$oid": "688de56d86e2c5b1364c8865"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6896f0b503c86fb04af22a76"
+      },
+      "productName": "Hamburger",
+      "quantity": 1,
+      "price": 20000,
+      "totalPrice": 20000,
+      "_id": {
+        "$oid": "6899f1f93ef71de1dfa429f0"
+      },
+      "selectedOptions": []
+    }
+  ],
+  "orderType": "dine_in",
+  "customerInfo": {
+    "name": "Javohir",
+    "phone": "+998909335873"
+  },
+  "dineInInfo": {
+    "tableNumber": "2"
+  },
+  "subtotal": 20000,
+  "deliveryFee": 0,
+  "serviceFee": 0,
+  "discount": 0,
+  "total": 20000,
+  "paymentMethod": "cash",
+  "paymentStatus": "pending",
+  "status": "pending",
+  "statusHistory": [],
+  "createdAt": {
+    "$date": "2025-08-11T13:36:57.767Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-11T13:36:57.767Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6899f4e8d395f476f696d13c"
+  },
+  "orderId": "ORD1754920168075J16GD",
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "branch": {
+    "$oid": "688de56d86e2c5b1364c8865"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8874"
+      },
+      "productName": "Pepperoni Pizza",
+      "quantity": 1,
+      "price": 55000,
+      "totalPrice": 55000,
+      "_id": {
+        "$oid": "6899f4e8d395f476f696d13d"
+      },
+      "selectedOptions": []
+    }
+  ],
+  "orderType": "dine_in",
+  "customerInfo": {
+    "name": "Javohir",
+    "phone": "+998909335873"
+  },
+  "dineInInfo": {
+    "tableNumber": "2"
+  },
+  "subtotal": 55000,
+  "deliveryFee": 0,
+  "serviceFee": 0,
+  "discount": 0,
+  "total": 55000,
+  "paymentMethod": "cash",
+  "paymentStatus": "pending",
+  "status": "confirmed",
+  "statusHistory": [
+    {
+      "status": "confirmed",
+      "timestamp": {
+        "$date": "2025-08-12T05:29:03.390Z"
+      },
+      "updatedBy": "688af2f50f610f5d50d5a41b",
+      "_id": {
+        "$oid": "689ad11fa5efc65007b255ca"
+      }
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-08-11T13:49:28.086Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-12T05:29:03.391Z"
+  },
+  "__v": 1
+},
+{
+  "_id": {
+    "$oid": "6899f540d395f476f696d160"
+  },
+  "orderId": "ORD1754920256552WUO5Q",
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "branch": {
+    "$oid": "688de56d86e2c5b1364c8865"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688e2e718595285610fefae0"
+      },
+      "productName": "maxito",
+      "quantity": 1,
+      "price": 23233,
+      "totalPrice": 23233,
+      "_id": {
+        "$oid": "6899f540d395f476f696d161"
+      },
+      "selectedOptions": []
+    }
+  ],
+  "orderType": "dine_in",
+  "customerInfo": {
+    "name": "Javohir",
+    "phone": "+998909335873"
+  },
+  "dineInInfo": {
+    "tableNumber": "2"
+  },
+  "subtotal": 23233,
+  "deliveryFee": 0,
+  "serviceFee": 0,
+  "discount": 0,
+  "total": 23233,
+  "paymentMethod": "cash",
+  "paymentStatus": "pending",
+  "status": "confirmed",
+  "statusHistory": [
+    {
+      "status": "confirmed",
+      "timestamp": {
+        "$date": "2025-08-12T05:28:54.197Z"
+      },
+      "updatedBy": "688af2f50f610f5d50d5a41b",
+      "_id": {
+        "$oid": "689ad116a5efc65007b255b6"
+      }
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-08-11T13:50:56.556Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-12T05:28:54.198Z"
+  },
+  "__v": 1
+},
+{
+  "_id": {
+    "$oid": "6899f7d96f3b46d018ac10a5"
+  },
+  "orderId": "ORD1754920921466OHRO6",
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "branch": {
+    "$oid": "688de56d86e2c5b1364c8865"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8878"
+      },
+      "productName": "Coca Cola",
+      "quantity": 1,
+      "price": 10000,
+      "totalPrice": 10000,
+      "_id": {
+        "$oid": "6899f7d96f3b46d018ac10a6"
+      },
+      "selectedOptions": []
+    }
+  ],
+  "orderType": "dine_in",
+  "customerInfo": {
+    "name": "Javohir",
+    "phone": "+998909335873"
+  },
+  "dineInInfo": {
+    "tableNumber": "2"
+  },
+  "subtotal": 10000,
+  "deliveryFee": 0,
+  "serviceFee": 0,
+  "discount": 0,
+  "total": 10000,
+  "paymentMethod": "cash",
+  "paymentStatus": "pending",
+  "status": "confirmed",
+  "statusHistory": [
+    {
+      "status": "confirmed",
+      "timestamp": {
+        "$date": "2025-08-12T05:28:31.325Z"
+      },
+      "updatedBy": "688af2f50f610f5d50d5a41b",
+      "_id": {
+        "$oid": "689ad0ffa5efc65007b25532"
+      }
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-08-11T14:02:01.475Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-12T05:28:31.330Z"
+  },
+  "__v": 1
+},
+{
+  "_id": {
+    "$oid": "6899fa0ce646bc836418607d"
+  },
+  "orderId": "ORD1754921484279GN6H2",
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "branch": {
+    "$oid": "688de56d86e2c5b1364c8865"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8874"
+      },
+      "productName": "Pepperoni Pizza",
+      "quantity": 1,
+      "price": 55000,
+      "totalPrice": 55000,
+      "_id": {
+        "$oid": "6899fa0ce646bc836418607e"
+      },
+      "selectedOptions": []
+    }
+  ],
+  "orderType": "dine_in",
+  "customerInfo": {
+    "name": "Javohir",
+    "phone": "+998909335873"
+  },
+  "dineInInfo": {
+    "tableNumber": "2"
+  },
+  "subtotal": 55000,
+  "deliveryFee": 0,
+  "serviceFee": 0,
+  "discount": 0,
+  "total": 55000,
+  "paymentMethod": "cash",
+  "paymentStatus": "pending",
+  "status": "ready",
+  "statusHistory": [
+    {
+      "status": "confirmed",
+      "timestamp": {
+        "$date": "2025-08-12T05:23:54.205Z"
+      },
+      "updatedBy": "689865b230a4bd7e9c0b4d29",
+      "_id": {
+        "$oid": "689acfeace616aa8d08398e1"
+      }
+    },
+    {
+      "status": "ready",
+      "timestamp": {
+        "$date": "2025-08-12T05:24:23.044Z"
+      },
+      "updatedBy": "689865b230a4bd7e9c0b4d29",
+      "_id": {
+        "$oid": "689ad007ce616aa8d0839991"
+      }
+    },
+    {
+      "status": "ready",
+      "timestamp": {
+        "$date": "2025-08-12T05:24:28.940Z"
+      },
+      "updatedBy": "689865b230a4bd7e9c0b4d29",
+      "_id": {
+        "$oid": "689ad00cce616aa8d0839999"
+      }
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-08-11T14:11:24.290Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-12T05:24:28.941Z"
+  },
+  "__v": 3
+},
+{
+  "_id": {
+    "$oid": "6899fa50e646bc83641861ae"
+  },
+  "orderId": "ORD175492155298956U9R",
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8876"
+      },
+      "productName": "Cheeseburger",
+      "quantity": 1,
+      "price": 35000,
+      "totalPrice": 35000,
+      "_id": {
+        "$oid": "6899fa50e646bc83641861af"
+      },
+      "selectedOptions": []
+    }
+  ],
+  "orderType": "dine_in",
+  "customerInfo": {
+    "name": "Javohir",
+    "phone": "+998909335873"
+  },
+  "dineInInfo": {
+    "arrivalTime": "60",
+    "tableNumber": "7"
+  },
+  "subtotal": 35000,
+  "deliveryFee": 0,
+  "serviceFee": 0,
+  "discount": 0,
+  "total": 35000,
+  "paymentMethod": "cash",
+  "paymentStatus": "pending",
+  "status": "arrived",
+  "statusHistory": [],
+  "createdAt": {
+    "$date": "2025-08-11T14:12:32.995Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-11T14:16:12.536Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6899fc7f4a75a68bdc0d6e58"
+  },
+  "orderId": "ORD1754922111503CIU0C",
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "branch": {
+    "$oid": "688de56d86e2c5b1364c8865"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8876"
+      },
+      "productName": "Cheeseburger",
+      "quantity": 1,
+      "price": 35000,
+      "totalPrice": 35000,
+      "_id": {
+        "$oid": "6899fc7f4a75a68bdc0d6e59"
+      },
+      "selectedOptions": []
+    }
+  ],
+  "orderType": "dine_in",
+  "customerInfo": {
+    "name": "Javohir",
+    "phone": "+998909335873"
+  },
+  "dineInInfo": {
+    "tableNumber": "2"
+  },
+  "subtotal": 35000,
+  "deliveryFee": 0,
+  "serviceFee": 0,
+  "discount": 0,
+  "total": 35000,
+  "paymentMethod": "cash",
+  "paymentStatus": "pending",
+  "status": "delivered",
+  "statusHistory": [
+    {
+      "status": "confirmed",
+      "timestamp": {
+        "$date": "2025-08-12T04:26:16.280Z"
+      },
+      "updatedBy": "689865b230a4bd7e9c0b4d29",
+      "_id": {
+        "$oid": "689ac2680a96b683bee346cc"
+      }
+    },
+    {
+      "status": "ready",
+      "timestamp": {
+        "$date": "2025-08-12T05:07:51.487Z"
+      },
+      "updatedBy": "689865b230a4bd7e9c0b4d29",
+      "_id": {
+        "$oid": "689acc27b6fe881e6d603497"
+      }
+    },
+    {
+      "status": "ready",
+      "timestamp": {
+        "$date": "2025-08-12T05:07:58.378Z"
+      },
+      "updatedBy": "689865b230a4bd7e9c0b4d29",
+      "_id": {
+        "$oid": "689acc2eb6fe881e6d60349e"
+      }
+    },
+    {
+      "status": "delivered",
+      "timestamp": {
+        "$date": "2025-08-12T05:09:43.672Z"
+      },
+      "updatedBy": "689865b230a4bd7e9c0b4d29",
+      "_id": {
+        "$oid": "689acc9767bd97132ee81933"
+      }
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-08-11T14:21:51.511Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-12T05:09:43.672Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "689a0202cf74f059f6f5f078"
+  },
+  "orderId": "ORD1754923522325ZYTB2",
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "branch": {
+    "$oid": "688de56d86e2c5b1364c8865"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8878"
+      },
+      "productName": "Coca Cola",
+      "quantity": 1,
+      "price": 10000,
+      "totalPrice": 10000,
+      "_id": {
+        "$oid": "689a0202cf74f059f6f5f079"
+      },
+      "selectedOptions": []
+    }
+  ],
+  "orderType": "table",
+  "customerInfo": {
+    "name": "Javohir",
+    "phone": "+998909335873"
+  },
+  "dineInInfo": {
+    "tableNumber": "2"
+  },
+  "subtotal": 10000,
+  "deliveryFee": 0,
+  "serviceFee": 0,
+  "discount": 0,
+  "total": 10000,
+  "paymentMethod": "cash",
+  "paymentStatus": "pending",
+  "status": "delivered",
+  "statusHistory": [
+    {
+      "status": "confirmed",
+      "timestamp": {
+        "$date": "2025-08-12T04:23:51.332Z"
+      },
+      "updatedBy": "689865b230a4bd7e9c0b4d29",
+      "_id": {
+        "$oid": "689ac1d70a96b683bee345f9"
+      }
+    },
+    {
+      "status": "ready",
+      "timestamp": {
+        "$date": "2025-08-12T04:25:45.652Z"
+      },
+      "updatedBy": "689865b230a4bd7e9c0b4d29",
+      "_id": {
+        "$oid": "689ac2490a96b683bee3462d"
+      }
+    },
+    {
+      "status": "delivered",
+      "timestamp": {
+        "$date": "2025-08-12T04:25:58.610Z"
+      },
+      "updatedBy": "689865b230a4bd7e9c0b4d29",
+      "_id": {
+        "$oid": "689ac2560a96b683bee34676"
+      }
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-08-11T14:45:22.333Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-12T04:25:58.611Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "689a0235cf74f059f6f5f120"
+  },
+  "orderId": "ORD1754923573730ZHF2F",
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6896f0b503c86fb04af22a76"
+      },
+      "productName": "Hamburger",
+      "quantity": 1,
+      "price": 20000,
+      "totalPrice": 20000,
+      "_id": {
+        "$oid": "689a0235cf74f059f6f5f121"
+      },
+      "selectedOptions": []
+    }
+  ],
+  "orderType": "dine_in",
+  "customerInfo": {
+    "name": "Javohir",
+    "phone": "+998909335873"
+  },
+  "dineInInfo": {
+    "arrivalTime": "60",
+    "tableNumber": "9"
+  },
+  "subtotal": 20000,
+  "deliveryFee": 0,
+  "serviceFee": 0,
+  "discount": 0,
+  "total": 20000,
+  "paymentMethod": "cash",
+  "paymentStatus": "pending",
+  "status": "arrived",
+  "statusHistory": [
+    {
+      "status": "confirmed",
+      "timestamp": {
+        "$date": "2025-08-11T14:46:30.238Z"
+      },
+      "updatedBy": "688af2f50f610f5d50d5a41b",
+      "_id": {
+        "$oid": "689a0246cf74f059f6f5f153"
+      }
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-08-11T14:46:13.736Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-11T14:46:38.300Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "689a0602548a1b026f335050"
+  },
+  "orderId": "ORD1754924546481ZBOF8",
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "branch": {
+    "$oid": "688de56d86e2c5b1364c8865"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "688de56d86e2c5b1364c8878"
+      },
+      "productName": "Coca Cola",
+      "quantity": 1,
+      "price": 10000,
+      "totalPrice": 10000,
+      "_id": {
+        "$oid": "689a0602548a1b026f335051"
+      },
+      "selectedOptions": []
+    }
+  ],
+  "orderType": "table",
+  "customerInfo": {
+    "name": "Javohir",
+    "phone": "+998909335873"
+  },
+  "dineInInfo": {
+    "tableNumber": "2"
+  },
+  "subtotal": 10000,
+  "deliveryFee": 0,
+  "serviceFee": 0,
+  "discount": 0,
+  "total": 10000,
+  "paymentMethod": "cash",
+  "paymentStatus": "pending",
+  "status": "delivered",
+  "statusHistory": [
+    {
+      "status": "confirmed",
+      "timestamp": {
+        "$date": "2025-08-11T15:09:05.557Z"
+      },
+      "updatedBy": "688af2f50f610f5d50d5a41b",
+      "_id": {
+        "$oid": "689a0791c51bc8270c30bd30"
+      }
+    },
+    {
+      "status": "preparing",
+      "timestamp": {
+        "$date": "2025-08-11T15:09:12.234Z"
+      },
+      "updatedBy": "688af2f50f610f5d50d5a41b",
+      "_id": {
+        "$oid": "689a0798c51bc8270c30bd60"
+      }
+    },
+    {
+      "status": "ready",
+      "timestamp": {
+        "$date": "2025-08-11T15:09:17.507Z"
+      },
+      "updatedBy": "688af2f50f610f5d50d5a41b",
+      "_id": {
+        "$oid": "689a079dc51bc8270c30bd92"
+      }
+    },
+    {
+      "status": "delivered",
+      "timestamp": {
+        "$date": "2025-08-11T15:09:24.869Z"
+      },
+      "updatedBy": "688af2f50f610f5d50d5a41b",
+      "_id": {
+        "$oid": "689a07a4c51bc8270c30bdc6"
+      }
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-08-11T15:02:26.489Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-11T15:09:24.869Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "689c297f9ae945f7b26a85b3"
+  },
+  "orderId": "ORD17550647030257TKZ9",
+  "user": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "branch": {
+    "$oid": "68979e6c7f31e0f54b23bf04"
+  },
+  "items": [
+    {
+      "product": {
+        "$oid": "6896f0b503c86fb04af22a76"
+      },
+      "productName": "Hamburger",
+      "quantity": 1,
+      "price": 20000,
+      "totalPrice": 20000,
+      "_id": {
+        "$oid": "689c297f9ae945f7b26a85b4"
+      },
+      "selectedOptions": []
+    }
+  ],
+  "orderType": "delivery",
+  "customerInfo": {
+    "name": "Javohir",
+    "phone": "+998909335873"
+  },
+  "deliveryInfo": {
+    "address": "",
+    "location": {
+      "latitude": 41.310722,
+      "longitude": 69.241079
+    },
+    "estimatedTime": {
+      "$date": "2025-08-13T06:29:23.012Z"
+    }
+  },
+  "subtotal": 20000,
+  "deliveryFee": 0,
+  "serviceFee": 0,
+  "discount": 0,
+  "total": 20000,
+  "paymentMethod": "cash",
+  "paymentStatus": "pending",
+  "status": "ready",
+  "statusHistory": [
+    {
+      "status": "confirmed",
+      "timestamp": {
+        "$date": "2025-08-13T06:00:01.044Z"
+      },
+      "updatedBy": "688af2f50f610f5d50d5a41b",
+      "_id": {
+        "$oid": "689c29e19ae945f7b26a85fb"
+      }
+    },
+    {
+      "status": "ready",
+      "timestamp": {
+        "$date": "2025-08-13T06:00:17.817Z"
+      },
+      "updatedBy": "688af2f50f610f5d50d5a41b",
+      "_id": {
+        "$oid": "689c29f19ae945f7b26a868a"
+      }
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-08-13T05:58:23.030Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-13T06:00:17.818Z"
+  },
+  "__v": 2
+}]

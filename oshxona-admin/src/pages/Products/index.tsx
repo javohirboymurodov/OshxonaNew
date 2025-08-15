@@ -8,9 +8,10 @@ import ProductFormDialog from '@/components/Products/ProductFormDialog';
 import ProductViewDialog from '@/components/Products/ProductViewDialog';
 
 // Hook'larni import qilish
-import { useProducts, Product, FormData } from '@/hooks/useProducts';
+import { Product, FormData } from '@/hooks/useProducts';
 import apiService from '@/services/api';
-import { useCategories } from '@/hooks/useCategories';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/hooks/useAuth';
 
 const ProductsPage: React.FC = () => {
   // State'lar
@@ -21,17 +22,90 @@ const ProductsPage: React.FC = () => {
   const [viewProduct, setViewProduct] = useState<Product | null>(null);
   
   // Hook'lar
-  const { products, loading, fetchProducts, createProduct, updateProduct, deleteProduct } = useProducts();
-  const { categories } = useCategories();
+  const queryClient = useQueryClient();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const categoriesQuery = useQuery<{ _id: string; name: string; emoji?: string }[]>({
+    queryKey: ['categories-select'],
+    queryFn: async () => {
+      const res = await apiService.getCategories(1, 1000) as { items?: { _id: string; name: string; emoji?: string }[] };
+      return res.items || [];
+    }
+  });
+  const categories: { _id: string; name: string; emoji?: string }[] = categoriesQuery.data || [];
 
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<string>('all');
   const [status, setStatus] = useState<'all' | 'active' | 'inactive'>('all');
+  // useAuth tipini uyg'unlashtirish
+  type AuthShape = { user?: { role?: string; branch?: string } };
+  const { user } = useAuth() as AuthShape;
+  const isSuper = String(user?.role || '').toLowerCase() === 'superadmin';
+  const [branch, setBranch] = useState<string>('all');
+  const [page, setPage] = useState<number>(0);
+  const [rowsPerPage, setRowsPerPage] = useState<number>(10);
+
+  // Superadmin uchun filiallar ro'yxati (isSuper mavjud bo'lgandan keyin)
+  const branchesQuery = useQuery<{ _id: string; name?: string; title?: string }[]>({
+    queryKey: ['branches-select'],
+    queryFn: async () => {
+      const data: unknown = await apiService.getBranches();
+      if (Array.isArray(data)) return data as { _id: string; name?: string; title?: string }[];
+      const shaped = data as { branches?: { _id: string; name?: string; title?: string }[]; items?: { _id: string; name?: string; title?: string }[] };
+      return (shaped?.branches || shaped?.items || []) as { _id: string; name?: string; title?: string }[];
+    },
+    enabled: isSuper,
+  });
+  const branches: { _id: string; name?: string; title?: string }[] = branchesQuery.data || [];
+
+  const productsKey = ['products', { search, category, status, branch }];
+
+  const productsQuery = useQuery<Product[]>({
+    queryKey: productsKey,
+    queryFn: async () => {
+      let url = `/admin/products`;
+      const params: string[] = [];
+      if (isSuper && branch && branch !== 'all') params.push(`branch=${encodeURIComponent(branch)}`);
+      if (category && category !== 'all') params.push(`category=${encodeURIComponent(category)}`);
+      if (search && search.trim()) params.push(`search=${encodeURIComponent(search.trim())}`);
+      if (params.length) url += `?${params.join('&')}`;
+      const data = await apiService.get<{ items?: Product[] }>(url);
+      let items: Product[] = data?.items || [];
+      if (status && status !== 'all') {
+        const isActive = status === 'active';
+        items = items.filter(p => Boolean(p.isActive) === isActive);
+      }
+      return items;
+    },
+    placeholderData: [] as Product[],
+  });
 
   useEffect(() => {
-    fetchProducts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    setProducts((productsQuery.data || []) as Product[]);
+    setLoading(productsQuery.isLoading);
+  }, [productsQuery.data, productsQuery.isLoading]);
+
+  // Filter/pagination reset on key changes
+  useEffect(() => { setPage(0); }, [search, category, status, branch]);
+
+  // Inventory prefetch for selected branch (admin: own branch; superadmin: selected branch)
+  const targetBranchId: string | undefined = isSuper ? (branch && branch !== 'all' ? branch : undefined) : (user?.branch as string | undefined);
+  const productIds: string[] = React.useMemo(() => (products || []).map((p) => p._id), [products]);
+  const inventoryQuery = useQuery<Record<string, { isAvailable?: boolean; stock?: number | null; dailyLimit?: number | null; soldToday?: number | null }>>({
+    queryKey: ['inventory', { branch: targetBranchId, ids: productIds }],
+    queryFn: async () => {
+      if (!targetBranchId || productIds.length === 0) return {} as Record<string, { isAvailable?: boolean; stock?: number | null; dailyLimit?: number | null; soldToday?: number | null }>;
+      const data: Array<{ product: string | { _id: string }; isAvailable?: boolean; stock?: number | null; dailyLimit?: number | null; soldToday?: number | null }>
+        = await apiService.getInventory(targetBranchId, productIds);
+      // Expecting array of { product, isAvailable, stock, dailyLimit, soldToday }
+      const map: Record<string, { isAvailable?: boolean; stock?: number | null; dailyLimit?: number | null; soldToday?: number | null }> = {};
+      (data || []).forEach((it) => { map[String((it as { product: string | { _id: string } }).product && (typeof it.product === 'string' ? it.product : it.product._id))] = it; });
+      return map;
+    },
+    enabled: Boolean(targetBranchId) && productIds.length > 0,
+    staleTime: 5_000,
+    placeholderData: {} as Record<string, { isAvailable?: boolean; stock?: number | null; dailyLimit?: number | null; soldToday?: number | null }>
+  });
 
   // Yangi mahsulot qo'shish
   const handleAdd = () => {
@@ -55,8 +129,8 @@ const ProductsPage: React.FC = () => {
   const handleDelete = async (productId: string) => {
     if (window.confirm('Bu mahsulotni o\'chirmoqchimisiz?')) {
       try {
-        await deleteProduct(productId);
-        await fetchProducts();
+        await apiService.deleteProduct(productId);
+        await queryClient.invalidateQueries({ queryKey: productsKey });
         setError(''); // Clear any previous errors
       } catch (error: unknown) {
         if (error instanceof Error) {
@@ -70,14 +144,22 @@ const ProductsPage: React.FC = () => {
 
   // Form submit
   const handleSubmit = async (formData: FormData, selectedFile: File | null) => {
+    const fd = new window.FormData();
+    fd.append('name', formData.name.trim());
+    fd.append('description', formData.description.trim());
+    fd.append('price', String(formData.price));
+    fd.append('categoryId', formData.categoryId);
+    fd.append('isActive', String(formData.isActive));
+    if (selectedFile) fd.append('image', selectedFile);
+
     if (editProduct) {
-      await updateProduct(editProduct._id, formData, selectedFile);
+      await apiService.updateProduct(editProduct._id, fd as unknown as globalThis.FormData);
     } else {
-      await createProduct(formData, selectedFile);
+      await apiService.createProduct(fd as unknown as globalThis.FormData);
     }
-    
+
     setOpen(false);
-    await fetchProducts();
+    await queryClient.invalidateQueries({ queryKey: productsKey });
     setError(''); // Clear any previous errors
   };
 
@@ -105,13 +187,15 @@ const ProductsPage: React.FC = () => {
       {/* Header */}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4">Mahsulotlar Boshqaruvi</Typography>
-        <Button 
-          variant="contained" 
-          startIcon={<AddIcon />}
-          onClick={handleAdd}
-        >
-          Yangi Mahsulot
-        </Button>
+        {isSuper && (
+          <Button 
+            variant="contained" 
+            startIcon={<AddIcon />}
+            onClick={handleAdd}
+          >
+            Yangi Mahsulot
+          </Button>
+        )}
       </Box>
 
       {/* Error Alert */}
@@ -132,19 +216,29 @@ const ProductsPage: React.FC = () => {
               onChange={(e) => {
                 const v = e.target.value;
                 setSearch(v);
-                fetchProducts({ search: v, category, status }, { silent: true });
+                queryClient.invalidateQueries({ queryKey: productsKey });
               }}
               size="small"
             />
           </Box>
+  {isSuper && (
+            <Box>
+              <TextField select fullWidth label="Filial" size="small" value={branch} onChange={(e) => { const v = e.target.value; setBranch(v); queryClient.invalidateQueries({ queryKey: productsKey }); }}>
+                <MenuItem value="all">Barchasi</MenuItem>
+                 {branches.map((b: { _id: string; name?: string; title?: string }) => (
+                  <MenuItem key={b._id} value={b._id}>{b.name || b.title || 'Nomsiz filial'}</MenuItem>
+                ))}
+              </TextField>
+            </Box>
+          )}
           <Box>
             <TextField select fullWidth label="Kategoriya" size="small" value={category} onChange={(e) => {
               const v = e.target.value;
               setCategory(v);
-              fetchProducts({ search, category: v, status }, { silent: true });
+              queryClient.invalidateQueries({ queryKey: productsKey });
             }}>
               <MenuItem value="all">Barchasi</MenuItem>
-              {categories.map((c) => (
+               {categories.map((c: { _id: string; name: string; emoji?: string }) => (
                 <MenuItem key={c._id} value={c._id}>
                   {c.emoji} {c.name}
                 </MenuItem>
@@ -155,7 +249,7 @@ const ProductsPage: React.FC = () => {
             <TextField select fullWidth label="Holat" size="small" value={status} onChange={(e) => {
               const v = e.target.value as 'all' | 'active' | 'inactive';
               setStatus(v);
-              fetchProducts({ search, category, status: v }, { silent: true });
+              queryClient.invalidateQueries({ queryKey: productsKey });
             }}>
               <MenuItem value="all">Barchasi</MenuItem>
               <MenuItem value="active">Faol</MenuItem>
@@ -183,11 +277,17 @@ const ProductsPage: React.FC = () => {
         onToggleStatus={async (id) => {
           try {
             await apiService.toggleProductStatus(id);
-            fetchProducts({ search, category, status }, { silent: true });
+            queryClient.invalidateQueries({ queryKey: productsKey });
           } catch (e) {
             console.error('Toggle status error', e);
           }
         }}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        total={products.length}
+        onPageChange={(_, newPage) => setPage(newPage)}
+        onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
+        inventoryMap={inventoryQuery.data || {}}
       />
 
       {/* Form Dialog */}

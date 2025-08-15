@@ -37,7 +37,7 @@ interface Product {
 interface Category {
   _id: string;
   name: string;
-  emoji: string;
+  emoji?: string;
 }
 
 interface FormData {

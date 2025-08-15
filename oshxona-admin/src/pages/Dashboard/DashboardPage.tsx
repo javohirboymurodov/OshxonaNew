@@ -15,6 +15,7 @@ import {
   Spin,
   Alert,
   DatePicker,
+  Select,
   message as antdMessage
 } from 'antd';
 import {
@@ -27,8 +28,9 @@ import {
   TruckOutlined,
   ClockCircleOutlined
 } from '@ant-design/icons';
-import { Line, Pie } from '@ant-design/plots';
+import { Line, Pie, Column, Bar } from '@ant-design/plots';
 import apiService from '@/services/api';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { useRealTimeOrders } from '@/hooks/useSocket';
 import dayjs from 'dayjs';
@@ -49,6 +51,13 @@ interface DashboardStats {
       delivered: number;
       cancelled: number;
     };
+    byType?: {
+      delivery?: number;
+      pickup?: number;
+      dine_in?: number;
+      table?: number;
+    };
+    byHour?: Array<{ hour: number; count: number; revenue: number }>;
   };
   revenue: {
     total: number;
@@ -72,6 +81,14 @@ interface DashboardStats {
       revenue: number;
     }>;
   };
+  meta?: {
+    categories?: number;
+    branches?: number;
+    avgDeliveryEtaMinutes?: number | null;
+  };
+  byBranch?: Array<{ branchId: string; name: string; orders: number; revenue: number }>;
+  courierPerformance?: Array<{ courierId: string; name: string; avgMinutes: number; orders: number }>;
+  categoryShare?: Array<{ categoryId: string; name: string; quantity: number; revenue: number; percent: number }>;
 }
 
 interface RecentOrder {
@@ -96,11 +113,81 @@ const DashboardPage: React.FC = () => {
     dayjs()
   ]);
   const { user } = useAuth();
+  const isSuper = String((user as { role?: string } | null | undefined)?.role || '').toLowerCase() === 'superadmin';
+  const [branch, setBranch] = useState<string>('');
+  const branchesQuery = useQuery<{ _id: string; name?: string; title?: string }[]>({
+    queryKey: ['branches-select'],
+    queryFn: async () => {
+      const data = await apiService.getBranches();
+      if (Array.isArray(data)) return data as { _id: string; name?: string; title?: string }[];
+      return (data?.branches || data?.items || []) as { _id: string; name?: string; title?: string }[];
+    },
+    enabled: isSuper,
+  });
   const token = localStorage.getItem('token') || '';
-  const branchId = ((user as unknown) as { branch?: { _id?: string } } | null)?.branch?._id || 'default';
+  const branchId = ((user as { branch?: { _id?: string } } | null | undefined)?.branch?._id) || 'default';
   const { newOrders, connected } = useRealTimeOrders(token, branchId);
 
   const [messageApi, contextHolder] = antdMessage.useMessage();
+
+  const queryClient = useQueryClient();
+  const rangeKey = {
+    from: dateRange[0]?.toDate()?.toISOString?.(),
+    to: dateRange[1]?.toDate()?.toISOString?.(),
+  } as const;
+  
+  const dashQuery = useQuery({
+    queryKey: ['dashboard', rangeKey, isSuper ? branch : 'admin-branch'],
+    queryFn: async () => {
+      const statsResponse = await apiService.getDashboardStats(isSuper && branch ? { branch } : undefined);
+
+      const startOfDay = dayjs().startOf('day').toDate().toISOString();
+      const endOfDay = dayjs().endOf('day').toDate().toISOString();
+      type RawOrder = {
+        _id?: unknown;
+        orderId?: unknown;
+        orderNumber?: unknown;
+        user?: { firstName?: unknown; lastName?: unknown };
+        customerInfo?: { name?: unknown };
+        totalAmount?: unknown;
+        total?: unknown;
+        status?: unknown;
+        orderType?: unknown;
+        createdAt?: unknown;
+      };
+      const ordersUrl = `/orders?page=1&limit=20&dateFrom=${encodeURIComponent(startOfDay)}&dateTo=${encodeURIComponent(endOfDay)}${isSuper && branch ? `&branch=${encodeURIComponent(branch)}` : ''}`;
+      const ordersData = await apiService.get<{ orders?: RawOrder[]; data?: { orders?: RawOrder[] } }>(ordersUrl);
+      const rawOrders: RawOrder[] = (ordersData?.orders || ordersData?.data?.orders || []) as RawOrder[];
+      const activeStatuses = new Set(['pending','confirmed','preparing','ready','on_delivery']);
+      const ordersResponse: RecentOrder[] = rawOrders
+        .filter((o) => activeStatuses.has(String(o.status)))
+        .slice(0, 10)
+        .map((o) => ({
+          _id: String(o._id ?? ''),
+          orderNumber: String((o.orderId ?? o.orderNumber ?? '')),
+          user: { firstName: String(o.user?.firstName ?? o.customerInfo?.name ?? 'Mijoz'), lastName: String(o.user?.lastName ?? '') },
+          totalAmount: Number(o.totalAmount ?? o.total ?? 0),
+          status: String(o.status ?? ''),
+          orderType: String(o.orderType ?? ''),
+          createdAt: String(o.createdAt ?? new Date().toISOString())
+        }));
+
+      const chartResponse = await apiService.get<{ date: string; value: number }[]>(`/dashboard/chart-data?startDate=${encodeURIComponent(rangeKey.from || '')}&endDate=${encodeURIComponent(rangeKey.to || '')}&type=revenue${isSuper && branch ? `&branch=${encodeURIComponent(branch)}` : ''}`);
+
+      // Buyurtma turlari diagrammasi (tanlangan oraliq bo'yicha)
+      const pieChartData: Array<{ type: string; value: number }> = [
+        { type: 'Yetkazib berish', value: statsResponse.orders.byType?.delivery || 0 },
+        { type: 'Olib ketish', value: statsResponse.orders.byType?.pickup || 0 },
+        { type: "Avvaldan buyurtma", value: statsResponse.orders.byType?.dine_in || 0 },
+        { type: 'Stol (QR)', value: statsResponse.orders.byType?.table || 0 },
+      ];
+
+      return { statsResponse, ordersResponse, chartResponse, pieChartData };
+    },
+    retry: 1,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+  });
 
   const fetchDashboardData = async () => {
     setLoading(true);
@@ -204,9 +291,20 @@ const DashboardPage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchDashboardData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dateRange[0]?.toISOString(), dateRange[1]?.toISOString()]);
+    setLoading(dashQuery.isLoading);
+    if (dashQuery.isError) setError('Dashboard ma\'lumotlarini yuklashda xatolik yuz berdi');
+    if (dashQuery.data) {
+      setStats(dashQuery.data.statsResponse);
+      setRecentOrders(dashQuery.data.ordersResponse);
+      setChartData(dashQuery.data.chartResponse);
+      setPieData(dashQuery.data.pieChartData);
+    }
+  }, [dashQuery.isLoading, dashQuery.isError, dashQuery.data]);
+
+  useEffect(() => {
+    if (!connected) return;
+    queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+  }, [connected, newOrders, queryClient]);
 
   const getStatusColor = (status: string) => {
     const colors: { [key: string]: string } = {
@@ -346,11 +444,75 @@ const DashboardPage: React.FC = () => {
     angleField: 'value',
     colorField: 'type',
     radius: 0.8,
+    legend: {
+      position: 'left',
+      layout: 'vertical',
+      flipPage: false,
+    },
+    tooltip: {
+      formatter: (datum: { type: string; value: number }) => ({
+        name: datum.type,
+        value: String(datum.value),
+      })
+    },
     label: {
-      type: 'outer',
+      type: 'spider',
       content: (d: { type: string; value: number }) => `${d.type} ${Math.round((d.value / (pieData.reduce((s, v) => s + v.value, 0) || 1)) * 100)}%`,
     },
   };
+
+  // Orders by hour (Column)
+  const ordersByHourConfig = {
+    data: (stats?.orders.byHour || []).map((d) => ({ hour: `${d.hour}:00`, count: d.count })),
+    xField: 'hour',
+    yField: 'count',
+    columnWidthRatio: 0.6,
+    label: {
+      position: 'middle' as const,
+      style: { fill: '#fff' },
+    },
+    xAxis: { label: { formatter: (v: string) => v.padStart(5, '0') } },
+  };
+
+  // Branch segmentation (Bar)
+  const [branchMetric, setBranchMetric] = useState<'revenue' | 'orders'>('revenue');
+  const branchBarConfig = {
+    data: (stats?.byBranch || []).map((b) => ({ name: b.name || 'Filial', value: branchMetric === 'revenue' ? b.revenue : b.orders })),
+    xField: 'value',
+    yField: 'name',
+    seriesField: 'name',
+    legend: false as const,
+    xAxis: {
+      label: { formatter: (v: string) => Number(v).toLocaleString() },
+    },
+    tooltip: {
+      formatter: (d: { name: string; value: number }) => ({ name: d.name, value: branchMetric === 'revenue' ? `${d.value.toLocaleString()} so'm` : `${d.value.toLocaleString()} ta` }),
+    },
+  };
+
+  // Category share (Pie)
+  const [categoryMetric, setCategoryMetric] = useState<'revenue' | 'quantity'>('revenue');
+  const categoryPieData = (stats?.categoryShare || []).map((c) => ({ type: c.name || 'Kategoriya', value: categoryMetric === 'revenue' ? (c.revenue || 0) : (c.quantity || 0) }));
+  const categoryPieConfig = {
+    data: categoryPieData,
+    angleField: 'value',
+    colorField: 'type',
+    radius: 0.8,
+    legend: { position: 'bottom' as const },
+    label: {
+      type: 'spider' as const,
+      content: (d: { type: string; value: number }) => `${d.type} ${(d.value / (categoryPieData.reduce((s, v) => s + v.value, 0) || 1) * 100).toFixed(0)}%`,
+    },
+  };
+
+  const courierColumns = [
+    { title: 'Kuryer', dataIndex: 'name', key: 'name' },
+    { title: 'Buyurtmalar', dataIndex: 'orders', key: 'orders', render: (v: number) => v?.toLocaleString?.() || 0 },
+    { title: 'O‘rtacha daqiqa', dataIndex: 'avgMinutes', key: 'avgMinutes', render: (v: number) => `${v?.toFixed?.(1) || 0}` },
+    { title: 'Median', dataIndex: 'medianMinutes', key: 'medianMinutes', render: (v: number) => `${v?.toFixed?.(1) || 0}` },
+    { title: 'Min', dataIndex: 'minMinutes', key: 'minMinutes', render: (v: number) => `${v ?? 0}` },
+    { title: 'Max', dataIndex: 'maxMinutes', key: 'maxMinutes', render: (v: number) => `${v ?? 0}` },
+  ];
 
   if (loading) {
     return (
@@ -392,6 +554,16 @@ const DashboardPage: React.FC = () => {
           </Col>
           <Col>
             <Space>
+              {isSuper && (
+                <Select
+                  placeholder="Filial"
+                  allowClear
+                  style={{ width: 220 }}
+                  value={branch || undefined}
+                  onChange={(v) => setBranch(v || '')}
+                  options={(branchesQuery.data || []).map((b) => ({ value: b._id, label: b.name || b.title || 'Filial' }))}
+                />
+              )}
               <RangePicker
                 value={dateRange}
                 onChange={(dates) => {
@@ -401,7 +573,11 @@ const DashboardPage: React.FC = () => {
               />
               <Button 
                 icon={<ReloadOutlined />} 
-                onClick={fetchDashboardData}
+                onClick={() => {
+                  // invalidate + fresh fetch with range filters
+                  queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+                  fetchDashboardData();
+                }}
                 loading={loading}
               >
                 Yangilash
@@ -572,6 +748,68 @@ const DashboardPage: React.FC = () => {
           <Card title="Buyurtma turlari">
             {pieData.length > 0 ? (
               <Pie {...pieConfig} />
+            ) : (
+              <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                <Text type="secondary">Ma'lumot yo'q</Text>
+              </div>
+            )}
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Hourly and Branch segmentation */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col xs={24} lg={12}>
+          <Card title="Soat bo‘yicha buyurtmalar">
+            {(stats?.orders.byHour || []).length > 0 ? (
+              <Column {...ordersByHourConfig} />
+            ) : (
+              <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                <Text type="secondary">Ma'lumot yo'q</Text>
+              </div>
+            )}
+          </Card>
+        </Col>
+        <Col xs={24} lg={12}>
+          <Card title="Filiallar" extra={
+            <Space size="small">
+              <Button size="small" type={branchMetric==='revenue'?'primary':'default'} onClick={() => setBranchMetric('revenue')}>Daromad</Button>
+              <Button size="small" type={branchMetric==='orders'?'primary':'default'} onClick={() => setBranchMetric('orders')}>Buyurtma</Button>
+            </Space>
+          }>
+            {(stats?.byBranch || []).length > 0 ? (
+              <Bar {...branchBarConfig} />
+            ) : (
+              <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                <Text type="secondary">Ma'lumot yo'q</Text>
+              </div>
+            )}
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Couriers and Category share */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col xs={24} lg={12}>
+          <Card title="Kuryerlar reytingi (o‘rtacha daqiqa pastdan yuqoriga)">
+            <Table
+              dataSource={(stats?.courierPerformance || []).slice(0, 10)}
+              columns={courierColumns}
+              rowKey={(r) => r.courierId}
+              size="small"
+              pagination={false}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} lg={12}>
+          <Card title="Kategoriya ulushi" extra={
+            <Space size="small">
+              <Button size="small" type={categoryMetric==='revenue'?'primary':'default'} onClick={() => setCategoryMetric('revenue')}>Daromad</Button>
+              <Button size="small" type={categoryMetric==='quantity'?'primary':'default'} onClick={() => setCategoryMetric('quantity')}>Soni</Button>
+            </Space>
+          }>
+            {(categoryPieData || []).length > 0 ? (
+              <Pie {...categoryPieConfig} />
             ) : (
               <div style={{ textAlign: 'center', padding: '40px 0' }}>
                 <Text type="secondary">Ma'lumot yo'q</Text>

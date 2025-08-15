@@ -117,7 +117,6 @@ class SocketManager {
         timestamp: new Date(),
         sound: true // Admin panelda ovoz signali uchun
       });
-      
       console.log(`📢 New order emitted to branch:${branchId}`);
     }
   }
@@ -170,6 +169,24 @@ class SocketManager {
         timestamp: new Date()
       });
     }
+  }
+
+  // Kuryer lokatsiyasini filialdagi barcha adminlarga yuborish
+  static emitCourierLocationToBranch(branchId, payload) {
+    if (!this.io) return;
+    const data = {
+      courierId: payload.courierId,
+      firstName: payload.firstName,
+      lastName: payload.lastName,
+      phone: payload.phone,
+      branchId: String(branchId || ''),
+      location: payload.location || null,
+      isOnline: Boolean(payload.isOnline),
+      isAvailable: Boolean(payload.isAvailable),
+      isStale: Boolean(payload.isStale),
+      updatedAt: payload.updatedAt ? new Date(payload.updatedAt) : new Date()
+    };
+    this.io.to(`branch:${branchId}`).emit('courier:location', data);
   }
   
   // Real-time statistika (admin dashboard uchun)

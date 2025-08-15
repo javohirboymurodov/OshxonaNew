@@ -1,0 +1,97 @@
+[{
+  "_id": {
+    "$oid": "6863bf6d43d93b1204096895"
+  },
+  "name": "Shahar markази",
+  "nameRu": "Центр города",
+  "description": "Toshkent shahar markazi",
+  "coordinates": [
+    {
+      "latitude": 41.311158,
+      "longitude": 69.240562,
+      "_id": {
+        "$oid": "6863bf6d43d93b1204096896"
+      }
+    },
+    {
+      "latitude": 41.311158,
+      "longitude": 69.290562,
+      "_id": {
+        "$oid": "6863bf6d43d93b1204096897"
+      }
+    },
+    {
+      "latitude": 41.361158,
+      "longitude": 69.290562,
+      "_id": {
+        "$oid": "6863bf6d43d93b1204096898"
+      }
+    },
+    {
+      "latitude": 41.361158,
+      "longitude": 69.240562,
+      "_id": {
+        "$oid": "6863bf6d43d93b1204096899"
+      }
+    }
+  ],
+  "deliveryFee": 8000,
+  "freeDeliveryAmount": 100000,
+  "minOrderAmount": 30000,
+  "maxWeight": 50,
+  "estimatedTime": 25,
+  "workingHours": {
+    "monday": {
+      "start": "09:00",
+      "end": "23:00",
+      "isActive": true
+    },
+    "tuesday": {
+      "start": "09:00",
+      "end": "23:00",
+      "isActive": true
+    },
+    "wednesday": {
+      "start": "09:00",
+      "end": "23:00",
+      "isActive": true
+    },
+    "thursday": {
+      "start": "09:00",
+      "end": "23:00",
+      "isActive": true
+    },
+    "friday": {
+      "start": "09:00",
+      "end": "23:00",
+      "isActive": true
+    },
+    "saturday": {
+      "start": "09:00",
+      "end": "23:00",
+      "isActive": true
+    },
+    "sunday": {
+      "start": "10:00",
+      "end": "22:00",
+      "isActive": true
+    }
+  },
+  "availableCouriers": [],
+  "priority": 1,
+  "isActive": true,
+  "stats": {
+    "totalOrders": 0,
+    "totalRevenue": 0,
+    "averageDeliveryTime": 0,
+    "successRate": 0
+  },
+  "specialConditions": [],
+  "createdAt": {
+    "$date": "2025-07-01T10:58:53.307Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-01T10:58:53.307Z"
+  },
+  "__v": 0
+}]

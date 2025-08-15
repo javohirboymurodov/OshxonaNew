@@ -24,6 +24,7 @@
     "db:restore": "node scripts/restore.js",
     "admin:create": "node scripts/createAdmin.js",
     "stats:generate": "node scripts/generateStats.js",
+    "smoke": "node scripts/smoke-admin-superadmin.js",
     "logs:clean": "node scripts/cleanLogs.js",
     "webhook:set": "node scripts/setWebhook.js",
     "webhook:delete": "node scripts/deleteWebhook.js",

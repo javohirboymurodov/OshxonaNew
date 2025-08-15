@@ -1,0 +1,48 @@
+[{
+  "_id": {
+    "$oid": "6863bf6d43d93b12040968a8"
+  },
+  "user": {
+    "$oid": "6863bf6d43d93b120409689d"
+  },
+  "product": {
+    "$oid": "6863bf6d43d93b1204096887"
+  },
+  "rating": 5,
+  "comment": "Juda mazali taom! Tavsiya qilaman! 👍",
+  "recommend": true,
+  "type": "product",
+  "status": "approved",
+  "createdAt": {
+    "$date": "2025-07-01T10:58:53.368Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-01T10:58:53.368Z"
+  },
+  "reviewId": "REV175136753336814UNF",
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6863bf6d43d93b12040968ab"
+  },
+  "user": {
+    "$oid": "6863bf6d43d93b12040968a0"
+  },
+  "product": {
+    "$oid": "6863bf6d43d93b120409688c"
+  },
+  "rating": 4,
+  "comment": "Yaxshi taom edi",
+  "recommend": true,
+  "type": "product",
+  "status": "approved",
+  "createdAt": {
+    "$date": "2025-07-01T10:58:53.377Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-01T10:58:53.377Z"
+  },
+  "reviewId": "REV1751367533377INLOL",
+  "__v": 0
+}]

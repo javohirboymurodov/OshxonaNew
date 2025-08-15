@@ -6,6 +6,7 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/uz-latn';
 
 import { AuthProvider } from '@/hooks/useAuth';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AppRouter from '@/router/AppRouter';
 import './App.css';
 
@@ -34,16 +35,19 @@ const theme = {
 };
 
 function App() {
+  const queryClient = React.useMemo(() => new QueryClient(), []);
   return (
     <ConfigProvider 
       theme={theme}
       locale={uzUZ}
     >
-      <AuthProvider>
-        <BrowserRouter>
-          <AppRouter />
-        </BrowserRouter>
-      </AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <BrowserRouter>
+            <AppRouter />
+          </BrowserRouter>
+        </AuthProvider>
+      </QueryClientProvider>
     </ConfigProvider>
   );
 }

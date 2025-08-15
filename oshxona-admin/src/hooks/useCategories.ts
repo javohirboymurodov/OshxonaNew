@@ -6,38 +6,9 @@ interface Category {
   emoji: string;
 }
 
+// Legacy hook — endi sahifalar React Query ishlatyapti. Orqaga moslik uchun bo'sh stub.
 export const useCategories = () => {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  const token = localStorage.getItem('token');
-
-  const fetchCategories = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('http://localhost:5000/api/categories', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setCategories(data.data?.items || data.data?.categories || []);
-      }
-    } catch (error) {
-      console.error('Fetch categories error:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  return { categories, loading, fetchCategories };
+  return { categories: [] as Category[], loading: false, fetchCategories: async () => {} };
 };
 
 export type { Category };

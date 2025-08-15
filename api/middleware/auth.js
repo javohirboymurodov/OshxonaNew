@@ -62,10 +62,18 @@ const requireRole = (roles) => {
 
 // Admin middleware
 const requireAdmin = (req, res, next) => {
-  if (req.user.role !== 'admin' && req.user.role !== 'superadmin') {
+  const role = req.user.role;
+  if (role !== 'admin' && role !== 'superadmin') {
     return res.status(403).json({
       success: false,
       message: 'Admin ruxsati kerak!'
+    });
+  }
+  // Admin (superadmin emas) bo'lsa, majburiy ravishda filialga biriktirilgan bo'lishi shart
+  if (role === 'admin' && !req.user.branch) {
+    return res.status(403).json({
+      success: false,
+      message: 'Admin uchun filial (branch) biriktirilmagan. Iltimos, superadmin orqali filial bering.'
     });
   }
   next();

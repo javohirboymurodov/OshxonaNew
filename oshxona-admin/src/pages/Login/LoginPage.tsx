@@ -43,7 +43,7 @@ const LoginPage: React.FC = () => {
               <div className="logo-icon">🍽️</div>
             </div>
             <Title level={2} className="login-title">
-              Oshxona Admin Panel
+              Admin Panel
             </Title>
             <Text className="login-subtitle">
               Admin panelga kirish uchun ma'lumotlaringizni kiriting
@@ -80,7 +80,7 @@ const LoginPage: React.FC = () => {
             >
               <Input 
                 prefix={<UserOutlined />} 
-                placeholder="superadmin@oshxona.uz"
+                placeholder="super@admin.uz"
                 autoComplete="email"
               />
             </Form.Item>
@@ -122,8 +122,8 @@ const LoginPage: React.FC = () => {
             <Space direction="vertical" size="small" style={{ width: '100%' }}>
               <div className="demo-item">
                 <Text strong>SuperAdmin:</Text>
-                <Text code>superadmin@oshxona.uz</Text>
-                <Text code>SuperAdmin2024!</Text>
+                <Text code>super@admin.uz</Text>
+                <Text code>admin123</Text>
               </div>
               <div className="demo-item">
                 <Text type="secondary" style={{ fontSize: '12px' }}>
@@ -137,7 +137,7 @@ const LoginPage: React.FC = () => {
         {/* Footer */}
         <div className="login-footer">
           <Text type="secondary">
-            © 2024 Oshxona Professional Bot. Barcha huquqlar himoyalangan.
+            © 2025 Oshxona Professional Bot. Barcha huquqlar himoyalangan.
           </Text>
         </div>
       </div>

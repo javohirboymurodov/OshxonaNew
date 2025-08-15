@@ -40,7 +40,10 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const isMobile = useMediaQuery('(max-width: 768px)');
   const { user } = useAuth();
   const token = localStorage.getItem('token') || '';
-  const branchId = (user as any)?.branch?._id || 'default';
+  type UserShape = { role?: string; branch?: { _id?: string } } | null | undefined;
+  const castUser = (user as unknown) as UserShape;
+  const isSuper = String(castUser?.role || '').toLowerCase() === 'superadmin';
+  const branchId = isSuper ? '' : (castUser?.branch?._id || '');
   const { newOrders } = useRealTimeOrders(token, branchId);
   const go = useNav();
   const [notifOpen, setNotifOpen] = useState(false);
@@ -58,8 +61,9 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     return () => window.removeEventListener('storage', onStorage);
   }, []);
 
+  type NewOrderLite = { id?: string; orderId?: string };
   const visibleOrders = useMemo(() => {
-    return newOrders.filter((o: any) => {
+    return (newOrders as NewOrderLite[]).filter((o) => {
       const id = String(o.id || o.orderId || '');
       return id && !dismissedIds.has(id);
     });
@@ -69,12 +73,9 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     token: { colorBgContainer },
   } = theme.useToken();
 
-  const menuItems = [
-    {
-      key: '/dashboard',
-      icon: <DashboardOutlined />,
-      label: 'Dashboard',
-    },
+  // isSuper already computed above
+  const baseMenu = [
+    ...(isSuper ? [{ key: '/dashboard', icon: <DashboardOutlined />, label: 'Dashboard' }] : []),
     {
       key: '/products',
       icon: <ShopOutlined />,
@@ -89,18 +90,19 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       key: '/orders',
       icon: <ShoppingCartOutlined />,
       label: 'Buyurtmalar',
-    },
-    {
-      key: '/users',
-      icon: <UserOutlined />,
-      label: 'Foydalanuvchilar',
-    },
-    {
-      key: '/settings',
-      icon: <SettingOutlined />,
-      label: 'Sozlamalar',
-    },
+    }
   ];
+  const menuItems = isSuper
+    ? [
+        ...baseMenu,
+        { key: '/couriers', icon: <UserOutlined />, label: 'Haydovchilar' },
+        { key: '/users', icon: <UserOutlined />, label: 'Foydalanuvchilar' },
+        { key: '/settings', icon: <SettingOutlined />, label: 'Sozlamalar' },
+      ]
+    : [
+        ...baseMenu,
+        { key: '/couriers', icon: <UserOutlined />, label: 'Haydovchilar' }
+      ];
 
   const userMenuItems = [
     {
@@ -224,7 +226,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                   <List
                     locale={{ emptyText: 'Hozircha yangi buyurtma yo\'q' }}
                     dataSource={visibleOrders.slice(0, 10)}
-                    renderItem={(item: any) => (
+                    renderItem={(item: { id?: string; orderId?: string; orderType?: string; customer?: { name?: string }; total?: number }) => (
                       <List.Item
                         style={{ cursor: 'pointer' }}
                         onClick={() => {
@@ -236,10 +238,20 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                           go('/orders', { state: { focusOrderId: id } });
                         }}
                       >
-                        <List.Item.Meta
-                          title={<span>№ {item.orderId || item.orderNumber}</span>}
-                          description={<span>{item.customer?.name || 'Mijoz'} • {(item.total || 0).toLocaleString()} so'm</span>}
-                        />
+                          <List.Item.Meta
+                            title={<span>№ {item.orderId || ''}</span>}
+                            description={
+                              <span>
+                                {(item.orderType === 'delivery' && '🚚 Yetkazish')
+                                  || (item.orderType === 'pickup' && '🛍️ Olib ketish')
+                                  || (item.orderType === 'dine_in' && '🍽️ Avvaldan buyurtma')
+                                  || (item.orderType === 'table' && '🪑 Stol (QR)')
+                                  || ''}
+                                {item.customer?.name ? ` • ${item.customer.name}` : ''}
+                                {' • '}{(item.total || 0).toLocaleString()} so'm
+                              </span>
+                            }
+                          />
                       </List.Item>
                     )}
                   />

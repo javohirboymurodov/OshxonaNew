@@ -24,6 +24,8 @@ const deliveryZoneSchema = new mongoose.Schema({
     latitude: { type: Number, required: true },
     longitude: { type: Number, required: true }
   }],
+  // Bog'liq filial
+  branch: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch' },
   
   // Yetkazib berish narxi
   deliveryFee: {
@@ -108,6 +110,7 @@ const deliveryZoneSchema = new mongoose.Schema({
 deliveryZoneSchema.index({ name: 1 });
 deliveryZoneSchema.index({ isActive: 1 });
 deliveryZoneSchema.index({ priority: 1 });
+deliveryZoneSchema.index({ branch: 1 });
 
 // Virtual - zona maydoni (taxminiy)
 deliveryZoneSchema.virtual('estimatedArea').get(function() {

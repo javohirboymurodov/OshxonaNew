@@ -27,6 +27,7 @@ module.exports = function registerUserBot(bot) {
   } = require('../handlers/user/cart');
   const { handleTextMessage, handlePhoneInput } = require('../handlers/user/input');
   const { mainMenuKeyboard } = require('../keyboards/userKeyboards');
+  const { showBranches } = require('../handlers/user/catalog');
   const { showMyOrders, myOrdersCallbackHandler } = require('../handlers/user/myOrders');
   const UXImprovements = require('../improvements/ux-improvements');
 
@@ -47,6 +48,17 @@ module.exports = function registerUserBot(bot) {
         user.lastName = lastName;
         user.username = username;
         await user.save();
+      }
+
+      // Agar foydalanuvchi roli kuryer bo'lsa, darhol kuryer paneliga yo'naltiramiz
+      if (user.role === 'courier') {
+        try {
+          const { start } = require('../bot/courier/handlers');
+          await start(ctx);
+          return;
+        } catch (e) {
+          // agar modul yuklanmasa, odatiy menyuni ko'rsatamiz
+        }
       }
 
       // Parse /start payload: table_{number}_b_{branchId}
@@ -126,6 +138,37 @@ module.exports = function registerUserBot(bot) {
     await backToMain(ctx);
   });
 
+  // Reply keyboarddagi "Asosiy menyu" faqat user paneli uchun (kuryer uchun alohida matn bor)
+  bot.hears('⬅️ Asosiy menyu', async (ctx) => {
+    try {
+      // Agar foydalanuvchi kuryer bo'lsa, bu matnga javob bermaymiz
+      const { User } = require('../models');
+      const u = await User.findOne({ telegramId: ctx.from?.id });
+      if (u?.role === 'courier') return; 
+      const { backToMain } = require('../handlers/user/backToMain');
+      await backToMain(ctx);
+    } catch {}
+  });
+
+  // Branches navigation
+  const catalogHandlers = require('../handlers/user/catalog');
+  bot.action('show_branches', async (ctx) => { await catalogHandlers.showBranches(ctx, 1); });
+  bot.action(/^branches_page_(\d+)$/, async (ctx) => { const page = parseInt(ctx.match[1], 10) || 1; await catalogHandlers.showBranches(ctx, page); });
+  bot.action(/^branch_([0-9a-fA-F]{24})$/, async (ctx) => { await catalogHandlers.showBranchDetailsById(ctx, ctx.match[1]); });
+  bot.action('nearest_branch', async (ctx) => {
+    try {
+      console.log('[nearest_branch] action');
+      await ctx.reply('Eng yaqin filialni aniqlash uchun lokatsiyangizni yuboring', {
+        reply_markup: {
+          keyboard: [[{ text: '📍 Geo-joylashuvni yuborish', request_location: true }], [{ text: '⬅️ Orqga' }]],
+          resize_keyboard: true,
+          one_time_keyboard: true,
+        }
+      });
+      ctx.session = ctx.session || {}; ctx.session.waitingFor = 'nearest_branch';
+    } catch {}
+  });
+
   // Orders (user)
   bot.action(/^my_orders$|^orders_page_\d+$|^order_detail_[0-9a-fA-F]{24}$|^back_to_my_orders$/, async (ctx) => {
     const data = ctx.callbackQuery.data;
@@ -154,6 +197,15 @@ module.exports = function registerUserBot(bot) {
   // Avvaldan buyurtma uchun alias: preorder → dine_in oqimi
   bot.action(/^order_type_(delivery|pickup|dine_in|preorder)$/, async (ctx) => { await handleOrderType(ctx); });
   bot.action('dine_in_preorder', async (ctx) => { await handleDineInPreorder(ctx); });
+  const orderHandlers = require('../handlers/user/order');
+  bot.action(/^choose_branch_(pickup|dine)_[0-9a-fA-F]{24}$/, async (ctx) => {
+    try {
+      await orderHandlers.handleChooseBranch(ctx);
+    } catch (e) {
+      console.error('choose_branch handler error:', e);
+      await ctx.answerCbQuery('❌ Xatolik');
+    }
+  });
   bot.action(/^arrival_time_(\d+|1_hour(?:_30)?|2_hours)$/, async (ctx) => { await handleArrivalTime(ctx); });
   bot.action(/^payment_(cash|card|click|payme)$/, async (ctx) => { await handlePaymentMethod(ctx, ctx.match[1]); });
   bot.action('confirm_order', async (ctx) => { await finalizeOrder(ctx); });
@@ -185,6 +237,32 @@ module.exports = function registerUserBot(bot) {
       [{ text: '📱 Telegram', callback_data: 'contact_telegram' }, { text: '🌐 Website', callback_data: 'contact_website' }],
       [{ text: '🔙 Asosiy menyu', callback_data: 'back_to_main' }]
     ] } });
+  });
+
+  // Admin quick action: picked_up (only for pickup)
+  bot.action(/^admin_quick_picked_up_([0-9a-fA-F]{24})$/, async (ctx) => {
+    try {
+      const orderId = ctx.match[1];
+      const { Order } = require('../models');
+      const order = await Order.findById(orderId);
+      if (!order) return await ctx.answerCbQuery('❌ Buyurtma topilmadi');
+      if (order.orderType !== 'pickup') return await ctx.answerCbQuery('❌ Bu amal faqat olib ketish uchun');
+      order.status = 'picked_up';
+      await order.save();
+      // 10 soniyadan so'ng avtomatik completed
+      setTimeout(async () => {
+        try {
+          const fresh = await Order.findById(orderId);
+          if (fresh && fresh.status === 'picked_up') {
+            fresh.status = 'completed';
+            await fresh.save();
+          }
+        } catch {}
+      }, 10000);
+      await ctx.answerCbQuery('✅ Olib ketdi');
+    } catch {
+      await ctx.answerCbQuery('❌ Xatolik');
+    }
   });
   bot.action('contact_phone', async (ctx) => { await ctx.answerCbQuery('📞 +998 90 123 45 67'); });
   bot.action('contact_address', async (ctx) => { await ctx.answerCbQuery('📍 Toshkent shahri'); });
@@ -226,16 +304,68 @@ module.exports = function registerUserBot(bot) {
   });
 
   // Location & Text handlers
+  // Faqat user (non-courier) uchun: eng yaqin filial va delivery manzil oqimlari
   bot.on('location', async (ctx) => {
     try {
+      console.log('[location] received');
       const user = await User.findOne({ telegramId: ctx.from.id });
       if (!user) return;
+      if (user.role === 'courier') return; // kuryer lokatsiyasi global handlerda qayta ishlanadi
       const { latitude, longitude } = ctx.message.location || {};
+      // If user requested nearest branch, show details and nearby list (no order flow)
+      if (ctx.session?.waitingFor === 'nearest_branch') {
+        console.log('[location] mode=nearest_branch');
+        await catalogHandlers.handleNearestBranchLocation(ctx, latitude, longitude);
+        ctx.session.waitingFor = null;
+        return;
+      }
+      // Delivery address flow
       if (ctx.session?.waitingFor === 'address' && ctx.session.orderType === 'delivery') {
+        console.log('[location] mode=delivery');
         ctx.session.orderData = ctx.session.orderData || {};
         ctx.session.orderData.location = { latitude, longitude };
+
+        // Find nearest branch and validate radius
+        try {
+          const { Branch } = require('../models');
+          const geoService = require('../services/geoService');
+          const branches = await Branch.find({ isActive: true });
+          let nearest = null;
+          let bestDist = Infinity;
+          for (const b of branches) {
+            const bl = b.address?.coordinates?.latitude;
+            const bo = b.address?.coordinates?.longitude;
+            if (typeof bl === 'number' && typeof bo === 'number') {
+              const d = geoService.calculateDistance(bl, bo, latitude, longitude);
+              if (d < bestDist) { bestDist = d; nearest = b; }
+            }
+          }
+          if (nearest) {
+            const maxKm = Number(nearest.settings?.maxDeliveryDistance ?? 15);
+            if (bestDist > maxKm) {
+              await ctx.reply(
+                `❌ Manzil yetkazib berish radiusidan tashqarida.\n\nEng yaqin filial: ${nearest.name}\nMasofa: ${bestDist.toFixed(2)} km\nLimit: ${maxKm} km\n\nIltimos, boshqa manzil yuboring yoki "Olib ketish" turini tanlang.`
+              );
+              // keep waitingFor='address' to let user resend location
+              return;
+            }
+            // within radius → bind branch
+            ctx.session.orderData.branch = String(nearest._id);
+          }
+        } catch (e) {
+          // If anything fails, continue without blocking the flow
+          console.error('Nearest branch/radius validation error:', e?.message || e);
+        }
+        // close reply keyboard and continue
+        try { await ctx.reply('✅ Lokatsiya qabul qilindi', { reply_markup: { remove_keyboard: true } }); } catch {}
         ctx.session.waitingFor = null;
         if (user.phone) await askForPaymentMethod(ctx); else await require('../handlers/user/order').askForPhone(ctx);
+      }
+      // Fallback: if no specific waitingFor flag, treat as nearest-branch lookup (faqat userlar uchun)
+      else {
+        console.log('[location] mode=fallback-nearest');
+        await catalogHandlers.handleNearestBranchLocation(ctx, latitude, longitude);
+        if (ctx.session) ctx.session.waitingFor = null;
       }
     } catch {}
   });

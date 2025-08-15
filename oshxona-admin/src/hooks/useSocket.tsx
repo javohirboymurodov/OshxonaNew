@@ -86,6 +86,16 @@ export const useSocket = (options: UseSocketOptions = {}): SocketHook => {
       console.log('👤 User joined for tracking:', data);
     });
 
+    // Re-subscribe on reconnect for reliability
+    socketInstance.on('reconnect', () => {
+      if (options.token && options.branchId) {
+        socketInstance.emit('join-admin', { token: options.token, branchId: options.branchId });
+      }
+      if (options.userId) {
+        socketInstance.emit('join-user', { userId: options.userId, orderId: options.orderId });
+      }
+    });
+
     setSocket(socketInstance);
 
     // Cleanup
@@ -119,6 +129,14 @@ export const useRealTimeOrders = (token: string, branchId: string) => {
       setNewOrders(prev => [order, ...prev.slice(0, 49)]); // Last 50 orders
       
       // Audio notification (agar browser ruxsat bergan bo'lsa)
+      if (order.sound) {
+        try {
+          const audio = new Audio('/notification.mp3');
+          audio.play().catch((e) => { console.warn('Audio play blocked', e?.message || e); });
+        } catch (err) {
+          console.warn('Audio init error', (err as Error)?.message || err);
+        }
+      }
       if (order.sound && 'Notification' in window) {
         const play = async () => {
           try {

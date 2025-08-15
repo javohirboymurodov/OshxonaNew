@@ -1,0 +1,196 @@
+[{
+  "_id": {
+    "$oid": "688de56d86e2c5b1364c885b"
+  },
+  "name": "Asosiy filial",
+  "address": {
+    "street": "Amir Temur ko'chasi, 43",
+    "city": "Toshkent",
+    "district": "Yunusobod tumani"
+  },
+  "phone": "+998911234568",
+  "isActive": true,
+  "workingHours": {},
+  "deliveryZones": [],
+  "settings": {
+    "minOrderAmount": 50000,
+    "deliveryFee": 15000,
+    "freeDeliveryAmount": 200000,
+    "maxDeliveryDistance": 15
+  },
+  "createdAt": {
+    "$date": "2025-08-02T10:16:13.221Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-09T18:41:18.868Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "688de56d86e2c5b1364c885f"
+  },
+  "name": "Chilonzor filiali",
+  "address": {
+    "street": "Bunyodkor ko'chasi, 25",
+    "city": "Toshkent",
+    "district": "Chilonzor tumani",
+    "coordinates": {
+      "latitude": 41.2856,
+      "longitude": 69.2034
+    }
+  },
+  "phone": "+998911234569",
+  "isActive": true,
+  "workingHours": {
+    "monday": {
+      "open": "08:00",
+      "close": "22:00",
+      "isOpen": true
+    },
+    "tuesday": {
+      "open": "08:00",
+      "close": "22:00",
+      "isOpen": true
+    },
+    "wednesday": {
+      "open": "08:00",
+      "close": "22:00",
+      "isOpen": true
+    },
+    "thursday": {
+      "open": "08:00",
+      "close": "22:00",
+      "isOpen": true
+    },
+    "friday": {
+      "open": "08:00",
+      "close": "22:00",
+      "isOpen": true
+    },
+    "saturday": {
+      "open": "09:00",
+      "close": "23:00",
+      "isOpen": true
+    },
+    "sunday": {
+      "open": "09:00",
+      "close": "23:00",
+      "isOpen": true
+    }
+  },
+  "deliveryZones": [],
+  "settings": {
+    "minOrderAmount": 40000,
+    "deliveryFee": 12000,
+    "freeDeliveryAmount": 150000,
+    "maxDeliveryDistance": 12
+  },
+  "createdAt": {
+    "$date": "2025-08-02T10:16:13.232Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-02T10:16:13.232Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "688de56d86e2c5b1364c8862"
+  },
+  "name": "Sergeli filiali",
+  "address": {
+    "street": "Sergeli ko'chasi, 78",
+    "city": "Toshkent",
+    "district": "Sergeli tumani"
+  },
+  "phone": "+998911234570",
+  "isActive": true,
+  "workingHours": {
+    "monday": {
+      "open": "8:00",
+      "close": "10:00",
+      "isOpen": true
+    }
+  },
+  "deliveryZones": [],
+  "settings": {
+    "maxDeliveryDistance": 10,
+    "deliveryFee": 18000
+  },
+  "createdAt": {
+    "$date": "2025-08-02T10:16:13.239Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-09T19:20:28.871Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "688de56d86e2c5b1364c8865"
+  },
+  "name": "Bektemir filiali",
+  "address": {
+    "street": "Bektemir ko'chasi, 156",
+    "city": "Toshkent",
+    "district": "Bektemir tumani"
+  },
+  "phone": "+998911234571",
+  "isActive": true,
+  "workingHours": {
+    "monday": {
+      "open": "14:00",
+      "close": "03:00",
+      "isOpen": true
+    }
+  },
+  "deliveryZones": [],
+  "settings": {
+    "maxDeliveryDistance": 9,
+    "deliveryFee": 20000
+  },
+  "createdAt": {
+    "$date": "2025-08-02T10:16:13.245Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-09T19:20:09.376Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68979e6c7f31e0f54b23bf04"
+  },
+  "name": "Javohir filiali",
+  "address": {
+    "street": "Qoratosh ko'chasi",
+    "city": "Toshkent shahar",
+    "district": "Shayxtron tumani",
+    "coordinates": {
+      "latitude": 41.304064,
+      "longitude": 69.258445
+    }
+  },
+  "phone": "+9988909335834",
+  "isActive": true,
+  "workingHours": {
+    "monday": {
+      "open": "10:00",
+      "close": "00:00",
+      "isOpen": true
+    }
+  },
+  "deliveryZones": [],
+  "settings": {
+    "maxDeliveryDistance": 5,
+    "deliveryFee": 14000
+  },
+  "createdAt": {
+    "$date": "2025-08-09T19:15:56.485Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-13T05:42:25.007Z"
+  },
+  "__v": 0
+}]

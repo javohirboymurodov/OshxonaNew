@@ -127,10 +127,10 @@ const ProductViewDialog: React.FC<ProductViewDialogProps> = ({
               </Box>
             </Box>
 
-            {/* Yaratilgan sana */}
+            {/* Qo'shilgan sana */}
             <Box>
               <Typography variant="body2" color="textSecondary" fontWeight="bold">
-                📅 Yaratilgan:
+                📅 Qo'shilgan:
               </Typography>
               <Typography variant="body2">
                 {new Date(product.createdAt).toLocaleDateString('uz-UZ')}

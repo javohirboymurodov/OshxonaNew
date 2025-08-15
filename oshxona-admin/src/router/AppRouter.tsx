@@ -13,6 +13,7 @@ import CategoriesPage from '@/pages/Categories/CategoriesPage'
 import ProductsPage from '@/pages/Products/index';
 import OrdersPage from '@/pages/Orders/OrdersPage';
 import UsersPage from '@/pages/Users/UsersPage';
+import CouriersPage from '@/pages/Couriers/CouriersPage';
 import SettingsPage from '@/pages/Settings/SettingsPage';
 import ProfilePage from '@/pages/Profile/ProfilePage';
 
@@ -32,18 +33,23 @@ const AppRouter: React.FC = () => {
     );
   }
 
+  const isSuper = (user as any)?.role === 'superadmin';
   return (
     <MainLayout>
       <Routes>
-        <Route path="/dashboard" element={<DashboardPage />} />
+        {isSuper && <Route path="/dashboard" element={<DashboardPage />} />}
         <Route path="/categories" element={<CategoriesPage />} />
         <Route path="/products" element={<ProductsPage />} />
         <Route path="/orders" element={<OrdersPage />} />
-        <Route path="/users" element={<UsersPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/couriers" element={<CouriersPage />} />
+        {isSuper && <Route path="/users" element={<UsersPage />} />}
+        <Route
+          path="/settings"
+          element={isSuper ? <SettingsPage /> : <Navigate to="/orders" replace />}
+        />
         <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/" element={<Navigate to="/dashboard" />} />
-        <Route path="*" element={<Navigate to="/dashboard" />} />
+        <Route path="/" element={<Navigate to={isSuper ? '/dashboard' : '/orders'} />} />
+        <Route path="*" element={<Navigate to={isSuper ? '/dashboard' : '/orders'} />} />
       </Routes>
     </MainLayout>
   );

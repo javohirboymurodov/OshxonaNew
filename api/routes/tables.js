@@ -1,9 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const QRCode = require('qrcode');
-const PDFDocument = require('pdfkit');
-const path = require('path');
-const fs = require('fs');
+const PDFService = require('../../services/pdfService');
 
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const { Table } = require('../../models');
@@ -109,44 +107,10 @@ router.get('/:id/qr-pdf', async (req, res) => {
     const link = `https://t.me/${botUsername}?start=${encodeURIComponent(startPayload)}`;
 
     const qrPngBuffer = await QRCode.toBuffer(link, { width: 600, margin: 1 });
-
-    // PDF yaratish
-    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    const pdf = await PDFService.generateTableQrPdf({ tableNumber: table.number, link, qrPngBuffer });
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=table_${table.number}_qr.pdf`);
-    doc.pipe(res);
-
-    // Sarlavha
-    doc.fontSize(22).font('Helvetica-Bold').text('Stol uchun QR kod', { align: 'center' });
-    doc.moveDown();
-    doc.fontSize(16).font('Helvetica').text(`Stol raqami: ${table.number}`, { align: 'center' });
-    doc.moveDown();
-
-    // QR
-    const qrTemp = path.join(__dirname, `../../temp/qr_table_${table.number}.png`);
-    fs.mkdirSync(path.dirname(qrTemp), { recursive: true });
-    fs.writeFileSync(qrTemp, qrPngBuffer);
-    const pageWidth = doc.page.width;
-    const qrSize = 300;
-    const x = (pageWidth - qrSize) / 2;
-    doc.image(qrTemp, x, doc.y, { width: qrSize, height: qrSize });
-    doc.moveDown(2);
-
-    // Link va instruktsiya
-    doc.fontSize(12).text('Quyidagi QR kodni skaner qiling yoki linkdan foydalaning:', { align: 'center' });
-    doc.moveDown(0.5);
-    doc.font('Helvetica-Oblique').fillColor('blue').text(link, { align: 'center', link });
-    doc.moveDown(2);
-    doc.fillColor('black').font('Helvetica').text('QR kodni chop etib stol ustiga yopishtiring. Mijoz shu QR orqali botni ochadi va stol raqami bilan buyurtma qiladi.', {
-      align: 'center'
-    });
-
-    doc.end();
-
-    // temp faylni tozalash (stream tugagach o'chirish tavsiya etiladi)
-    doc.on('end', () => {
-      try { fs.unlinkSync(qrTemp); } catch {}
-    });
+    res.setHeader('Content-Disposition', `attachment; filename=${pdf.filename}`);
+    return res.end(pdf.buffer);
   } catch (e) {
     console.error('tables qr-pdf error:', e);
     res.status(500).json({ success: false, message: 'QR PDF yaratishda xatolik' });

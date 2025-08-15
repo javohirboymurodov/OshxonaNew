@@ -4,6 +4,7 @@ import { Button, Space, Card, Row, Col, Typography, Select, DatePicker, message 
 import { FilterOutlined, ReloadOutlined } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
 import OrdersStats from '@/components/Orders/OrdersStats';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import OrdersTable, { type Order as TableOrder } from '@/components/Orders/OrdersTable';
 import OrderDetailsModal, { type Order as DetailsOrder } from '@/components/Orders/OrderDetailsModal';
 import AssignCourierModal from '@/components/Orders/AssignCourierModal';
@@ -30,12 +31,12 @@ interface OrderStatsShape {
 }
 
 const defaultStats: OrderStatsShape = {
-  pending: 0,
-  confirmed: 0,
-  preparing: 0,
-  ready: 0,
-  delivered: 0,
-  cancelled: 0,
+    pending: 0,
+    confirmed: 0,
+    preparing: 0,
+    ready: 0,
+    delivered: 0,
+    cancelled: 0,
 };
 
 const OrdersPage: React.FC = () => {
@@ -70,8 +71,23 @@ const OrdersPage: React.FC = () => {
     dateRange: null as [Dayjs | null, Dayjs | null] | null,
     courier: ''
   });
-
   const { user } = useAuth();
+  const isSuper = String(((user as unknown) as { role?: string })?.role || '').toLowerCase() === 'superadmin';
+  const [branch, setBranch] = useState<string>('');
+  type BranchLite = { _id: string; name?: string; title?: string };
+
+  const branchesQuery = useQuery<BranchLite[]>({
+    queryKey: ['branches-select'],
+    queryFn: async () => {
+      const data = await apiService.getBranches();
+      if (Array.isArray(data)) return data as BranchLite[];
+      const obj = data as { branches?: BranchLite[]; items?: BranchLite[] };
+      const list = obj?.branches || obj?.items || [];
+      return list as BranchLite[];
+    },
+    enabled: isSuper,
+  });
+
   const location = useLocation();
   const branchId = (() => {
     const maybe = (user as unknown) as { branch?: { _id?: string } } | null;
@@ -87,14 +103,28 @@ const OrdersPage: React.FC = () => {
     data?: { orders?: Array<Order & { orderId?: string; total?: number }>; pagination?: { total?: number; current?: number; pageSize?: number } };
   };
 
-  const fetchOrders = async (page = 1, pageSize = 15) => {
-    setLoading(true);
-    try {
-      const data: OrdersListResponse = await apiService.getOrders(page, pageSize, {
+  const queryClient = useQueryClient();
+  const ordersQueryKey = ['orders', {
+    page: pagination.current,
+    pageSize: pagination.pageSize,
+    status: filters.status,
+    orderType: filters.orderType,
+    search: filters.search,
+    courier: filters.courier,
+    dateFrom: filters.dateRange?.[0]?.toISOString?.(),
+    dateTo: filters.dateRange?.[1]?.toISOString?.(),
+    branch: isSuper ? branch : undefined,
+  }];
+
+  const ordersQuery = useQuery<Order[]>({
+    queryKey: ordersQueryKey,
+    queryFn: async () => {
+      const data: OrdersListResponse = await apiService.getOrders(pagination.current, pagination.pageSize, {
         status: filters.status || undefined,
         orderType: filters.orderType || undefined,
         search: filters.search || undefined,
         courier: filters.courier || undefined,
+        ...(isSuper && branch ? { branch } : {}),
         ...(filters.dateRange && filters.dateRange[0] && filters.dateRange[1]
           ? {
               dateFrom: dayjs(filters.dateRange[0]).toDate().toISOString(),
@@ -102,51 +132,57 @@ const OrdersPage: React.FC = () => {
             }
           : {}),
       });
-
       const rawOrders: Array<Order & { orderId?: string; total?: number; orderNumber?: string; totalAmount?: number }> = (data?.orders || data?.data?.orders || []) as Array<Order & { orderId?: string; total?: number; orderNumber?: string; totalAmount?: number }>;
       const normalized: Order[] = rawOrders.map((o) => ({
-        ...o,
+          ...o,
         orderNumber: o.orderNumber || o.orderId || '',
-        totalAmount: o.totalAmount ?? o.total,
-      }));
+          totalAmount: o.totalAmount ?? o.total,
+        }));
       const pag = data?.pagination || data?.data?.pagination || {};
+      setPagination((prev) => ({ ...prev, total: Number(pag.total || normalized.length || 0) }));
+      return normalized;
+    },
+    staleTime: 5_000,
+    refetchOnWindowFocus: false,
+  });
 
-      setOrders(normalized);
-      setPagination({ current: page, pageSize, total: Number(pag.total || normalized.length || 0) });
-    } catch (error) {
-      console.error('Error fetching orders:', error);
-      messageApi.error('Buyurtmalarni yuklashda xatolik!');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchOrderStats = async () => {
-    try {
-      const data = (await apiService.getOrderStats()) as { stats?: Partial<OrderStatsShape> } | Partial<OrderStatsShape> | undefined;
-      let s: Partial<OrderStatsShape> = {};
-      if (data && typeof data === 'object' && 'stats' in (data as Record<string, unknown>)) {
-        s = ((data as { stats?: Partial<OrderStatsShape> }).stats) ?? {};
-      } else {
-        s = (data as Partial<OrderStatsShape>) ?? {};
-      }
-      setStats({
-        pending: Number(s.pending) || 0,
-        confirmed: Number(s.confirmed) || 0,
-        preparing: Number(s.preparing) || 0,
-        ready: Number(s.ready) || 0,
-        delivered: Number(s.delivered) || 0,
-        cancelled: Number(s.cancelled) || 0,
-      });
-    } catch (error) {
-      console.error('Stats fetch error:', error);
-      setStats(defaultStats);
-    }
-  };
+  // Real-time invalidation on updates
+  useEffect(() => {
+    if (!orderUpdates || orderUpdates.length === 0) return;
+    queryClient.invalidateQueries({ queryKey: ordersQueryKey });
+    queryClient.invalidateQueries({ queryKey: ['orders-stats'] });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderUpdates]);
 
   useEffect(() => {
-    fetchOrders(1, pagination.pageSize);
-    fetchOrderStats();
+    setOrders((ordersQuery.data || []) as Order[]);
+    setLoading(ordersQuery.isLoading);
+  }, [ordersQuery.data, ordersQuery.isLoading]);
+
+  const statsQuery = useQuery<OrderStatsShape>({
+    queryKey: ['orders-stats'],
+    queryFn: async () => {
+      const data = (await apiService.get(`/orders/stats${isSuper && branch ? `?branch=${encodeURIComponent(branch)}` : ''}`)) as Record<string, unknown>;
+      const hasStats = data && typeof data === 'object' && Object.prototype.hasOwnProperty.call(data, 'stats');
+      const s = (hasStats ? (data as { stats: Partial<OrderStatsShape> }).stats : (data as Partial<OrderStatsShape>)) || {} as Partial<OrderStatsShape>;
+      return {
+        pending: Number(s?.pending) || 0,
+        confirmed: Number(s?.confirmed) || 0,
+        preparing: Number(s?.preparing) || 0,
+        ready: Number(s?.ready) || 0,
+        delivered: Number(s?.delivered) || 0,
+        cancelled: Number(s?.cancelled) || 0,
+      } as OrderStatsShape;
+    }
+  });
+
+  useEffect(() => {
+    if (statsQuery.data) setStats(statsQuery.data);
+  }, [statsQuery.data]);
+
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ordersQueryKey });
+    queryClient.invalidateQueries({ queryKey: ['orders-stats'] });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
@@ -188,8 +224,8 @@ const OrdersPage: React.FC = () => {
 
   useEffect(() => {
     if (!connected) return;
-    fetchOrders(pagination.current, pagination.pageSize);
-    fetchOrderStats();
+    queryClient.invalidateQueries({ queryKey: ordersQueryKey });
+    queryClient.invalidateQueries({ queryKey: ['orders-stats'] });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [newOrders, orderUpdates, connected]);
 
@@ -257,7 +293,7 @@ const OrdersPage: React.FC = () => {
         <Col>
           <Space>
             <Button icon={<FilterOutlined />} onClick={() => setFiltersVisible(true)}>Filtrlar</Button>
-            <Button type="primary" icon={<ReloadOutlined />} onClick={() => { fetchOrders(pagination.current, pagination.pageSize); fetchOrderStats(); }}>Yangilash</Button>
+            <Button type="primary" icon={<ReloadOutlined />} onClick={() => { queryClient.invalidateQueries({ queryKey: ordersQueryKey }); queryClient.invalidateQueries({ queryKey: ['orders-stats'] }); }}>Yangilash</Button>
           </Space>
         </Col>
       </Row>
@@ -271,6 +307,18 @@ const OrdersPage: React.FC = () => {
 
       <Card style={{ marginBottom: 24 }}>
         <Row gutter={16} align="middle">
+          {isSuper && (
+            <Col xs={24} sm={8} lg={4}>
+              <Select
+                placeholder="Filial"
+                allowClear
+                value={branch || undefined}
+                onChange={(v) => setBranch(v || '')}
+                style={{ width: '100%' }}
+                 options={(branchesQuery.data || []).map((b) => ({ value: b._id, label: b.name || b.title || b._id }))}
+              />
+            </Col>
+          )}
           <Col xs={24} sm={8} lg={6}>
             <Search
               placeholder="Buyurtma raqami yoki mijoz ismi..."
@@ -330,14 +378,14 @@ const OrdersPage: React.FC = () => {
           data={orders}
           loading={loading}
           pagination={pagination}
-          onChangePage={(p, ps) => fetchOrders(p, ps)}
+           onChangePage={(p, ps) => setPagination({ ...pagination, current: p, pageSize: ps })}
           onShowDetails={showOrderDetails}
-          onQuickStatusChange={async (order, newStatus) => {
+           onQuickStatusChange={async (order, newStatus) => {
             try {
               await apiService.updateOrderStatus(order._id, newStatus);
               messageApi.success('Holat yangilandi');
-              fetchOrders(pagination.current, pagination.pageSize);
-              fetchOrderStats();
+              queryClient.invalidateQueries({ queryKey: ordersQueryKey });
+              queryClient.invalidateQueries({ queryKey: ['orders-stats'] });
             } catch {
               messageApi.error('Holatni yangilashda xatolik');
             }
@@ -354,8 +402,8 @@ const OrdersPage: React.FC = () => {
         getOrderTypeText={getOrderTypeText}
         getPaymentText={getPaymentMethodText}
         onStatusUpdated={() => {
-          fetchOrders(pagination.current, pagination.pageSize);
-          fetchOrderStats();
+          queryClient.invalidateQueries({ queryKey: ordersQueryKey });
+          queryClient.invalidateQueries({ queryKey: ['orders-stats'] });
         }}
       />
 
@@ -367,7 +415,7 @@ const OrdersPage: React.FC = () => {
         onClose={() => setAssignModalVisible(false)}
         onAssigned={() => {
           messageApi.success('Kuryer tayinlandi');
-          fetchOrders(pagination.current, pagination.pageSize);
+          queryClient.invalidateQueries({ queryKey: ordersQueryKey });
         }}
       />
 
@@ -396,7 +444,7 @@ const OrdersPage: React.FC = () => {
             </Select>
           </div>
 
-          <Button type="primary" block onClick={() => { setFiltersVisible(false); fetchOrders(1, pagination.pageSize); }}>
+          <Button type="primary" block onClick={() => { setFiltersVisible(false); setPagination({ ...pagination, current: 1 }); queryClient.invalidateQueries({ queryKey: ordersQueryKey }); }}>
             Filtrlarni qo'llash
           </Button>
         </Space>

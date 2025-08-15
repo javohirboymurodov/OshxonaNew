@@ -8,6 +8,7 @@ import BranchModal from '@/components/Settings/BranchModal';
 import TablesManager from '@/components/Settings/TablesManager';
 import NotificationsForm from '@/components/Settings/NotificationsForm';
 import apiService from '@/services/api';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 const { Title } = Typography;
 // Using Tabs.items API; no TabPane
@@ -92,11 +93,38 @@ const SettingsPage: React.FC = () => {
   // App and Notifications forms are handled inside their own components
   const [branchForm] = Form.useForm();
 
+  const queryClient = useQueryClient();
+
+  const settingsQuery = useQuery({
+    queryKey: ['settings'],
+    queryFn: async () => {
+      const data: { appSettings?: Partial<AppSettings>; notifications?: Partial<NotificationSettings> } = await apiService.getSettings();
+      return data;
+    },
+  });
+
+  const branchesQuery = useQuery({
+    queryKey: ['branches'],
+    queryFn: async () => {
+      const data: { branches?: Branch[]; items?: Branch[] } | Branch[] = await apiService.getBranches();
+      return Array.isArray(data) ? data : (data.branches ?? data.items ?? []);
+    },
+  });
+
   useEffect(() => {
-    fetchSettings();
-    fetchBranches();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const data = settingsQuery.data;
+    if (data) {
+      const app: Partial<AppSettings> = data?.appSettings ?? {};
+      const noti: Partial<NotificationSettings> = data?.notifications ?? {};
+      setAppSettings((prev) => ({ ...prev, ...app }));
+      setNotifications((prev) => ({ ...prev, ...noti }));
+    }
+  }, [settingsQuery.data]);
+
+  useEffect(() => {
+    const list = branchesQuery.data as Branch[] | undefined;
+    if (list) setBranches(list);
+  }, [branchesQuery.data]);
 
   const fetchSettings = async () => {
     try {
@@ -116,6 +144,7 @@ const SettingsPage: React.FC = () => {
       const data: { branches?: Branch[]; items?: Branch[] } | Branch[] = await apiService.getBranches();
       const list = Array.isArray(data) ? data : (data.branches ?? data.items ?? []);
       setBranches(list);
+      try { localStorage.setItem('branches', JSON.stringify(list)); } catch {}
     } catch (error) {
       console.error('Error fetching branches:', error);
       setBranches([]);
@@ -128,6 +157,7 @@ const SettingsPage: React.FC = () => {
       await apiService.updateSettings({ appSettings: values, notifications });
       messageApi.success('Sozlamalar saqlandi!');
         setAppSettings(values);
+        queryClient.invalidateQueries({ queryKey: ['settings'] });
     } catch (error) {
       console.error('Error saving app settings:', error);
       messageApi.error('Sozlamalarni saqlashda xatolik!');
@@ -142,6 +172,7 @@ const SettingsPage: React.FC = () => {
       await apiService.updateSettings({ appSettings, notifications: values });
       messageApi.success('Bildirishnoma sozlamalari saqlandi!');
         setNotifications(values);
+        queryClient.invalidateQueries({ queryKey: ['settings'] });
     } catch (error) {
       console.error('Error saving notification settings:', error);
       messageApi.error('Sozlamalarni saqlashda xatolik!');
@@ -153,8 +184,21 @@ const SettingsPage: React.FC = () => {
   const handleSaveBranch = async (values: Record<string, unknown>) => {
     try {
       // Normalize payload to backend schema
-      const { deliveryRadius, deliveryFee, workingHours, ...rest } = values as any;
+      const { deliveryRadius, deliveryFee, workingHours, address, ...rest } = values as any;
       const payload: any = { ...rest };
+      // Ensure address mapping including coordinates
+      if (address) {
+        payload.address = {
+          ...(rest.address || {}),
+          street: address.street,
+          city: address.city,
+          district: address.district,
+          coordinates: address.coordinates ? {
+            latitude: Number(address.coordinates.latitude),
+            longitude: Number(address.coordinates.longitude)
+          } : undefined
+        };
+      }
       // Map delivery fields into settings
       if (deliveryRadius != null || deliveryFee != null) {
         payload.settings = {
@@ -183,7 +227,7 @@ const SettingsPage: React.FC = () => {
         setBranchModalVisible(false);
         setEditingBranch(null);
         branchForm.resetFields();
-        fetchBranches();
+        queryClient.invalidateQueries({ queryKey: ['branches'] });
     } catch (error) {
       console.error('Error saving branch:', error);
       messageApi.error('Filialni saqlashda xatolik!');
@@ -194,7 +238,7 @@ const SettingsPage: React.FC = () => {
     try {
       await apiService.deleteBranch(branchId);
         message.success('Filial o\'chirildi!');
-        fetchBranches();
+        queryClient.invalidateQueries({ queryKey: ['branches'] });
     } catch (error) {
       console.error('Error deleting branch:', error);
       message.error('Filialni o\'chirishda xatolik!');

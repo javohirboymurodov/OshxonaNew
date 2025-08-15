@@ -1,0 +1,439 @@
+[{
+  "_id": {
+    "$oid": "6863bf6d43d93b120409689d"
+  },
+  "telegramId": 123456789,
+  "firstName": "Test",
+  "lastName": "Foydalanuvchi",
+  "username": "test_user",
+  "phone": "+998901234567",
+  "language": "uz",
+  "role": "user",
+  "isActive": true,
+  "isBlocked": false,
+  "stats": {
+    "totalOrders": 0,
+    "totalSpent": 0
+  },
+  "preferences": {
+    "notifications": true,
+    "language": "uz",
+    "favoriteCategories": []
+  },
+  "createdAt": {
+    "$date": "2025-07-01T10:58:53.325Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-11T12:14:29.140Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6863bf6d43d93b12040968a0"
+  },
+  "telegramId": 987654321,
+  "firstName": "Admin",
+  "lastName": "Oshxona",
+  "username": "admin_kitchen",
+  "phone": "+998901234568",
+  "language": "uz",
+  "role": "user",
+  "isActive": true,
+  "isBlocked": false,
+  "stats": {
+    "totalOrders": 0,
+    "totalSpent": 0
+  },
+  "preferences": {
+    "notifications": true,
+    "language": "uz",
+    "favoriteCategories": []
+  },
+  "createdAt": {
+    "$date": "2025-07-01T10:58:53.334Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-01T10:58:53.334Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6863bf6d43d93b12040968a3"
+  },
+  "telegramId": 555666777,
+  "firstName": "Oshpaz",
+  "lastName": "Bahodir",
+  "username": "chef_bahodir",
+  "phone": "+998901234569",
+  "language": "uz",
+  "role": "chef",
+  "isActive": true,
+  "isBlocked": false,
+  "stats": {
+    "totalOrders": 0,
+    "totalSpent": 0
+  },
+  "preferences": {
+    "notifications": true,
+    "language": "uz",
+    "favoriteCategories": []
+  },
+  "createdAt": {
+    "$date": "2025-07-01T10:58:53.341Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-01T10:58:53.341Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "686422254431dfbafa657f8c"
+  },
+  "telegramId": 6514231707,
+  "firstName": "...",
+  "username": "javoxir0473",
+  "language": "ru",
+  "role": "courier",
+  "isActive": true,
+  "isBlocked": false,
+  "stats": {
+    "totalOrders": 0,
+    "totalSpent": 0
+  },
+  "preferences": {
+    "notifications": true,
+    "language": "uz",
+    "favoriteCategories": []
+  },
+  "createdAt": {
+    "$date": "2025-07-01T18:00:05.859Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-02T15:39:04.897Z"
+  },
+  "__v": 0,
+  "phone": "+998903307393",
+  "courierInfo": {
+    "isAvailable": true,
+    "isOnline": false,
+    "rating": 5,
+    "totalDeliveries": 0
+  },
+  "lastName": ""
+},
+{
+  "_id": {
+    "$oid": "68665fa80762903225d0249a"
+  },
+  "telegramId": 1982260159,
+  "firstName": "Navruz",
+  "lastName": "Jalilov",
+  "username": "NMtech3123",
+  "phone": "998900032010",
+  "language": "en",
+  "role": "user",
+  "isActive": true,
+  "isBlocked": false,
+  "stats": {
+    "totalOrders": 0,
+    "totalSpent": 0
+  },
+  "preferences": {
+    "notifications": true,
+    "language": "uz",
+    "favoriteCategories": []
+  },
+  "createdAt": {
+    "$date": "2025-07-03T10:47:04.401Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-03T10:47:14.173Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6868d63f58df57253cb0f882"
+  },
+  "telegramId": 7504646424,
+  "firstName": "Math teacher",
+  "lastName": null,
+  "username": "Mathteacher1113",
+  "phone": "998957961113",
+  "language": "uz",
+  "role": "user",
+  "isActive": true,
+  "isBlocked": false,
+  "stats": {
+    "totalOrders": 0,
+    "totalSpent": 0
+  },
+  "preferences": {
+    "notifications": true,
+    "language": "uz",
+    "favoriteCategories": []
+  },
+  "createdAt": {
+    "$date": "2025-07-05T07:37:35.965Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-05T07:37:39.418Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "688af2f50f610f5d50d5a41b"
+  },
+  "telegramId": null,
+  "firstName": "Super",
+  "lastName": "Admin",
+  "email": "super@admin.uz",
+  "password": "$2a$12$CQ.q6Z59r8FlnCp.7YSMwu3/IZgSGQitYghRkrRI1qPyQZiGg2rvC",
+  "language": "uz",
+  "role": "superadmin",
+  "isActive": true,
+  "isBlocked": false,
+  "courierInfo": {
+    "isOnline": false,
+    "isAvailable": true,
+    "rating": 5,
+    "totalDeliveries": 0
+  },
+  "stats": {
+    "totalOrders": 0,
+    "totalSpent": 0
+  },
+  "preferences": {
+    "notifications": true,
+    "language": "uz",
+    "favoriteCategories": []
+  },
+  "createdAt": {
+    "$date": "2025-07-31T04:31:28.670Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-31T04:31:28.670Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "688e1db6dc1dd321767b08a7"
+  },
+  "telegramId": 522386729,
+  "firstName": "Javohir",
+  "lastName": "",
+  "username": "javohirboymurodov1",
+  "language": "uz",
+  "role": "user",
+  "isActive": true,
+  "isBlocked": false,
+  "courierInfo": {
+    "isOnline": false,
+    "isAvailable": true,
+    "rating": 5,
+    "totalDeliveries": 0
+  },
+  "stats": {
+    "totalOrders": 0,
+    "totalSpent": 0
+  },
+  "preferences": {
+    "notifications": true,
+    "language": "uz",
+    "favoriteCategories": []
+  },
+  "createdAt": {
+    "$date": "2025-08-02T14:16:22.631Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-13T08:26:35.692Z"
+  },
+  "__v": 0,
+  "phone": "+998909335873"
+},
+{
+  "_id": {
+    "$oid": "6898542a15592a191a1d922a"
+  },
+  "telegramId": 738320515,
+  "firstName": "🧚🧚🧚🧚🧚🧚🧚🐾",
+  "lastName": "",
+  "username": "Shodiya1107",
+  "language": "uz",
+  "role": "user",
+  "isActive": true,
+  "isBlocked": false,
+  "courierInfo": {
+    "isOnline": false,
+    "isAvailable": true,
+    "rating": 5,
+    "totalDeliveries": 0
+  },
+  "stats": {
+    "totalOrders": 0,
+    "totalSpent": 0
+  },
+  "preferences": {
+    "notifications": true,
+    "language": "uz",
+    "favoriteCategories": []
+  },
+  "createdAt": {
+    "$date": "2025-08-10T08:11:22.616Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-10T08:12:23.530Z"
+  },
+  "__v": 0,
+  "phone": "+998903414394"
+},
+{
+  "_id": {
+    "$oid": "689865b230a4bd7e9c0b4d29"
+  },
+  "telegramId": "",
+  "firstName": "Admin",
+  "lastName": "Admin",
+  "email": "admin@admin.uz",
+  "password": "$2a$12$CQ.q6Z59r8FlnCp.7YSMwu3/IZgSGQitYghRkrRI1qPyQZiGg2rvC",
+  "language": "uz",
+  "role": "admin",
+  "isActive": true,
+  "isBlocked": false,
+  "courierInfo": {
+    "isOnline": false,
+    "isAvailable": true,
+    "rating": 5,
+    "totalDeliveries": 0
+  },
+  "stats": {
+    "totalOrders": 0,
+    "totalSpent": 0
+  },
+  "preferences": {
+    "notifications": true,
+    "language": "uz",
+    "favoriteCategories": []
+  },
+  "createdAt": {
+    "$date": "2025-07-31T04:31:28.670Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-11T05:30:48.948Z"
+  },
+  "__v": 0,
+  "phone": "+998 8903307393"
+},
+{
+  "_id": {
+    "$oid": "68986a02997ca792b64ac27a"
+  },
+  "telegramId": 825652265,
+  "firstName": "64-maktab. Turdiyeva Dilfuza",
+  "lastName": "",
+  "username": "dilfuz730",
+  "language": "uz",
+  "role": "user",
+  "isActive": true,
+  "isBlocked": false,
+  "courierInfo": {
+    "isOnline": false,
+    "isAvailable": true,
+    "rating": 5,
+    "totalDeliveries": 0
+  },
+  "stats": {
+    "totalOrders": 0,
+    "totalSpent": 0
+  },
+  "preferences": {
+    "notifications": true,
+    "language": "uz",
+    "favoriteCategories": []
+  },
+  "createdAt": {
+    "$date": "2025-08-10T09:44:34.722Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-10T10:00:11.245Z"
+  },
+  "__v": 0,
+  "phone": "+998919457310"
+},
+{
+  "_id": {
+    "$oid": "68997f3784bd3c0dbc6cc2a3"
+  },
+  "firstName": "Shermat",
+  "lastName": "Sherm",
+  "email": "shermat@gmail.com",
+  "phone": "+998881234567",
+  "language": "uz",
+  "role": "courier",
+  "isActive": true,
+  "isBlocked": false,
+  "courierInfo": {
+    "vehicleType": "bike",
+    "isOnline": false,
+    "isAvailable": true,
+    "rating": 5,
+    "totalDeliveries": 0
+  },
+  "stats": {
+    "totalOrders": 0,
+    "totalSpent": 0
+  },
+  "preferences": {
+    "notifications": true,
+    "language": "uz",
+    "favoriteCategories": []
+  },
+  "createdAt": {
+    "$date": "2025-08-11T05:27:19.933Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-11T09:00:43.309Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6899eea84d9b10ed98cc4dc7"
+  },
+  "telegramId": 7008173825,
+  "firstName": "Ozodaxon",
+  "lastName": "",
+  "username": "Ravshanbekovna12",
+  "language": "uz",
+  "role": "user",
+  "isActive": true,
+  "isBlocked": false,
+  "courierInfo": {
+    "isOnline": false,
+    "isAvailable": true,
+    "rating": 5,
+    "totalDeliveries": 0
+  },
+  "stats": {
+    "totalOrders": 0,
+    "totalSpent": 0
+  },
+  "preferences": {
+    "notifications": true,
+    "language": "uz",
+    "favoriteCategories": []
+  },
+  "createdAt": {
+    "$date": "2025-08-11T13:22:48.815Z"
+  },
+  "updatedAt": {
+    "$date": "2025-08-12T05:39:54.787Z"
+  },
+  "__v": 0,
+  "phone": "+998950007822"
+}]
