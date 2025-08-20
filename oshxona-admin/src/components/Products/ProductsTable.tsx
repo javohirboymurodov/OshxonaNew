@@ -12,7 +12,9 @@ import {
   Avatar,
   Switch,
   Tooltip,
-  TextField
+  TextField,
+  Box,
+  Typography
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -35,6 +37,9 @@ interface ProductsTableProps {
   onPageChange?: (event: unknown, page: number) => void;
   onRowsPerPageChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
   inventoryMap?: Record<string, { isAvailable?: boolean; stock?: number | null; dailyLimit?: number | null; soldToday?: number | null }>;
+  onInventoryUpdate?: () => void;
+  inventoryBranchId?: string;
+  inventoryBranchName?: string;
 }
 
 const getImageUrl = (imagePath: string | undefined): string | undefined => {
@@ -54,16 +59,26 @@ const ProductsTable: React.FC<ProductsTableProps> = ({
   total = products.length,
   onPageChange,
   onRowsPerPageChange,
-  inventoryMap = {}
+  inventoryMap = {},
+  onInventoryUpdate,
+  inventoryBranchId,
+  inventoryBranchName
 }) => {
   const { user } = useAuth() as { user?: { role?: string; branch?: string } };
   const isSuper = String(user?.role || '').toLowerCase() === 'superadmin';
   const branchId = isSuper ? undefined : user?.branch;
 
   return (
-    <Paper>
-      <TableContainer>
-        <Table>
+          <Paper>
+        {inventoryBranchId && (
+          <Box p={2} bgcolor="primary.light" color="white">
+            <Typography variant="body2" fontWeight="bold">
+              📍 Mavjudlik boshqaruvi faol - {inventoryBranchName || `Filial (${inventoryBranchId})`}
+            </Typography>
+          </Box>
+        )}
+        <TableContainer>
+          <Table>
           <TableHead>
             <TableRow>
               <TableCell>Rasm</TableCell>
@@ -71,7 +86,6 @@ const ProductsTable: React.FC<ProductsTableProps> = ({
               <TableCell>Kategoriya</TableCell>
               <TableCell>Narx</TableCell>
               <TableCell>Holat</TableCell>
-              {!isSuper && <TableCell>Inventar</TableCell>}
               <TableCell>Yaratilgan</TableCell>
               <TableCell>Amallar</TableCell>
             </TableRow>
@@ -94,66 +108,57 @@ const ProductsTable: React.FC<ProductsTableProps> = ({
                 </TableCell>
                 <TableCell>{product.price.toLocaleString()} so'm</TableCell>
                 <TableCell>
-                  <Tooltip title={product.isActive ? 'Faol' : 'Nofaol'}>
-                    <Switch
-                      checked={product.isActive}
-                      color="success"
-                      onChange={() => onToggleStatus && onToggleStatus(product._id, !product.isActive)}
-                    />
-                  </Tooltip>
+                  {(() => {
+                    const inventoryData = (inventoryMap as Record<string, { isAvailable?: boolean }>)[product._id];
+                    const currentAvailability = inventoryData?.isAvailable ?? true;
+                    const targetBranch = inventoryBranchId || branchId || (user as { branch?: string } | undefined)?.branch || undefined;
+                    const canToggle = Boolean(targetBranch);
+                    
+                    console.log('🔍 Toggle debug:', {
+                      productId: product._id,
+                      productName: product.name,
+                      inventoryData,
+                      currentAvailability,
+                      targetBranch,
+                      inventoryBranchId,
+                      branchId,
+                      userBranch: (user as { branch?: string } | undefined)?.branch,
+                      canToggle,
+                      inventoryMapSize: Object.keys(inventoryMap || {}).length
+                    });
+                    
+                    return (
+                      <Tooltip title={canToggle ? (currentAvailability ? 'Faol' : 'Nofaol') : 'Filialni tanlang'}>
+                        <span>
+                          <Switch
+                            color="success"
+                            checked={currentAvailability}
+                            disabled={!canToggle}
+                            onChange={async (e) => {
+                              try {
+                                const tb = targetBranch;
+                                if (!tb) {
+                                  console.error('❌ No target branch for toggle');
+                                  return;
+                                }
+                                console.log('📤 Updating inventory:', {
+                                  branch: tb,
+                                  product: product._id,
+                                  isAvailable: e.target.checked
+                                });
+                                const result = await apiService.updateInventory(tb, product._id, { isAvailable: e.target.checked });
+                                console.log('✅ Inventory updated:', result);
+                                if (onInventoryUpdate) onInventoryUpdate();
+                              } catch (err) {
+                                console.error('❌ Inventory toggle error:', err);
+                              }
+                            }}
+                          />
+                        </span>
+                      </Tooltip>
+                    );
+                  })()}
                 </TableCell>
-                {(
-                  // Inventar ustunini ham admin, ham superadmin ko'radi
-                  true as boolean
-                ) && (
-                  <TableCell>
-                    <Tooltip title="Mavjud/yashirish">
-                      <Switch
-                        color="primary"
-                        checked={Boolean((inventoryMap as Record<string, { isAvailable?: boolean }>)[product._id]?.isAvailable)}
-                        onChange={async (e) => {
-                          try {
-                            const targetBranch = branchId || (user as { branch?: string } | undefined)?.branch || undefined;
-                            if (!targetBranch) return;
-                            await apiService.updateInventory(targetBranch, product._id, { isAvailable: e.target.checked });
-                          } catch (err) { console.error('Inventory toggle error', err); }
-                        }}
-                      />
-                    </Tooltip>
-                    <TextField
-                      type="number"
-                      size="small"
-                      sx={{ width: 90, ml: 1 }}
-                      placeholder="Stock"
-                      defaultValue={(inventoryMap as Record<string, { stock?: number | null }>)[product._id]?.stock ?? ''}
-                      onBlur={async (e) => {
-                        const val = e.target.value;
-                        const parsed = val === '' ? null : Number(val);
-                        try {
-                          const targetBranch = branchId || (user as { branch?: string } | undefined)?.branch || undefined;
-                          if (!targetBranch) return;
-                          await apiService.updateInventory(targetBranch as string, product._id, { stock: Number.isNaN(parsed as number) ? null : (parsed as number) });
-                        } catch (err) { console.error('Stock update error', err); }
-                      }}
-                    />
-                    <TextField
-                      type="number"
-                      size="small"
-                      sx={{ width: 90, ml: 1 }}
-                      placeholder="Kunlim"
-                      defaultValue={(inventoryMap as Record<string, { dailyLimit?: number | null }>)[product._id]?.dailyLimit ?? ''}
-                      onBlur={async (e) => {
-                        const val = e.target.value;
-                        const parsed = val === '' ? null : Number(val);
-                        try {
-                          const targetBranch = branchId || (user as { branch?: string } | undefined)?.branch || undefined;
-                          if (!targetBranch) return;
-                          await apiService.updateInventory(targetBranch as string, product._id, { dailyLimit: Number.isNaN(parsed as number) ? null : (parsed as number) });
-                        } catch (err) { console.error('DailyLimit update error', err); }
-                      }}
-                    />
-                  </TableCell>
-                )}
                 <TableCell>
                   {new Date(product.createdAt).toLocaleDateString('uz-UZ')}
                 </TableCell>

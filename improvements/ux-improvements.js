@@ -1,6 +1,6 @@
 // Yaxshilangan foydalanuvchi interfeysi
 const mongoose = require('mongoose');
-const { mainMenuKeyboard } = require('../keyboards/userKeyboards');
+const { mainMenuKeyboard } = require('../bot/user/keyboards');
 const { Order, Product, Cart, User } = require('../models');
 const Favorite = require('../models/Favorite');
 

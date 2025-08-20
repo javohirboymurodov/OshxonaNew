@@ -6,6 +6,7 @@ const compression = require('compression');
 const path = require('path');
 
 const SocketManager = require('../config/socketConfig');
+const { specs, swaggerUi } = require('../docs/swagger');
 
 // Express app yaratish
 const app = express();
@@ -76,6 +77,21 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/categories', require('./routes/categories'));
 app.use('/api/tables', require('./routes/tables'));
 
+// 📚 API DOCUMENTATION (Swagger)
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(specs, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'Oshxona API Documentation',
+  customfavIcon: '/favicon.ico',
+  swaggerOptions: {
+    persistAuthorization: true,
+    displayRequestDuration: true,
+    docExpansion: 'none',
+    filter: true,
+    showCommonExtensions: true,
+    tryItOutEnabled: true
+  }
+}));
+
 // 🏥 HEALTH CHECK
 
 app.get('/health', (req, res) => {
@@ -93,6 +109,7 @@ app.get('/api/health', (req, res) => {
   res.json({
     success: true,
     message: 'API server ishlayapti',
+    documentation: '/api/docs',
     data: {
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),

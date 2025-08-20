@@ -73,7 +73,7 @@ export interface Order {
   items: OrderItem[];
   totalAmount: number;
   status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
-  orderType: 'delivery' | 'pickup' | 'dine_in';
+  orderType: 'delivery' | 'pickup' | 'dine_in' | 'table';
   paymentMethod: 'cash' | 'card' | 'online';
   deliveryInfo?: {
     address?: string;

@@ -1,10 +1,10 @@
-### OshxonaNew loyihasi haqida umumiy ma’lumot
+### OshxonaNew loyihasi haqida umumiy ma’lumot (2025-08 yangilanish)
 
 Ushbu hujjat loyihaning hozirgi holati bo‘yicha yagona manba: arxitektura, asosiy funksiyalar, papkalar xaritasi, ishga tushirish tartibi, mavjud imkoniyatlar va ustuvor TODO ro‘yxati. Kontekst yo‘qolsa, ushbu faylni o‘qib, loyihaga tezda kirish va xavfsiz davom ettirish mumkin.
 
 ## Texnologiyalar to‘plami
 - Backend: Node.js, Express, Mongoose (MongoDB), Socket.IO, Telegraf (Telegram bot)
-- Admin frontend: React + Vite + TypeScript + Ant Design + @tanstack/react-query (Products sahifasida client-side pagination + inventory prefetch)
+- Admin frontend: React + Vite + TypeScript + Ant Design + @tanstack/react-query (Products sahifasida client-side pagination + inventory prefetch). Dev rejimda Vite proxy `/api` ga yo'naltirilgan, `src/services/api.ts` default `baseURL` sifatida `/api` dan foydalanadi.
 - Auth: JWT (Bearer) va rollarga asoslangan kirish nazorati (RBAC)
 
 ## Asosiy biznes funksiyalar
@@ -15,7 +15,7 @@ Ushbu hujjat loyihaning hozirgi holati bo‘yicha yagona manba: arxitektura, aso
   - Courier: Telegram orqali tayinlangan buyurtmalarni qabul qiladi va statuslarni yangilaydi
   - User: Telegram bot orqali buyurtma qiladi (Yetkazib berish, Olib ketish, Avvaldan buyurtma, QR orqali stol)
 - Buyurtmalar: Socket.IO orqali admin panelda real-vaqt yangilanishlar; to‘liq status oqimi (assigned/on_the_way/delivered/picked_up kabilar bilan)
-- Kategoriyalar/Mahsulotlar: CRUD, ko‘rinish (visibility) toggle, drag-and-drop tartiblash (rejalashtirilgan), analitika
+- Kategoriyalar/Mahsulotlar: CRUD, global mahsulot holati (`Product.isActive`), drag-and-drop tartiblash (rejalashtirilgan), analitika
 - Yetkazib berish logikasi: eng yaqin filialni topish + DeliveryZone poligon tekshiruvi; ETA va to‘lovni hisoblash. Delivery oqimida lokatsiya reply klaviaturasi ko‘rsatiladi va yuborilgach remove_keyboard bilan yopiladi; “Eng yaqin filial” ko‘rsatish oqimidan ajratilgan.
 - JSON import: eski ma’lumotlarni yangi sxemaga ko‘chirish skripti (ID mapping va enum normalizatsiya)
 
@@ -29,12 +29,15 @@ Ushbu hujjat loyihaning hozirgi holati bo‘yicha yagona manba: arxitektura, aso
   - server.js: Express + Socket.IO ishga tushirish (qarang: config/socketConfig.js)
 - config/
   - localUploadConfig.js: lokal fayl yuklash/saqlash (Cloudinary olib tashlangan)
+- bot/
+  - botManager.js: modullarni ulash
+  - user/: `/start` va menyu, callbacks, profil. Qat’iy telefon raqami gating (telefon bo‘lmaguncha boshqa amallar bloklanadi).
+  - courier/: buyurtmalar boshqaruvi, online/offline, live location oqimi, callbacks.
+  - handlers/: umumiy message handlerlar (text/contact/location) va user/courier oqimlari uchun yordamchilar.
 - handlers/
-  - user/
-    - cart.js, catalog.js, order.js: Telegram bot (foydalanuvchi oqimlari). `catalog.js` da filiallar inline keyboard (pagination) va `nearest_branch` oqimi; `order.js` da delivery uchun lokatsiya klaviaturasi va radius tekshiruvi.
-  - admin/ (boshlang‘ich rejada): adminga oid bot handlerlar (rejalashtirilgan)
+  - admin/, user/: tarixiy/helper fayllar (asosiy bot kodi `bot/` ostida to‘plangan)
 - keyboards/
-  - adminKeyboards.js, index.js: Telegram klaviaturalar
+  - adminKeyboards.js: Telegram admin klaviaturalari
 - models/
   - User.js, Product.js, Order.js, Category.js, Cart.js, PromoCode.js, Table.js, DeliveryZone.js, Review.js, Branch.js
   - index.js: modellar agregatori
@@ -62,6 +65,22 @@ Ushbu hujjat loyihaning hozirgi holati bo‘yicha yagona manba: arxitektura, aso
   - fileService.js: lokal fayl operatsiyalari
 - index.js: Telegram bot kirish nuqtasi (modullashtirish davom etmoqda)
 
+## Middlewares
+- `middlewares/auth.js`: JWT tekshiruvi, `requireAdmin` va RBAC; admin uchun filial skopi majburiy, superadmin bundan ozod
+- `middlewares/rateLimit.js`: oddiy throttling (doimiy qo'llash rejalashtirilgan)
+- `middlewares/session.js`: sessiya boshqaruvi uchun helper (bot uchun Telegraf `session()` ishlatiladi)
+
+## API marshrutlari
+- `api/routes/auth.js`: `/api/auth/*` (login, me)
+- `api/routes/admin.js`: admin asosi; products/branches/settings kabi bo'limlar uchun delegatsiya
+- `api/routes/products.js`, `api/routes/categories.js`, `api/routes/orders.js`, `api/routes/dashboard.js`, `api/routes/users.js`, `api/routes/superadmin.js`, `api/routes/tables.js`
+- `api/controllers/adminController.js`: products/category/orders/inventory uchun asosiy handlerlar
+
+### Birlashtirilgan server (index.js)
+- Bosqichlar: (1) MongoDB ulanishi → (2) API Server (`startAPIServer(PORT)`) → (3) Dev rejimida webhook tozalash → (4) `bot.launch()`
+- Graceful shutdown: SIGINT/SIGTERM/usizlangan promise’larda bot to‘xtatiladi
+- Kuryer monitoringi: `COURIER_STALE_MS` va `COURIER_CHECK_INTERVAL_MS` yordamida eskirgan live lokatsiyalar tekshiriladi va `SocketManager.emitCourierLocationToBranch` orqali filial xonasiga yuboriladi; kuryerga ogohlantirish xabari jo‘natiladi
+
 Eslatma: avvalgi Docker fayllari va user-frontend bu tarmoqqa kiritilmagan; lokal rivojlantirish nishon qilingan.
 
 ## Backend imkoniyatlari (API asosiylari)
@@ -88,7 +107,7 @@ Eslatma: avvalgi Docker fayllari va user-frontend bu tarmoqqa kiritilmagan; loka
     - Foydalanuvchiga ham “buyurtmangiz yo‘lda” xabari yuboriladi (kuryer FIO, telefon, ETA)
 - Branches
   - Superadmin: `/api/superadmin/branches` to‘liq CRUD
-  - Admin: `/api/admin/branches` — faqat o‘z filial(lar)i
+  - Admin: `/api/admin/branches` — faat o‘z filial(lar)i
 - Dashboard
   - `/api/dashboard/stats?dateFrom=...&dateTo=...&branch=...` (range + filial; admin — avtomatik skop)
   - `byStatus` bilan birga `byType`, `byHour`, `byBranch`, `categoryShare`, `courierPerformance` ham qaytaradi
@@ -106,16 +125,18 @@ Eslatma: avvalgi Docker fayllari va user-frontend bu tarmoqqa kiritilmagan; loka
   - status: pending → confirmed → prepared → ready → assigned → on_the_way → delivered → completed (pickup: picked_up; ~10s dan keyin auto-complete)
   - dineInInfo: `table` uchun stol raqami
 - Product/Category
-  - product.branch: Branch ga ref
-  - category: visibility toggle; drag-drop tartib indeksi (rejalashtirilgan)
+  - Product: global `isActive`, narx, tasvir(lar), statistikalar. Per-filial mavjudlik Product’da emas.
+  - BranchProduct: per-filial mavjudlik va narx override — `isAvailable: Boolean`, `priceOverride: Number|null`. Unikal indeks: `{ product: 1, branch: 1 }`.
+  - product.branch: Branch ga ref; per-filial mavjudlik BranchProduct orqali boshqariladi.
+  - Category: drag-drop tartib indeksi (rejalashtirilgan)
 - DeliveryZone
   - filialga bog‘langan poligonlar; eng yaqin filialga fallbackdan avval tekshiriladi
 
 ## Real-time (Socket.IO)
-- emitNewOrder: endi faqat tegishli `branch:<id>` xonasiga yuboriladi (default broadcast o‘chirildi)
+- `emitNewOrder`: faqat tegishli `branch:<id>` xonasiga yuboriladi (default broadcast o‘chirildi)
 - Frontend: admin panel faqat o‘z filialining xonasiga ulanadi; superadmin uchun umumiy notification yo‘q
-- Popover: yangi buyurtmada turi ham ko‘rinadi (🚚 Yetkazish / 🛍️ Olib ketish / 🍽️ Avvaldan / 🪑 Stol QR)
-- emitOrderUpdate: status o‘zgarishlarida; admin panel UIni yangilash uchun
+- Popover: yangi buyurtmada turi ham ko‘rinadi (🚚 Yetkazib berish / 🛍️ Olib ketish / 🍽️ Avvaldan / 🪑 Stol QR)
+- `emitOrderUpdate`: status o‘zgarishlarida UI yangilanadi va audio/browser notification ko‘rsatiladi (lokatsiya yangilanishida notification yo‘q)
 
 ### Socket eventlar (courier live location)
 - Event: `courier:location`
@@ -137,20 +158,17 @@ Eslatma: avvalgi Docker fayllari va user-frontend bu tarmoqqa kiritilmagan; loka
   - Frontend: `useSocket` orqali `join-admin` va `socket.on('courier:location', ...)` bilan tinglanadi
 
 ## Telegram bot (Telegraf)
-- Kirish: `index.js`
-- User oqimlari (`handlers/user/...`)
-  - boshlang‘ich menyu, kategoriyalar/mahsulotlar, savat, miqdorlarni o‘zgartirish, yakuniy tasdiqlash
-  - turlar: yetkazib berish (lokatsiya → zona yoki eng yaqin filial), olib ketish (filial tanlash → vaqt), avvaldan (filial → kelish vaqti), QR (stol raqami → telefon/to‘lov)
-  - adminlar filial bo‘yicha ogohlantiriladi; superadmin — hammasi; pickup — "🛍️ Olib ketdi" tez tugma; table — stol raqami bilan
-- Kuryer modul (modullashtirilgan): `bot/courier/`
-  - Onboarding: superadmin kiritgan telefon raqami bilan /courier → telefon yuborish → `telegramId` bog‘lash
-  - Panel: Online/Offline, Mavjud/Band, Faol buyurtmalar, Daromad (bugun/jami)
-  - Profil: Reyting (faqat umumiy), bugungi/jami buyurtmalar soni, oxirgi 10 buyurtma
-  - Status tugmalari: Yo‘ldaman → `on_delivery`, Yetkazdim → `delivered`
-  - “Qabul qilaman” bosilganda xabar o‘chirib yuborilmaydi: buyurtma raqami, mijoz FIO/telefon va xarita linki saqlanadi; tugmalar “Yo‘ldaman” va “Yetkazdim”ga almashtiriladi
-  - “Yo‘ldaman” bosilganda faqat “Yetkazdim” tugmasi qoladi; yuqoridagi ma’lumotlar (FIO/telefon/xarita) doim ko‘rinib turadi
-  - `/start` bosilganda foydalanuvchi roli `courier` bo‘lsa avtomatik kuryer paneli ochiladi
-- Klaviaturalar: `keyboards/` ostida umumiy/admin klaviaturalar
+- Kirish: `index.js`; modullar `bot/` ostida.
+- User oqimlari (`bot/user/*`, `bot/handlers/*`)
+  - Qat’iy telefon raqami gating: telefon bo‘lmasa `/start`, tugmalar va matnlar bloklanadi. Inline “📱 Telefon raqamni ulashish” va reply “📞 Telefonni yuborish” orqali so‘raladi. Telefon ulashilgach asosiy menyu ko‘rsatiladi.
+  - Kategoriyalar/mahsulotlar, savat, yakuniy tasdiqlash.
+  - Turlar: yetkazib berish (lokatsiya → zona yoki eng yaqin filial), olib ketish (filial tanlash → vaqt), avvaldan (filial → kelish vaqti), QR (stol raqami → telefon/to‘lov).
+- Kuryer modul: `bot/courier/*`
+  - Onboarding: `/courier` → telefon yuborish → `telegramId` bog‘lash.
+  - Panel: Online/Offline (birlashtirilgan oqim), Mavjud/Band, faol buyurtmalar, daromad ko‘rsatkichlari.
+  - Live location: “✅ Ishni boshlash” bosilganda Telegram live location ulanishi. Statik lokatsiyalar rad etiladi yoki ogohlantiriladi; live yangilanishlar saqlanadi va filial xonasiga emit qilinadi.
+  - Status tugmalari: Yo‘ldaman → `on_delivery`, Yetkazdim → `delivered`.
+- Klaviaturalar: admin klaviaturalari `keyboards/adminKeyboards.js`; user/courier klaviaturalari `bot/*/keyboards.js`.
 
 ## Admin panel (React)
 - Global providerlar: QueryClientProvider + AntD App (message context ogohlantirishini bartaraf etish)
@@ -160,10 +178,12 @@ Eslatma: avvalgi Docker fayllari va user-frontend bu tarmoqqa kiritilmagan; loka
   - RBAC marshrut guardlari: Users/Settings — non-superadmin uchun yashirin; Dashboard — faqat superadmin
   - AntD Table: barqaror `rowKey` (ID), index ishlatilmaydi
   - OrderDetailsModal: `message.useMessage()`; tugmalar `Space` bilan o‘ralgan (overflow yo‘q)
+ - API mijozi: `src/services/api.ts` — default `baseURL` `/api` (Vite proxy), JWT token axios interceptor orqali yuboriladi
+ - Socket: `src/hooks/useSocket.tsx` — `VITE_SOCKET_URL` yoki `VITE_API_BASE_URL` dan URL hosil qiladi; `join-admin` va `join-user` eventlari
 - Sahifalar
   - Dashboard (faqat superadmin): statistikalar; pie chart label turi `spider`; sana oraliqlari + filial filtri; buyurtma turlari `byType`
   - Orders: filtrlar, modal tafsilotlar, status o‘tishlari, kuryer tayinlash
-  - Products: filial filtri, create/edit, client-side pagination; Inventar ustuni (isAvailable/stock/dailyLimit)
+  - Products: filial filtri, create/edit, client-side pagination; Inventar ustuni endi faqat `Holat` (BranchProduct.isAvailable) toggle’idan iborat. `stock/dailyLimit/soldToday` olib tashlangan.
   - Categories: visibility toggle, qidiruv/filtr; drag-drop va analitika (o‘rtacha narx, jami savdo) rejalashtirilgan
     - Admin: CRUD cheklangan (faqat status/ko‘rinish), Statistika va Amallar ustunlari yashirilgan
     - Superadmin: CRUD + filial bo‘yicha filtrlangan statistika (buyurtmalar, ko‘rishlar)
@@ -228,9 +248,9 @@ JSON import
 
 ## Yangi qarorlar va reja (2025-08)
 
-- Per-filial mavjudlik (inventory) modeli joriy qilindi: `BranchProduct` (isAvailable, stock, dailyLimit, soldToday, priceOverride)
+- Per-filial mavjudlik (inventory) modeli joriy qilindi: `BranchProduct` (faqat `isAvailable` va ixtiyoriy `priceOverride`). `stock/dailyLimit/soldToday` olib tashlandi.
 - Admin vakolatlari:
-  - Mahsulot: faqat Holat (active) va Inventar (isAvailable/stock/dailyLimit/priceOverride) boshqaradi
+  - Mahsulot: global Holat (`isActive`) va Inventar (`isAvailable`, ixtiyoriy `priceOverride`) boshqaradi
   - Kategoriya: CRUD faqat superadmin. Admin uchun status/ko‘rinish almashtirishga ruxsat (zarurat bo‘lsa to‘liq yashirish mumkin)
 - Kategoriya statistikasi:
   - Asosiy analitika Dashboard’da konsolidatsiya qilinadi (filial filtrli)
@@ -256,24 +276,22 @@ JSON import
 ### Orders (Admin panel) yangilanishlari (2025-08)
 - Tayinlangan kuryer ro‘yxatda ajralib turadi (yashil avatar + ✓ va "Tayinlangan" teg)
 - Buyurtma tafsilotlari modalida:
-  - Filial nomi (id emas) ko‘rsatiladi (branch populate)
+  - Filial nomi (ID emas) ko‘rsatiladi (`branch.name/title` populate)
+  - Mijoz manzili koordinatadan avtomatik yechiladi (reverse geocoding): Yandex mavjud bo‘lsa Yandex, aks holda Nominatim (OSM) fallback
+  - Yetkazish narxi ikki marta ko‘rinish xatosi bartaraf etildi
+  - Holat tarixi to‘liq ko‘rinadi (assigned → on_delivery → delivered ...). Kuryer amallaridan yozuvlar avtomatik qo‘shiladi
   - Kuryer ma’lumotlari kartasi: FIO, telefon, jami yetkazmalar, reyting
-  - "Kuryer takliflari" (Tavsiya): masofa + reyting + availability + load asosida skorlangan ro‘yxat; bir klikda tayinlash
-  - "Kuryer takliflari" paneli faqat kuryer tayinlanmaganida ko‘rinadi; tayinlangach avtomatik yashirinadi
-- Kuryer tayinlash modalida band (isAvailable=false) kuryerlar ko‘rsatilmaydi; lekin allaqachon tayinlangan kuryer highlight bilan ro‘yxatda qoladi
+  - "Kuryer takliflari" (Tavsiya): masofa + reyting + availability + load asosida skorlangan ro‘yxat; bir klikda tayinlash (faqat kuryer tayinlanmaganida ko‘rinadi)
+- "Yetkazilgan/Completed" buyurtmalarda "Kuryer" tayinlash tugmasi yashiriladi
+- Filtr/sort/paginatsiya o‘zgarganda modalning o‘z-o‘zidan ochilib ketishi bartaraf etildi (auto-open faqat notificationdan kelgan fokus uchun)
 
 ### Kuryerlar live location (yangi)
-- Bot (courier):
-  - “✅ Ishni boshlash” va “🛑 Ishni tugatish” tugmalari qo‘shildi. Online bo‘lganda kuryerga live location ulashish ko‘rsatmasi chiqadi.
-  - Oddiy va live lokatsiyalar qabul qilinadi (`location` va `edited_message`).
-  - Har lokatsiya yangilanishida filial xonasiga Socket.IO orqali event yuboriladi: `courier:location`.
-- Backend (SocketManager):
-  - `emitCourierLocationToBranch(branchId, payload)` → `branch:<id>` xonasiga `courier:location` emit qiladi.
-- Admin panel (React):
-  - Yangi sahifa: `CouriersPage` (`/couriers`). Leaflet xarita bilan kuryer markerlari.
-  - Socket subscribe: `courier:location` eventi orqali markerlar real-vaqtda yangilanadi.
-  - Filtrlar: Barchasi/Online/Offline/Stale. Stale — 5 daqiqa davomida lokatsiya yangilanmagan kuryer.
-  - Marker popup: FIO, telefon, Online/Available teglar, yangilangan vaqt.
+- Bot (courier): “✅ Ishni boshlash”/“🛑 Ishni tugatish”, live location majburiy; statik lokatsiyada ogohlantirish
+- Backend (SocketManager): `emitCourierLocationToBranch(branchId, payload)` → `branch:<id>` xonasiga `courier:location`
+- Admin panel (React): `CouriersPage` (`/couriers`) — Leaflet xarita, real-time markerlar
+  - Xaritada filial markerlari ham ko‘rsatiladi (binoning ikonkasi). Koordinatalar `address.coordinates` / `coordinates` / `address.location` va `lat/lon` aliaslaridan avtomatik aniqlanadi
+  - Filtrlar: Barchasi/Online/Offline/Stale (5 daqiqa o‘tgan bo‘lsa Stale)
+  - Ogohlantirish: lokatsiya o‘zgarishlarida notification yo‘q; notification faqat buyurtma holati o‘zgarganda
 
 ### Reja: Materialized snapshots va Background jobs
 - Redis kiritmasdan ham arxitektura tayyorlanadi: BullMQ yordamida kechayu-kunduz (nightly/hourly) agregatsiyalarni oldindan hisoblash
@@ -290,7 +308,7 @@ JSON import
 - Bot handlerlarini parchlash: `flow.js`, `dineIn.js`, `pickup.js`, `delivery.js`, `finalize.js`, `notify.js`
 - Boshqa route’larni ham controllerlarga ko‘chirish (`productsController`, `categoriesController`, ...)
 - Promo tizimi: superadmin uchun promo/kampaniya endpointlari va UI
-  - Kodli promo (`PromoService`) va vaqtli chegirmalar (product.originalPrice + validFrom/validUntil)
+  - Kodli promo (`PromoService`) va vaqtli chegirmalarni boshqarish (product.originalPrice + validFrom/validUntil)
   - Buyurtma tasdiqlashda promo tekshirish/apply endpointi
 - To‘lov integratsiyasi: `paymentService` bilan Click/Payme — webhooklar va statuslar
 - Chegirma e’lonlari (kampaniya): vaqtli foizlik chegirmalarni boshqarish (superadmin boshqarsin, ixtiyoriy per-filial override)
@@ -299,6 +317,11 @@ JSON import
 - `utils/helpers.getPaginationParams(query)` → `{ page, limit, skip }`
 - `utils/helpers.buildPagination(total, page, limit)` → `{ page, limit, total, totalPages }`
 - Qo‘llangan: `products`, `categories`, `orders` route’lari
+
+### Bot: menyular va baholash
+- Reply keyboard doimiy: “🏠 Asosiy sahifa”, “📋 Mening buyurtmalarim”, “👤 Profil” — matn yuborilganda tegishli handlerlarga yo‘naltiriladi
+- Inline asosiy menyu/katalog tugmalari qayta bog‘landi (Tezkor buyurtma, Filiallar, Bog‘lanish, Ma’lumot)
+- Yetkazilgan buyurtmadan so‘ng mijozdan ixtiyoriy baholash (1–5 ⭐) va ixtiyoriy izoh so‘raladi; `Order.rating` va `Order.feedback` ga saqlanadi
 
 ### Bot: filiallar inline keyboard va “Eng yaqin filial”
 - Asosiy menyuda: filiallar ro‘yxati inline keyboard (pagination bilan)
@@ -313,7 +336,7 @@ JSON import
   - Per-filial boshqaruv mahsulot darajasida qoladi (inventory), bu operatsion jihatdan osonroq
 
 ## Performance/Scalability reja
-- MongoDB indekslar: `Product(categoryId)`, `Product(branch)`, `BranchProduct(branch,product)`, `Order(branch,status,createdAt)`
+- MongoDB indekslar: `Product(categoryId)`, `Product(branch)`, `Product(isActive)`, `BranchProduct(branch,product)`, `Order(branch,status,createdAt)`
 - So‘rovlar: faqat kerakli maydonlarni `select` qilish, pagination, agregatsiyalarni limit bilan
 - Kesh: tez-tez o‘qiladigan public ro‘yxatlar (kategoriyalar, product list) uchun qisqa muddatli in-memory kesh (dev); prod’da Redis (rejalashtirilgan)
 - Socket hodisalari: xonalar bo‘yicha (`branch:<id>`) emit; keraksiz broadcast yo‘q
@@ -335,4 +358,61 @@ JSON import
 
 Agar darhol ishni davom ettirish kerak bo‘lsa, yuqoridagi TODO bo‘limidagi punktlardan boshlang va Repozitoriya tuzilmasi hamda Admin panel bo‘limlarida ko‘rsatilgan fayllar bilan ishlang.
 
+
+
+## Tez start (dev) — yangilangan
+
+### Backend .env namunasi
+```
+MONGODB_URI=mongodb://localhost:27017/oshxona
+JWT_SECRET=super_secret
+TELEGRAM_BOT_TOKEN=xxxx:yyyy
+COURIER_STALE_MS=300000
+COURIER_CHECK_INTERVAL_MS=60000
+SOCKET_CORS_ORIGIN=http://localhost:3000
+```
+
+### Frontend .env (ixtiyoriy)
+```
+VITE_API_BASE_URL=http://localhost:5000/api
+VITE_SOCKET_URL=http://localhost:5000
+```
+
+### Ishga tushirish
+1) Backend: `npm install && npm run dev`
+2) Frontend: `cd oshxona-admin && npm install && npm run dev`
+3) Bot: backend bilan bir jarayonda ishga tushadi (index.js orqali). `/start` dan keyin reply + inline menyular ko‘rinadi
+
+### API misollar (curl)
+
+- Buyurtmalar ro‘yxati (admin):
+```
+curl -H "Authorization: Bearer <TOKEN>" \
+  "http://localhost:5000/api/orders?page=1&limit=15&status=&orderType=&courier="
+```
+
+- Bitta buyurtma:
+```
+curl -H "Authorization: Bearer <TOKEN>" \
+  http://localhost:5000/api/orders/<ORDER_ID>
+```
+
+- Buyurtma holatini yangilash:
+```
+curl -X PATCH -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" \
+  -d '{"status":"confirmed"}' \
+  http://localhost:5000/api/orders/<ORDER_ID>/status
+```
+
+- Kuryer tayinlash:
+```
+curl -X PATCH -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" \
+  -d '{"courierId":"<COURIER_ID>"}' \
+  http://localhost:5000/api/orders/<ORDER_ID>/assign-courier
+```
+
+- Filiallar (superadmin):
+```
+curl -H "Authorization: Bearer <TOKEN>" http://localhost:5000/api/superadmin/branches
+```
 

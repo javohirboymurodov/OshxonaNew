@@ -19,6 +19,6 @@ module.exports = {
   PromoCode,
   Table,
   DeliveryZone,
-  Review
-  , Branch
+  Review,
+  Branch,
 };

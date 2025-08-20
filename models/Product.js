@@ -34,7 +34,6 @@ const productSchema = new mongoose.Schema({
   
   // Status flags
   isActive: { type: Boolean, default: true },
-  isAvailable: { type: Boolean, default: true },
   isPopular: { type: Boolean, default: false },
   isFeatured: { type: Boolean, default: false },
   isNewProduct: { type: Boolean, default: false },
@@ -65,7 +64,8 @@ const productSchema = new mongoose.Schema({
 // Indexlar
 productSchema.index({ categoryId: 1 });
 productSchema.index({ branch: 1 });
-productSchema.index({ isActive: 1, isAvailable: 1 });
+// isAvailable global darajada endi yo'q (per-filial mavjudlik BranchProduct orqali boshqariladi)
+productSchema.index({ isActive: 1 });
 productSchema.index({ isPopular: 1 });
 productSchema.index({ price: 1 });
 

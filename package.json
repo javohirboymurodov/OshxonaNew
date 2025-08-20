@@ -28,6 +28,8 @@
     "logs:clean": "node scripts/cleanLogs.js",
     "webhook:set": "node scripts/setWebhook.js",
     "webhook:delete": "node scripts/deleteWebhook.js",
+    "db:optimize": "node scripts/optimizeDatabase.js",
+    "db:check-indexes": "node scripts/optimizeDatabase.js --check",
     "pm2:start": "pm2 start ecosystem.config.js",
     "pm2:stop": "pm2 stop oshxona-bot",
     "pm2:restart": "pm2 restart oshxona-bot",
@@ -84,6 +86,8 @@
     "qrcode": "^1.5.3",
     "sharp": "^0.32.6",
     "socket.io": "^4.7.5",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
     "telegraf": "^4.15.6",
     "uuid": "^9.0.1",
     "validator": "^13.11.0",
@@ -91,6 +95,7 @@
     "winston-daily-rotate-file": "^4.7.1"
   },
   "devDependencies": {
+    "@jest/globals": "^30.0.5",
     "@types/node": "^20.10.5",
     "eslint": "^8.55.0",
     "eslint-config-prettier": "^9.1.0",
@@ -100,21 +105,7 @@
     "lint-staged": "^15.2.0",
     "nodemon": "^3.0.2",
     "prettier": "^3.1.1",
-    "supertest": "^6.3.3"
-  },
-  "jest": {
-    "testEnvironment": "node",
-    "collectCoverageFrom": [
-      "**/*.js",
-      "!node_modules/**",
-      "!coverage/**",
-      "!logs/**",
-      "!scripts/**"
-    ],
-    "testMatch": [
-      "**/__tests__/**/*.js",
-      "**/?(*.)+(spec|test).js"
-    ]
+    "supertest": "^6.3.4"
   },
   "husky": {
     "hooks": {

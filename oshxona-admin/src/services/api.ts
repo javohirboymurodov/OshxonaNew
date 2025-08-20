@@ -6,10 +6,10 @@ class ApiService {
   private api: AxiosInstance;
 
   constructor() {
-    // Prefer window.location.origin for dev if no env provided
-    const fallbackBase = (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5000') + '/api';
+    // Development da proxy orqali /api ishlatamiz
+    const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
     this.api = axios.create({
-      baseURL: import.meta.env.VITE_API_BASE_URL || fallbackBase,
+      baseURL,
       timeout: 10000,
       headers: {
         'Content-Type': 'application/json',
@@ -149,7 +149,7 @@ class ApiService {
   }
 
   // Inventory (per-branch) methods
-  async updateInventory(branchId: string, productId: string, payload: Partial<{ isAvailable: boolean; stock: number | null; dailyLimit: number | null; priceOverride: number | null; resetSoldToday: boolean }>) {
+  async updateInventory(branchId: string, productId: string, payload: Partial<{ isAvailable: boolean; priceOverride: number | null }>) {
     const response = await this.api.patch(`/admin/branches/${branchId}/products/${productId}`, payload);
     return response.data;
   }
@@ -162,10 +162,16 @@ class ApiService {
   }
 
   // Category methods
-  async getCategories(page = 1, limit = 10, search?: string) {
+  async getCategories(page = 1, limit = 10, params?: any) {
+    console.log('🏷️ getCategories called with:', { page, limit, params });
     let url = `/categories?page=${page}&limit=${limit}`;
-    if (search && search.trim()) url += `&search=${encodeURIComponent(search.trim())}`;
+    if (params?.search && params.search.trim()) url += `&search=${encodeURIComponent(params.search.trim())}`;
+    if (params?.status && params.status !== 'all') url += `&status=${params.status}`;
+    if (params?.visibility && params.visibility !== 'all') url += `&visibility=${params.visibility}`;
+    if (params?.branch) url += `&branch=${params.branch}`;
+    console.log('🌐 Categories API URL:', url);
     const response = await this.api.get(url);
+    console.log('📦 Categories API Response:', response.data);
     return response.data.data;
   }
 

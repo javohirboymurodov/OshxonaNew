@@ -21,13 +21,12 @@ function mainMenuKeyboard(user) {
   const info = (user && user.courierInfo) || {};
   return {
     inline_keyboard: [
-      [ { text: '✅ Ishni boshlash', callback_data: 'courier_start_work' }, { text: '🛑 Ishni tugatish', callback_data: 'courier_stop_work' } ],
-      [ { text: info.isOnline ? '🔴 Offline' : '🟢 Online', callback_data: 'courier_shift_toggle' } ],
+      // 🔧 FIX: Faqat ishni boshlash/tugatish - joylashuvni yuborish tugmasi keraksiz
+      [ { text: info.isOnline ? '🛑 Ishni tugatish' : '✅ Ishni boshlash', callback_data: info.isOnline ? 'courier_stop_work' : 'courier_start_work' } ],
       [ { text: info.isAvailable ? '❌ Band qilish' : '✅ Mavjud qilish', callback_data: 'courier_available_toggle' } ],
-      [ { text: '📍 Joylashuvni yuborish', callback_data: 'courier_send_location' } ],
       [ { text: '📋 Faol buyurtmalar', callback_data: 'courier_active_orders' } ],
       [ { text: '👤 Profil', callback_data: 'courier_profile' }, { text: '💰 Daromad', callback_data: 'courier_earnings' } ],
-      [ { text: '🔙 Asosiy menyu', callback_data: 'courier_back' } ],
+      [ { text: '🔙 Kuryer paneli', callback_data: 'courier_main_menu' } ],
     ]
   };
 }

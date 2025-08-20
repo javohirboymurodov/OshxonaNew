@@ -84,7 +84,7 @@ const orderSchema = new mongoose.Schema({
   // Status
   status: { 
     type: String, 
-    enum: ['pending', 'confirmed', 'preparing', 'ready', 'assigned', 'on_delivery', 'delivered', 'picked_up', 'completed', 'cancelled', 'refunded'], 
+    enum: ['pending', 'confirmed', 'preparing', 'ready', 'assigned', 'on_delivery', 'delivered', 'picked_up', 'completed', 'cancelled', 'refunded', 'customer_arrived'], 
     default: 'pending'
   },
   
@@ -121,8 +121,8 @@ orderSchema.index({ status: 1 });
 orderSchema.index({ createdAt: 1 });
 orderSchema.index({ orderType: 1 });
 
-// Pre-save middleware
-orderSchema.pre('save', function(next) {
+// Ensure orderId exists before validation
+orderSchema.pre('validate', function(next) {
   if (!this.orderId) {
     this.orderId = 'ORD' + Date.now() + Math.random().toString(36).substr(2, 5).toUpperCase();
   }

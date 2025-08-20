@@ -65,12 +65,25 @@ const ProductsPage: React.FC = () => {
     queryFn: async () => {
       let url = `/admin/products`;
       const params: string[] = [];
-      if (isSuper && branch && branch !== 'all') params.push(`branch=${encodeURIComponent(branch)}`);
+      // Superadmin filial tanlaganda mahsulotlarni FILTRLASH KERAK EMAS
+      // Chunki biz inventory orqali boshqaramiz, API hamma mahsulotlarni qaytarsin
       if (category && category !== 'all') params.push(`category=${encodeURIComponent(category)}`);
       if (search && search.trim()) params.push(`search=${encodeURIComponent(search.trim())}`);
       if (params.length) url += `?${params.join('&')}`;
+      
+      console.log('📡 Fetching products:', {
+        url,
+        isSuper,
+        selectedBranch: branch,
+        category,
+        search
+      });
+      
       const data = await apiService.get<{ items?: Product[] }>(url);
       let items: Product[] = data?.items || [];
+      
+      console.log('📦 Received products:', items.length);
+      
       if (status && status !== 'all') {
         const isActive = status === 'active';
         items = items.filter(p => Boolean(p.isActive) === isActive);
@@ -89,22 +102,35 @@ const ProductsPage: React.FC = () => {
   useEffect(() => { setPage(0); }, [search, category, status, branch]);
 
   // Inventory prefetch for selected branch (admin: own branch; superadmin: selected branch)
-  const targetBranchId: string | undefined = isSuper ? (branch && branch !== 'all' ? branch : undefined) : (user?.branch as string | undefined);
+  // Superadmin uchun branch 'all' bo'lsa, birinchi filialni tanlaymiz
+  const targetBranchId: string | undefined = isSuper 
+    ? (branch && branch !== 'all' ? branch : (branches.length > 0 ? branches[0]._id : undefined)) 
+    : (user?.branch as string | undefined);
   const productIds: string[] = React.useMemo(() => (products || []).map((p) => p._id), [products]);
-  const inventoryQuery = useQuery<Record<string, { isAvailable?: boolean; stock?: number | null; dailyLimit?: number | null; soldToday?: number | null }>>({
+  const inventoryQuery = useQuery<Record<string, { isAvailable?: boolean }>>({
     queryKey: ['inventory', { branch: targetBranchId, ids: productIds }],
     queryFn: async () => {
-      if (!targetBranchId || productIds.length === 0) return {} as Record<string, { isAvailable?: boolean; stock?: number | null; dailyLimit?: number | null; soldToday?: number | null }>;
-      const data: Array<{ product: string | { _id: string }; isAvailable?: boolean; stock?: number | null; dailyLimit?: number | null; soldToday?: number | null }>
-        = await apiService.getInventory(targetBranchId, productIds);
-      // Expecting array of { product, isAvailable, stock, dailyLimit, soldToday }
-      const map: Record<string, { isAvailable?: boolean; stock?: number | null; dailyLimit?: number | null; soldToday?: number | null }> = {};
-      (data || []).forEach((it) => { map[String((it as { product: string | { _id: string } }).product && (typeof it.product === 'string' ? it.product : it.product._id))] = it; });
+      if (!targetBranchId || productIds.length === 0) return {} as Record<string, { isAvailable?: boolean }>;
+      const response = await apiService.getInventory(targetBranchId, productIds);
+      const data = response?.items || response || [];
+      const map: Record<string, { isAvailable?: boolean }> = {};
+      
+      console.log('📦 Raw inventory response:', response);
+      console.log('📦 Inventory data array:', data);
+      
+      (data || []).forEach((it: any) => {
+        const productId = typeof it.product === 'string' ? it.product : it.product?._id;
+        if (productId) {
+          map[productId] = { isAvailable: it.isAvailable };
+        }
+      });
+      
+      console.log('📦 Final inventory map:', map);
       return map;
     },
     enabled: Boolean(targetBranchId) && productIds.length > 0,
     staleTime: 5_000,
-    placeholderData: {} as Record<string, { isAvailable?: boolean; stock?: number | null; dailyLimit?: number | null; soldToday?: number | null }>
+    placeholderData: {} as Record<string, { isAvailable?: boolean }>
   });
 
   // Yangi mahsulot qo'shish
@@ -223,8 +249,20 @@ const ProductsPage: React.FC = () => {
           </Box>
   {isSuper && (
             <Box>
-              <TextField select fullWidth label="Filial" size="small" value={branch} onChange={(e) => { const v = e.target.value; setBranch(v); queryClient.invalidateQueries({ queryKey: productsKey }); }}>
-                <MenuItem value="all">Barchasi</MenuItem>
+              <TextField 
+                select 
+                fullWidth 
+                label="Filial (Mavjudlikni boshqarish uchun tanlang)" 
+                size="small" 
+                value={branch} 
+                onChange={(e) => { 
+                  const v = e.target.value; 
+                  setBranch(v); 
+                  queryClient.invalidateQueries({ queryKey: productsKey }); 
+                }}
+                helperText={branch === 'all' ? "Mavjudlikni boshqarish uchun filial tanlang" : null}
+              >
+                <MenuItem value="all">Barchasi (faqat ko'rish)</MenuItem>
                  {branches.map((b: { _id: string; name?: string; title?: string }) => (
                   <MenuItem key={b._id} value={b._id}>{b.name || b.title || 'Nomsiz filial'}</MenuItem>
                 ))}
@@ -288,6 +326,11 @@ const ProductsPage: React.FC = () => {
         onPageChange={(_, newPage) => setPage(newPage)}
         onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
         inventoryMap={inventoryQuery.data || {}}
+        onInventoryUpdate={() => {
+          queryClient.invalidateQueries({ queryKey: ['inventory', { branch: targetBranchId, ids: productIds }] });
+        }}
+        inventoryBranchId={targetBranchId}
+        inventoryBranchName={targetBranchId ? branches.find(b => b._id === targetBranchId)?.name || branches.find(b => b._id === targetBranchId)?.title || 'Filial' : undefined}
       />
 
       {/* Form Dialog */}

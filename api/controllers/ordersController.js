@@ -66,6 +66,7 @@ async function listOrders(req, res) {
       .populate('user', 'firstName lastName phone')
       .populate('deliveryInfo.courier', 'firstName lastName phone courierInfo')
       .populate('items.product', 'name price')
+      .populate('branch', 'name title address')
       .limit(limit)
       .skip(skip)
       .sort({ createdAt: -1 });
@@ -204,11 +205,19 @@ async function updateStatus(req, res) {
     existing.status = status;
     existing.updatedAt = new Date();
     existing.statusHistory = existing.statusHistory || [];
-    existing.statusHistory.push({ status, message: customMessage || getStatusMessage(status), timestamp: new Date(), updatedBy: req.user._id });
+    
+    // 🔧 FIX: Status history ga qo'shish
+    const statusMessage = customMessage || getStatusMessage(status);
+    existing.statusHistory.push({ 
+      status, 
+      message: statusMessage, 
+      timestamp: new Date(), 
+      updatedBy: req.user._id 
+    });
+    
     const order = await existing.save();
     // Socket events
     try {
-      const statusMessage = customMessage || getStatusMessage(status);
       SocketManager.emitStatusUpdate(order.user._id, { orderId: order._id, orderNumber: order.orderId, status, message: statusMessage, updatedAt: new Date(), estimatedTime: getEstimatedTime(status, order.orderType) });
     } catch (e) {}
     res.json({ success: true, message: 'Buyurtma holati yangilandi!', data: { order } });
@@ -253,19 +262,49 @@ async function assignCourier(req, res) {
       return res.status(409).json({ success: false, message: 'Ushbu kuryer allaqachon tayinlangan.' });
     }
     const update = { 'deliveryInfo.courier': courierId, updatedAt: new Date() };
-    // Tayinlanganda holat: on_delivery (yetkazilmoqda)
-    update.status = 'on_delivery';
-    const order = await Order.findOneAndUpdate(query, update, { new: true })
+    // 🔧 FIX: Tayinlanganda holat: assigned (kuryer tayinlandi, lekin hali qabul qilinmagan)
+    update.status = 'assigned';
+    
+    // 🔧 FIX: Status history ga qo'shish
+    const order = await Order.findOneAndUpdate(
+      query, 
+      { 
+        ...update,
+        $push: { 
+          statusHistory: { 
+            status: 'assigned', 
+            message: `Kuryer tayinlandi: ${courier.firstName} ${courier.lastName}`, 
+            timestamp: new Date(), 
+            updatedBy: req.user._id 
+          } 
+        }
+      }, 
+      { new: true }
+    )
       .populate('deliveryInfo.courier', 'firstName lastName phone courierInfo')
       .populate('user', 'firstName lastName phone telegramId')
       .populate('branch', 'address coordinates');
     if (!order) return res.status(404).json({ success: false, message: 'Buyurtma topilmadi!' });
+    
+    // 🔧 FIX: Real-time yangilash admin panelga
+    try {
+      SocketManager.emitOrderStatusUpdateToBranch(branchId || 'global', {
+        orderId: order._id,
+        status: 'assigned',
+        courierId: courier._id,
+        courierName: `${courier.firstName} ${courier.lastName}`,
+        updatedAt: new Date()
+      });
+    } catch (e) {
+      console.error('Socket emit error:', e);
+    }
+    
     try {
       if (courier.telegramId) {
         const { bot } = require('../../index');
         const geoService = require('../../services/geoService');
         const acceptData = `courier_accept_${order._id}`;
-        const onwayData = `courier_onway_${order._id}`;
+        const onwayData = `courier_on_way_${order._id}`;
         let locationLines = '';
         try {
           const loc = order?.deliveryInfo?.location;
@@ -281,6 +320,7 @@ async function assignCourier(req, res) {
         );
       }
     } catch {}
+    
     // Notify customer that order is on delivery with ETA
     try {
       if (order.user?.telegramId && order.orderType === 'delivery') {
@@ -302,7 +342,7 @@ async function assignCourier(req, res) {
             if (calc?.totalTime) etaText = `${calc.totalTime} daqiqa`;
           }
         } catch {}
-        if (!etaText && order.deliveryMeta?.etaMinutes) etaText = `${order.deliveryMeta.etaMinutes} daqiqa`;
+        if (!etaText && order.deliveryMeta?.etaMinutes) etaText = `${order.deliveryMeta?.etaMinutes} daqiqa`;
         if (!etaText) etaText = 'taxminan 30-45 daqiqa';
         const courierName = `${order.deliveryInfo?.courier?.firstName || ''} ${order.deliveryInfo?.courier?.lastName || ''}`.trim();
         const courierPhone = order.deliveryInfo?.courier?.phone || '';

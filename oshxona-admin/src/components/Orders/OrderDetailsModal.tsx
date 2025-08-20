@@ -45,7 +45,39 @@ const OrderDetailsModal: React.FC<Props> = ({ open, order, onClose, getOrderType
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [isUpdating, setIsUpdating] = React.useState(false);
   const [hasAssigned, setHasAssigned] = React.useState(Boolean(order?.deliveryInfo?.courier));
+  const [addressDetails, setAddressDetails] = React.useState<string>('');
+  
   React.useEffect(() => { setHasAssigned(Boolean(order?.deliveryInfo?.courier)); }, [order?.deliveryInfo?.courier, order?._id]);
+  
+  // 🔧 FIX: Manzil ma'lumotlarini koordinatadan olish (Yandex mavjud bo'lmasa Nominatim)
+  React.useEffect(() => {
+    if (order?.deliveryInfo?.location?.latitude && order?.deliveryInfo?.location?.longitude) {
+      const fetchAddress = async () => {
+        try {
+          let text: string | null = null;
+          if (process.env.REACT_APP_YANDEX_MAPS_API_KEY) {
+            const yx = await fetch(`https://geocode-maps.yandex.ru/1.x/?format=json&geocode=${order.deliveryInfo!.location!.longitude},${order.deliveryInfo!.location!.latitude}&apikey=${process.env.REACT_APP_YANDEX_MAPS_API_KEY}`);
+            const yxData = await yx.json();
+            text = yxData?.response?.GeoObjectCollection?.featureMember?.[0]?.GeoObject?.metaDataProperty?.GeocoderMetaData?.text || null;
+          }
+          if (!text) {
+            const nm = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${order.deliveryInfo!.location!.latitude}&lon=${order.deliveryInfo!.location!.longitude}&zoom=18&addressdetails=1`);
+            const nmData = await nm.json();
+            text = nmData?.display_name || null;
+          }
+          setAddressDetails(text || `Koordinata: ${order.deliveryInfo!.location!.latitude}, ${order.deliveryInfo!.location!.longitude}`);
+        } catch (error) {
+          console.error('Address fetch error:', error);
+          setAddressDetails(`Koordinata: ${order.deliveryInfo!.location!.latitude}, ${order.deliveryInfo!.location!.longitude}`);
+        }
+      };
+      
+      fetchAddress();
+    } else {
+      setAddressDetails('Manzil ko\'rsatilmagan');
+    }
+  }, [order?.deliveryInfo?.location]);
+  
   if (!order) return null;
   const fullName = [order.user?.firstName, order.user?.lastName].filter(Boolean).join(' ') || order.customerInfo?.name || '-';
   const phone = order.user?.phone || order.customerInfo?.phone || "Ko'rsatilmagan";
@@ -126,9 +158,13 @@ const OrderDetailsModal: React.FC<Props> = ({ open, order, onClose, getOrderType
           <Card title="Mijoz ma'lumotlari" size="small">
             <Descriptions column={1} size="small">
               <Descriptions.Item label="Ism">{fullName}</Descriptions.Item>
-              <Descriptions.Item label="Telefon"><PhoneOutlined /> {phone}</Descriptions.Item>
-              {(order.deliveryAddress || order.deliveryInfo?.address) && (
-                <Descriptions.Item label="Manzil"><EnvironmentOutlined /> {order.deliveryAddress || order.deliveryInfo?.address}</Descriptions.Item>
+              <Descriptions.Item label="Telefon">
+                <PhoneOutlined /> {phone}
+              </Descriptions.Item>
+              {order.orderType === 'delivery' && order.deliveryInfo?.location && (
+                <Descriptions.Item label="Manzil">
+                  <EnvironmentOutlined /> {addressDetails || 'Tanlangan joylashuv'}
+                </Descriptions.Item>
               )}
             </Descriptions>
           </Card>
@@ -189,11 +225,9 @@ const OrderDetailsModal: React.FC<Props> = ({ open, order, onClose, getOrderType
                     <Descriptions.Item label="Masofa">{order.deliveryMeta.distanceKm} km</Descriptions.Item>
                   )}
                   {order.deliveryMeta?.etaMinutes != null && (
-                    <Descriptions.Item label="ETA">{order.deliveryMeta.etaMinutes} daqiqa</Descriptions.Item>
+                    <Descriptions.Item label="Tahminiy yetkazish vaqti">{order.deliveryMeta.etaMinutes} daqiqa</Descriptions.Item>
                   )}
-                  {order.deliveryMeta?.deliveryFee != null && (
-                    <Descriptions.Item label="Yetkazish narxi">{Number(order.deliveryMeta.deliveryFee).toLocaleString()} so'm {order.deliveryMeta.isFreeDelivery ? '(bepul)' : ''}</Descriptions.Item>
-                  )}
+                  {/* 🔧 FIX: Yetkazish narxi ikki marta ko'rsatilmasin */}
                 </>
               )}
             </Descriptions>

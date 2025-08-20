@@ -79,7 +79,7 @@ async function toggleProductStatus(req, res) {
 async function createProduct(req, res) {
   try {
     if (req.user.role !== 'superadmin') return res.status(403).json({ success: false, message: 'Mahsulot qo\'shish faqat SuperAdmin uchun!' });
-    const { name, description, price, originalPrice, categoryId, preparationTime, ingredients, allergens, tags, weight, unit, minOrderQuantity, maxOrderQuantity, isActive, isAvailable, isPopular, isFeatured, isNewProduct } = req.body;
+    const { name, description, price, originalPrice, categoryId, preparationTime, ingredients, allergens, tags, weight, unit, minOrderQuantity, maxOrderQuantity, isActive, isPopular, isFeatured, isNewProduct } = req.body;
     if (!name) return res.status(400).json({ success: false, message: 'Mahsulot nomi kiritilishi shart!' });
     if (!price || price <= 0) return res.status(400).json({ success: false, message: 'Mahsulot narxi kiritilishi shart!' });
     if (!categoryId) return res.status(400).json({ success: false, message: 'Kategoriya tanlanishi shart!' });
@@ -94,7 +94,7 @@ async function createProduct(req, res) {
       allergens: allergens ? (typeof allergens === 'string' ? allergens.split(',').map(a => a.trim()).filter(Boolean) : allergens) : [],
       tags: tags ? (typeof tags === 'string' ? tags.split(',').map(t => t.trim()).filter(Boolean) : tags) : [],
       weight: weight ? parseFloat(weight) : undefined, unit: unit || 'portion', minOrderQuantity: minOrderQuantity ? parseInt(minOrderQuantity) : 1, maxOrderQuantity: maxOrderQuantity ? parseInt(maxOrderQuantity) : 50,
-      isActive: isActive !== undefined ? isActive === 'true' : true, isAvailable: isAvailable !== undefined ? isAvailable === 'true' : true, isPopular: isPopular === 'true', isFeatured: isFeatured === 'true', isNewProduct: isNewProduct === 'true',
+      isActive: isActive !== undefined ? isActive === 'true' : true, isPopular: isPopular === 'true', isFeatured: isFeatured === 'true', isNewProduct: isNewProduct === 'true',
       image: imageUrl, imageFileName
     };
     if (req.user.role === 'superadmin') { if (req.body.branch) productData.branch = req.body.branch; } else { productData.branch = req.user.branch || undefined; }
@@ -143,14 +143,14 @@ async function updateProduct(req, res) {
     const productId = req.params.id;
     const existingProduct = await Product.findById(productId);
     if (!existingProduct) return res.status(404).json({ success: false, message: 'Mahsulot topilmadi!' });
-    const { name, description, price, originalPrice, categoryId, preparationTime, ingredients, allergens, tags, weight, unit, minOrderQuantity, maxOrderQuantity, isActive, isAvailable, isPopular, isFeatured, isNewProduct } = req.body;
+    const { name, description, price, originalPrice, categoryId, preparationTime, ingredients, allergens, tags, weight, unit, minOrderQuantity, maxOrderQuantity, isActive, isPopular, isFeatured, isNewProduct } = req.body;
     const updateData = {
       name: name?.trim(), description: description?.trim(), price: price ? parseFloat(price) : existingProduct.price, originalPrice: originalPrice ? parseFloat(originalPrice) : existingProduct.originalPrice, categoryId: categoryId || existingProduct.categoryId, preparationTime: preparationTime ? parseInt(preparationTime) : existingProduct.preparationTime,
       ingredients: ingredients ? (typeof ingredients === 'string' ? ingredients.split(',').map(i => i.trim()).filter(Boolean) : ingredients) : existingProduct.ingredients,
       allergens: allergens ? (typeof allergens === 'string' ? allergens.split(',').map(a => a.trim()).filter(Boolean) : allergens) : existingProduct.allergens,
       tags: tags ? (typeof tags === 'string' ? tags.split(',').map(t => t.trim()).filter(Boolean) : tags) : existingProduct.tags,
       weight: weight ? parseFloat(weight) : existingProduct.weight, unit: unit || existingProduct.unit, minOrderQuantity: minOrderQuantity ? parseInt(minOrderQuantity) : existingProduct.minOrderQuantity, maxOrderQuantity: maxOrderQuantity ? parseInt(maxOrderQuantity) : existingProduct.maxOrderQuantity,
-      isActive: isActive !== undefined ? isActive === 'true' : existingProduct.isActive, isAvailable: isAvailable !== undefined ? isAvailable === 'true' : existingProduct.isAvailable, isPopular: isPopular === 'true', isFeatured: isFeatured === 'true', isNewProduct: isNewProduct === 'true', updatedAt: new Date()
+      isActive: isActive !== undefined ? isActive === 'true' : existingProduct.isActive, isPopular: isPopular === 'true', isFeatured: isFeatured === 'true', isNewProduct: isNewProduct === 'true', updatedAt: new Date()
     };
     if (req.file) {
       try {
@@ -263,16 +263,13 @@ async function getSettings(req, res) {
 async function updateInventory(req, res) {
   try {
     const { branchId, productId } = req.params;
-    const { isAvailable, stock, dailyLimit, priceOverride, resetSoldToday } = req.body;
+    const { isAvailable, priceOverride } = req.body;
     if (req.user.role === 'admin' && String(req.user.branch) !== String(branchId)) return res.status(403).json({ success: false, message: 'Ushbu filial uchun ruxsat yo\'q' });
     const product = await Product.findById(productId).select('_id isActive');
     if (!product) return res.status(404).json({ success: false, message: 'Mahsulot topilmadi' });
     const update = {};
     if (isAvailable !== undefined) update.isAvailable = !!isAvailable;
-    if (stock !== undefined) update.stock = stock === null ? null : Number(stock);
-    if (dailyLimit !== undefined) update.dailyLimit = dailyLimit === null ? null : Number(dailyLimit);
     if (priceOverride !== undefined) update.priceOverride = priceOverride === null ? null : Number(priceOverride);
-    if (resetSoldToday) { update.soldToday = 0; update.lastResetAt = new Date(); }
     const inv = await BranchProduct.findOneAndUpdate({ branch: branchId, product: productId }, { $set: update, $setOnInsert: { branch: branchId, product: productId } }, { new: true, upsert: true });
     res.json({ success: true, message: 'Inventar yangilandi', data: inv });
   } catch (error) {
@@ -293,7 +290,7 @@ async function getInventory(req, res) {
       else if (typeof productIdsParam === 'string') ids = productIdsParam.split(',').map(s => s.trim()).filter(Boolean);
       if (ids.length > 0) filter.product = { $in: ids };
     }
-    const list = await BranchProduct.find(filter).select('product isAvailable stock dailyLimit soldToday priceOverride');
+    const list = await BranchProduct.find(filter).select('product isAvailable priceOverride');
     res.json({ success: true, data: { items: list } });
   } catch (error) {
     console.error('Get inventory error:', error);

@@ -6,10 +6,6 @@ const branchProductSchema = new mongoose.Schema({
   branch: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch', required: true },
   // Filialdagi ko'rinish/mavjudlik
   isAvailable: { type: Boolean, default: true },
-  stock: { type: Number, default: null }, // null => cheksiz/qo'llanmaydi
-  dailyLimit: { type: Number, default: null },
-  soldToday: { type: Number, default: 0 },
-  lastResetAt: { type: Date, default: null },
   // Ixtiyoriy narx o'zgarishi
   priceOverride: { type: Number, default: null },
 }, {

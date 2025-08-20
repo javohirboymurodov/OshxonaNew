@@ -21,6 +21,14 @@ type CourierMarker = {
   updatedAt?: string | Date;
 };
 
+type BranchMarker = {
+  branchId: string;
+  name: string;
+  address: string;
+  coordinates: { latitude: number; longitude: number };
+  isActive: boolean;
+};
+
 // Leaflet default icon fix (when using Vite)
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
@@ -41,16 +49,18 @@ const CouriersPage: React.FC = () => {
   const { socket, connected } = useSocket({ token, branchId });
 
   const [markers, setMarkers] = useState<Record<string, CourierMarker>>({});
+  const [branches, setBranches] = useState<BranchMarker[]>([]);
   const [filter, setFilter] = useState<'all'|'online'|'offline'|'stale'>('all');
 
-  // Initial load: fetch current couriers list (optional locations)
+  // Initial load: fetch current couriers list and branches
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const data = await apiService.getCouriers();
+        // Fetch couriers
+        const courierData = await apiService.getCouriers();
         const next: Record<string, CourierMarker> = {};
-        (data?.couriers || data || []).forEach((c: any) => {
+        (courierData?.couriers || courierData || []).forEach((c: any) => {
           const loc = c?.courierInfo?.currentLocation;
           next[String(c._id)] = {
             courierId: String(c._id),
@@ -64,8 +74,30 @@ const CouriersPage: React.FC = () => {
           };
         });
         if (mounted) setMarkers(next);
+
+        // Fetch branches
+        const branchData = await apiService.getBranches();
+        const list = branchData?.branches || branchData?.items || branchData || [];
+        const branchMarkers: BranchMarker[] = list
+          .map((b: any) => {
+            const coordsSrc = b?.address?.coordinates || b?.coordinates || b?.address?.location || null;
+            const lat = Number(coordsSrc?.latitude ?? coordsSrc?.lat);
+            const lon = Number(coordsSrc?.longitude ?? coordsSrc?.lon);
+            if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+            const addr = b?.address?.street || b?.address?.text || b?.address?.addressLine || '';
+            const city = b?.address?.city || b?.address?.region || '';
+            return {
+              branchId: String(b._id),
+              name: b.name,
+              address: [addr, city].filter(Boolean).join(', '),
+              coordinates: { latitude: lat, longitude: lon },
+              isActive: Boolean(b.isActive)
+            } as BranchMarker;
+          })
+          .filter(Boolean) as BranchMarker[];
+        if (mounted) setBranches(branchMarkers);
       } catch (e) {
-        // ignore
+        console.error('Error fetching data:', e);
       }
     })();
     return () => { mounted = false; };
@@ -128,14 +160,40 @@ const CouriersPage: React.FC = () => {
         <div style={{ height: 560, width: '100%' }}>
           <MapContainer center={center} zoom={12} style={{ height: '100%', width: '100%' }}>
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap" />
+            {/* Branch markers (tooltip with branch name) */}
+            {branches.map((branch) => (
+              <Marker 
+                key={branch.branchId} 
+                position={[branch.coordinates.latitude, branch.coordinates.longitude]}
+                icon={new L.Icon({
+                  iconUrl: 'https://cdn-icons-png.flaticon.com/512/1046/1046784.png', // Building icon
+                  iconSize: [32, 32],
+                  iconAnchor: [16, 32],
+                  popupAnchor: [0, -32]
+                })}
+              >
+                <Popup>
+                  <div style={{ minWidth: 200 }}>
+                    <Text strong>{branch.name}</Text>
+                    <div>{branch.address}</div>
+                    <Tag color={branch.isActive ? 'green' : 'red'}>
+                      {branch.isActive ? 'Faol' : 'Nofaol'}
+                    </Tag>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+
+            {/* Courier markers */}
             {filtered.map((m) => {
               if (!m.location) return null;
               const fresh = m.updatedAt ? (Date.now() - new Date(m.updatedAt).getTime() <= staleMs) : false;
               const icon = new L.Icon({
-                iconUrl: fresh ? 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png' : 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+                iconUrl: fresh ? 'https://cdn-icons-png.flaticon.com/512/3774/3774278.png' : 'https://cdn-icons-png.flaticon.com/512/3774/3774279.png', // Car icons
                 shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-                iconSize: fresh ? [25, 41] : [25, 41],
-                iconAnchor: [12, 41]
+                iconSize: fresh ? [32, 32] : [28, 28],
+                iconAnchor: [16, 32],
+                popupAnchor: [0, -32]
               });
               return (
                 <Marker key={m.courierId} position={[m.location.latitude, m.location.longitude]} icon={icon}>

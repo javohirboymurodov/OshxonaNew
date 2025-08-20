@@ -148,12 +148,43 @@ class SocketManager {
         orderId, // Eslatma: updateData ichida ham orderId bo'lsa, bu mongoIdni saqlash uchun oldinga qo'yildi
         ...updateData
       };
+      
       // Order xonasiga
       this.io.to(`order:${orderId}`).emit('order-updated', payload);
 
       // Agar branchId berilgan bo'lsa, shu filialdagi barcha adminlarga ham yuboramiz
       if (updateData && updateData.branchId) {
         this.io.to(`branch:${updateData.branchId}`).emit('order-updated', payload);
+        
+        // Superadmin overview xonasiga ham yuboramiz
+        if (updateData.branchId !== 'default') {
+          this.io.to('branch:default').emit('order-updated', payload);
+        }
+      }
+      
+      // Agar event 'dine_in_arrived' bo'lsa, maxsus notification yuboramiz
+      if (updateData.event === 'dine_in_arrived') {
+        const notificationPayload = {
+          type: 'customer_arrived',
+          orderId: updateData.orderId,
+          tableNumber: updateData.tableNumber,
+          customer: updateData.customer,
+          total: updateData.total,
+          items: updateData.items,
+          branchId: updateData.branchId,
+          timestamp: new Date(),
+          sound: true
+        };
+        
+        // Branch adminlarga
+        if (updateData.branchId && updateData.branchId !== 'default') {
+          this.io.to(`branch:${updateData.branchId}`).emit('customer-arrived', notificationPayload);
+        }
+        
+        // Superadmin overview xonasiga
+        this.io.to('branch:default').emit('customer-arrived', notificationPayload);
+        
+        console.log(`🔔 Customer arrived notification sent for order:${orderId}`);
       }
       
       console.log(`🔄 Order update emitted for order:${orderId}${updateData && updateData.branchId ? ` (branch:${updateData.branchId})` : ''}`);
@@ -189,10 +220,36 @@ class SocketManager {
     this.io.to(`branch:${branchId}`).emit('courier:location', data);
   }
   
+  // 🔧 FIX: Kuryer buyurtma holatini filialdagi barcha adminlarga real-time yuborish
+  static emitOrderStatusUpdateToBranch(branchId, payload) {
+    if (!this.io) return;
+    
+    const data = {
+      orderId: payload.orderId,
+      status: payload.status,
+      courierId: payload.courierId,
+      courierName: payload.courierName,
+      courierStatus: payload.courierStatus,
+      deliveredAt: payload.deliveredAt,
+      updatedAt: payload.updatedAt ? new Date(payload.updatedAt) : new Date(),
+      timestamp: new Date()
+    };
+    
+    // Branch adminlarga yuborish
+    if (branchId && branchId !== 'global') {
+      this.io.to(`branch:${branchId}`).emit('order-status-updated', data);
+      console.log(`🔄 Order status update sent to branch:${branchId} - Order:${payload.orderId} - Status:${payload.status}`);
+    }
+    
+    // Superadmin overview xonasiga ham yuborish
+    this.io.to('branch:default').emit('order-status-updated', data);
+    console.log(`🔄 Order status update sent to superadmin - Order:${payload.orderId} - Status:${payload.status}`);
+  }
+  
   // Real-time statistika (admin dashboard uchun)
   static emitStatistics(branchId, stats) {
     if (this.io) {
-      this.io.to(`branch:${branchId}`).emit('statistics-update', {
+      this.io.to(`branchId:${branchId}`).emit('statistics-update', {
         ...stats,
         timestamp: new Date()
       });

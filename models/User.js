@@ -66,6 +66,7 @@ const userSchema = new mongoose.Schema({
     vehicleType: {
       type: String,
       enum: ['bike', 'car', 'motorcycle', 'scooter'],
+      default: 'bike',
       required: function() { return this.role === 'courier'; }
     },
     isOnline: { type: Boolean, default: false },

@@ -1,5 +1,5 @@
 // src/pages/Orders/OrdersPage.tsx
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Space, Card, Row, Col, Typography, Select, DatePicker, message as antdMessage, Input, Drawer } from 'antd';
 import { FilterOutlined, ReloadOutlined } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
@@ -96,6 +96,13 @@ const OrdersPage: React.FC = () => {
   const token = localStorage.getItem('token') || '';
   const { newOrders, orderUpdates, connected } = useRealTimeOrders(token, branchId);
   const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
+  // 🔧 Guard: filtr o'zgarganda avtomatik modal ochilmasin
+  const suppressAutoOpenRef = useRef(false);
+  useEffect(() => {
+    suppressAutoOpenRef.current = true;
+    const t = setTimeout(() => { suppressAutoOpenRef.current = false; }, 400);
+    return () => clearTimeout(t);
+  }, [filters, pagination.current, pagination.pageSize]);
 
   type OrdersListResponse = {
     orders?: Array<Order & { orderId?: string; total?: number }>;
@@ -154,6 +161,35 @@ const OrdersPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderUpdates]);
 
+  // 🔧 FIX: Kuryer buyurtma holati real-time yangilanishi
+  useEffect(() => {
+    if (!orderUpdates || orderUpdates.length === 0) return;
+    
+    const lastUpdate = orderUpdates[0];
+    if (lastUpdate && typeof lastUpdate === 'object' && 'orderId' in lastUpdate) {
+      console.log('🚚 Real-time order status update:', lastUpdate);
+      
+      // Buyurtma ro'yxatini yangilash
+      queryClient.invalidateQueries({ queryKey: ordersQueryKey });
+      queryClient.invalidateQueries({ queryKey: ['orders-stats'] });
+      
+      // Agar buyurtma ochiq bo'lsa, uni ham yangilash
+      if (selectedOrder && selectedOrder._id === lastUpdate.orderId) {
+        setSelectedOrder(prev => prev ? { ...prev, status: lastUpdate.status as string } : null);
+      }
+      
+      // Notification ko'rsatish
+      const statusText = {
+        'assigned': 'Kuryer tayinlandi',
+        'on_delivery': 'Buyurtma qabul qilindi',
+        'delivered': 'Buyurtma yetkazildi'
+      }[lastUpdate.status as string] || 'Holat o\'zgardi';
+      
+      antdMessage.success(`${statusText} - Buyurtma №${lastUpdate.orderId}`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderUpdates]);
+
   useEffect(() => {
     setOrders((ordersQuery.data || []) as Order[]);
     setLoading(ordersQuery.isLoading);
@@ -190,6 +226,7 @@ const OrdersPage: React.FC = () => {
   useEffect(() => {
     const state = location.state as { focusOrderId?: string } | null;
     if (!state?.focusOrderId) return;
+    if (suppressAutoOpenRef.current) return;
     const order = orders.find(o => o._id === state.focusOrderId || o.orderNumber === state.focusOrderId);
     if (order) {
       setSelectedOrder(order);
@@ -214,6 +251,7 @@ const OrdersPage: React.FC = () => {
   // Fokus ID bo'lsa va ro'yxat yangilangan bo'lsa, moddalni ochamiz
   useEffect(() => {
     if (!pendingFocusId || orders.length === 0) return;
+    if (suppressAutoOpenRef.current) return;
     const order = orders.find(o => o._id === pendingFocusId || o.orderNumber === pendingFocusId);
     if (order) {
       setSelectedOrder(order);

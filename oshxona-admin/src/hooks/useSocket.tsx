@@ -43,11 +43,11 @@ export const useSocket = (options: UseSocketOptions = {}): SocketHook => {
       setConnected(true);
       setError(null);
       
-      // Admin panel uchun branch'ga qo'shilish
-      if (options.token && options.branchId) {
+      // Admin panel uchun branch'ga qo'shilish (branchId bo'lmasa 'default')
+      if (options.token) {
         socketInstance.emit('join-admin', {
           token: options.token,
-          branchId: options.branchId
+          branchId: options.branchId || 'default'
         });
       }
       
@@ -88,8 +88,8 @@ export const useSocket = (options: UseSocketOptions = {}): SocketHook => {
 
     // Re-subscribe on reconnect for reliability
     socketInstance.on('reconnect', () => {
-      if (options.token && options.branchId) {
-        socketInstance.emit('join-admin', { token: options.token, branchId: options.branchId });
+      if (options.token) {
+        socketInstance.emit('join-admin', { token: options.token, branchId: options.branchId || 'default' });
       }
       if (options.userId) {
         socketInstance.emit('join-user', { userId: options.userId, orderId: options.orderId });
@@ -164,12 +164,72 @@ export const useRealTimeOrders = (token: string, branchId: string) => {
       setOrderUpdates(prev => [update, ...prev.slice(0, 99)]);
     };
 
+    // 🔧 FIX: Kuryer buyurtma holati yangilanishi
+    const handleOrderStatusUpdate = (update: Record<string, unknown>) => {
+      console.log('🚚 Order status update received:', update);
+      setOrderUpdates(prev => [update, ...prev.slice(0, 99)]);
+      
+      // Audio notification kuryer holati o'zgarganda
+      try {
+        const audio = new Audio('/notification.wav');
+        audio.play().catch((e) => { console.warn('Audio play blocked', e?.message || e); });
+      } catch (err) {
+        console.warn('Audio init error', (err as Error)?.message || err);
+      }
+      
+      // Browser notification
+      if ('Notification' in window && Notification.permission === 'granted') {
+        const statusText = {
+          'assigned': 'Kuryer tayinlandi',
+          'on_delivery': 'Buyurtma qabul qilindi',
+          'delivered': 'Buyurtma yetkazildi'
+        }[update.status as string] || 'Holat o\'zgardi';
+        
+        new Notification(`Buyurtma holati: ${statusText}`, {
+          body: `№${update.orderId || ''} - ${update.courierName || 'Kuryer'}`,
+          icon: '/favicon.ico',
+          tag: `order-status-${update.orderId}`
+        });
+      }
+    };
+
+    // Mijoz kelgani haqida xabar
+    const handleCustomerArrived = (data: Record<string, unknown>) => {
+      console.log('🚶 Customer arrived notification:', data);
+      
+      // Audio notification
+      if (data.sound) {
+        try {
+          const audio = new Audio('/notification.wav');
+          audio.play().catch((e) => { console.warn('Audio play blocked', e?.message || e); });
+        } catch (err) {
+          console.warn('Audio init error', (err as Error)?.message || err);
+        }
+      }
+      
+      // Browser notification
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(`Mijoz keldi! Stol: ${data.tableNumber || 'N/A'}`, {
+          body: `Buyurtma №${data.orderId || ''} - ${(data.total || 0).toLocaleString()} so'm`,
+          icon: '/favicon.ico',
+          tag: `customer-arrived-${data.orderId}`
+        });
+      }
+      
+      // Order updates ga ham qo'shamiz
+      setOrderUpdates(prev => [data, ...prev.slice(0, 99)]);
+    };
+
     socket.on('new-order', handleNewOrder);
     socket.on('order-updated', handleOrderUpdate);
+    socket.on('order-status-updated', handleOrderStatusUpdate);
+    socket.on('customer-arrived', handleCustomerArrived);
 
     return () => {
       socket.off('new-order', handleNewOrder);
       socket.off('order-updated', handleOrderUpdate);
+      socket.off('order-status-updated', handleOrderStatusUpdate);
+      socket.off('customer-arrived', handleCustomerArrived);
     };
   }, [socket, connected]);
 
