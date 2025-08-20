@@ -256,18 +256,35 @@ const ProductsTable: React.FC<ProductsTableProps> = ({
       <PromoModal
         open={promoModalOpen}
         onClose={handlePromoClose}
-        productId={selectedProduct._id}
-        productName={selectedProduct.name}
-        branchId={inventoryBranchId || branchId || ''}
-        branchName={inventoryBranchName || 'Filial'}
-        currentPromo={selectedProduct.discount ? {
-          discountType: selectedProduct.discount.type,
-          discountValue: selectedProduct.discount.value,
-          promoStart: null, // TODO: API'dan olish kerak
-          promoEnd: null,   // TODO: API'dan olish kerak
-          isPromoActive: true
-        } : undefined}
-        onPromoUpdate={handlePromoUpdate}
+        product={selectedProduct || undefined}
+        isSuperAdmin={isSuper}
+        onSubmit={async (data) => {
+          try {
+            if (data.applyToAllBranches && isSuper) {
+              await apiService.post(`/admin/products/${selectedProduct._id}/promo-all-branches`, {
+                discountType: data.discountType,
+                discountValue: data.discountValue,
+                promoStart: data.promoStart,
+                promoEnd: data.promoEnd,
+                isPromoActive: data.isPromoActive
+              });
+            } else {
+              const targetBranch = inventoryBranchId || branchId;
+              if (!targetBranch) return;
+              await apiService.patch(`/admin/branches/${targetBranch}/products/${selectedProduct._id}/promo`, {
+                discountType: data.discountType,
+                discountValue: data.discountValue,
+                promoStart: data.promoStart,
+                promoEnd: data.promoEnd,
+                isPromoActive: data.isPromoActive
+              });
+            }
+            handlePromoClose();
+            if (onInventoryUpdate) onInventoryUpdate();
+          } catch (err) {
+            console.error('Promo submit error:', err);
+          }
+        }}
       />
     )}
     </>

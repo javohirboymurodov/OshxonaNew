@@ -6,12 +6,14 @@ import { Add as AddIcon } from '@mui/icons-material';
 import ProductsTable from '@/components/Products/ProductsTable';
 import ProductFormDialog from '@/components/Products/ProductFormDialog';
 import ProductViewDialog from '@/components/Products/ProductViewDialog';
+import PromoModal from '@/components/Products/PromoModal';
 
 // Hook'larni import qilish
 import { Product, FormData } from '@/hooks/useProducts';
 import apiService from '@/services/api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
+import { message } from 'antd';
 
 const ProductsPage: React.FC = () => {
   // State'lar
@@ -20,6 +22,8 @@ const ProductsPage: React.FC = () => {
   const [viewOpen, setViewOpen] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [viewProduct, setViewProduct] = useState<Product | null>(null);
+  const [promoModalOpen, setPromoModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   
   // Hook'lar
   const queryClient = useQueryClient();
@@ -97,7 +101,7 @@ const ProductsPage: React.FC = () => {
       // Promo filter
       if (promotions !== 'all') {
         items = items.filter(p => {
-          const hasPromo = Boolean((p as any).discount);
+          const hasPromo = Boolean((p as Product & { discount?: unknown }).discount);
           return promotions === 'promo' ? hasPromo : !hasPromo;
         });
       }
@@ -132,7 +136,7 @@ const ProductsPage: React.FC = () => {
       console.log('📦 Raw inventory response:', response);
       console.log('📦 Inventory data array:', data);
       
-      (data || []).forEach((it: any) => {
+      (data || []).forEach((it: { product: string | { _id: string }; isAvailable?: boolean }) => {
         const productId = typeof it.product === 'string' ? it.product : it.product?._id;
         if (productId) {
           map[productId] = { isAvailable: it.isAvailable };
@@ -146,6 +150,55 @@ const ProductsPage: React.FC = () => {
     staleTime: 5_000,
     placeholderData: {} as Record<string, { isAvailable?: boolean }>
   });
+
+  // Promo handler
+  const handlePromoSubmit = async (promoData: {
+    discountType: 'percent' | 'amount';
+    discountValue: number;
+    promoStart: Date | null;
+    promoEnd: Date | null;
+    isPromoActive: boolean;
+    applyToAllBranches?: boolean;
+  }) => {
+    try {
+      if (!selectedProduct) return;
+      
+      if (promoData.applyToAllBranches && isSuper) {
+        // Barcha filiallarga promo qo'llash
+        await apiService.post(`/admin/products/${selectedProduct._id}/promo-all-branches`, {
+          discountType: promoData.discountType,
+          discountValue: promoData.discountValue,
+          promoStart: promoData.promoStart,
+          promoEnd: promoData.promoEnd,
+          isPromoActive: promoData.isPromoActive
+        });
+        message.success('Promo barcha filiallarga muvaffaqiyatli qo\'llandi!');
+      } else {
+        // Faqat tanlangan filialga promo qo'llash
+        const targetBranch = branch || (user as { branch?: string })?.branch;
+        if (!targetBranch) {
+          message.error('Filial tanlanmagan!');
+          return;
+        }
+        
+        await apiService.patch(`/admin/branches/${targetBranch}/products/${selectedProduct._id}/promo`, {
+          discountType: promoData.discountType,
+          discountValue: promoData.discountValue,
+          promoStart: promoData.promoStart,
+          promoEnd: promoData.promoEnd,
+          isPromoActive: promoData.isPromoActive
+        });
+        message.success('Promo muvaffaqiyatli qo\'shildi!');
+      }
+      
+      setPromoModalOpen(false);
+      setSelectedProduct(null);
+      queryClient.invalidateQueries({ queryKey: productsKey });
+    } catch (error) {
+      console.error('Promo qo\'shish xatosi:', error);
+      message.error('Promo qo\'shishda xatolik yuz berdi!');
+    }
+  };
 
   // Yangi mahsulot qo'shish
   const handleAdd = () => {
@@ -329,8 +382,8 @@ const ProductsPage: React.FC = () => {
           <Chip label={`Faol: ${products.filter(p => p.isActive).length}`} color="success" />
           <Chip label={`Nofaol: ${products.filter(p => !p.isActive).length}`} />
           <Chip label={`Kategoriyalar: ${new Set(products.map(p => p.categoryId?._id)).size}`} color="secondary" />
-          <Chip label={`Promo: ${products.filter(p => Boolean((p as any).discount)).length}`} color="warning" />
-          <Chip label={`Promo emas: ${products.filter(p => !Boolean((p as any).discount)).length}`} />
+          <Chip label={`Promo: ${products.filter(p => (p as Product & { discount?: unknown }).discount).length}`} color="warning" />
+          <Chip label={`Promo emas: ${products.filter(p => !(p as Product & { discount?: unknown }).discount).length}`} />
         </Box>
       </Paper>
 
@@ -375,6 +428,15 @@ const ProductsPage: React.FC = () => {
         open={viewOpen}
         onClose={handleCloseView}
         product={viewProduct}
+      />
+
+      {/* Promo Modal */}
+      <PromoModal
+        open={promoModalOpen}
+        onClose={() => setPromoModalOpen(false)}
+        product={selectedProduct}
+        onSubmit={handlePromoSubmit}
+        isSuperAdmin={isSuper}
       />
     </Box>
   );

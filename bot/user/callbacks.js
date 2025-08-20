@@ -109,10 +109,117 @@ function registerUserCallbacks(bot) {
 
   bot.action('show_promotions', async (ctx) => {
     try {
-      await ctx.reply('🎉 Aksiyalar: hozircha faol aksiyalar mavjud emas.');
-      if (ctx.answerCbQuery) await ctx.answerCbQuery();
+      const { Product } = require('../../models');
+      const { BranchProduct } = require('../../models');
+      
+      // Foydalanuvchining joylashuviga qarab eng yaqin filialni topish
+      let targetBranch = null;
+      if (ctx.session && ctx.session.userLocation) {
+        const { Branch } = require('../../models');
+        const branches = await Branch.find({ isActive: true });
+        let nearestBranch = null;
+        let minDistance = Infinity;
+        
+        for (const branch of branches) {
+          if (branch.coordinates && branch.coordinates.lat && branch.coordinates.lng) {
+            const distance = Math.sqrt(
+              Math.pow(branch.coordinates.lat - ctx.session.userLocation.latitude, 2) +
+              Math.pow(branch.coordinates.lng - ctx.session.userLocation.longitude, 2)
+            );
+            if (distance < minDistance) {
+              minDistance = distance;
+              nearestBranch = branch;
+            }
+          }
+        }
+        targetBranch = nearestBranch;
+      }
+      
+      // Agar filial topilmagan bo'lsa, foydalanuvchidan so'rash
+      if (!targetBranch) {
+        await ctx.reply('📍 Aksiyalarni ko\'rish uchun avval filialni tanlang yoki joylashuvingizni ulashing:', {
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '🏪 Filiallarni ko\'rish', callback_data: 'show_branches' }],
+              [{ text: '📍 Joylashuvni ulashish', callback_data: 'request_location' }],
+              [{ text: '🔙 Orqaga', callback_data: 'main_menu' }]
+            ]
+          }
+        });
+        return;
+      }
+      
+      // Filialdagi aktiv promolar
+      const now = new Date();
+      const branchProducts = await BranchProduct.find({
+        branch: targetBranch._id,
+        isPromoActive: true,
+        $or: [
+          { promoStart: { $lte: now } },
+          { promoStart: null }
+        ],
+        $or: [
+          { promoEnd: { $gte: now } },
+          { promoEnd: null }
+        ]
+      }).populate('product', 'name price image categoryId');
+      
+      if (!branchProducts.length) {
+        await ctx.reply(`🎉 ${targetBranch.name} filialida hozircha faol aksiyalar mavjud emas.`, {
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '🏪 Boshqa filiallarni ko\'rish', callback_data: 'show_branches' }],
+              [{ text: '🔙 Orqaga', callback_data: 'main_menu' }]
+            ]
+          }
+        });
+        return;
+      }
+      
+      // Promo mahsulotlarni ko'rsatish
+      let message = `🎉 **${targetBranch.name} filialidagi aksiyalar:**\n\n`;
+      
+      for (const bp of branchProducts) {
+        const product = bp.product;
+        const originalPrice = product.price;
+        let discountedPrice = originalPrice;
+        
+        if (bp.discountType === 'percent') {
+          discountedPrice = Math.max(Math.round(originalPrice * (1 - bp.discountValue / 100)), 0);
+        } else if (bp.discountType === 'amount') {
+          discountedPrice = Math.max(originalPrice - bp.discountValue, 0);
+        }
+        
+        message += `🍽️ **${product.name}**\n`;
+        message += `💰 ~~${originalPrice.toLocaleString()} so'm~~ → **${discountedPrice.toLocaleString()} so'm**\n`;
+        if (bp.discountType === 'percent') {
+          message += `🎯 **-${bp.discountValue}%** chegirma\n`;
+        } else {
+          message += `🎯 **-${bp.discountValue.toLocaleString()} so'm** chegirma\n`;
+        }
+        message += `\n`;
+      }
+      
+      message += `📍 Filial: ${targetBranch.name}\n`;
+      if (targetBranch.address) message += `🏠 Manzil: ${targetBranch.address}\n`;
+      
+      await ctx.reply(message, {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '🛒 Katalogga o\'tish', callback_data: 'show_catalog' }],
+            [{ text: '🏪 Boshqa filiallarni ko\'rish', callback_data: 'show_branches' }],
+            [{ text: '🔙 Orqaga', callback_data: 'main_menu' }]
+          ]
+        }
+      });
+      
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('🎉 Aksiyalar ko\'rsatildi!');
+      
     } catch (e) {
       console.error('show_promotions error', e);
+      await ctx.reply('❌ Aksiyalarni yuklashda xatolik yuz berdi. Iltimos, qaytadan urinib ko\'ring.');
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik!');
     }
   });
   

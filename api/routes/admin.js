@@ -1,7 +1,11 @@
 const express = require('express');
-const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const { authenticateToken, requireAdmin, requireRole } = require('../middleware/auth');
 const AdminController = require('../controllers/adminController');
 const { uploadSingle, handleUploadError } = require('../../config/localUploadConfig');
+const Branch = require('../../models/Branch');
+const Product = require('../../models/Product');
+const BranchProduct = require('../../models/BranchProduct');
+// remove incorrect auth import; we use authenticateToken/requireRole/requireAdmin
 
 const router = express.Router();
 
@@ -73,25 +77,88 @@ router.patch('/branches/:branchId/products/:productId', AdminController.updateIn
 router.get('/branches/:branchId/inventory', AdminController.getInventory);
 
 // Promo/discount endpoints for BranchProduct
-router.patch('/branches/:branchId/products/:productId/promo', async (req, res) => {
+router.patch('/branches/:branchId/products/:productId/promo', requireRole(['admin', 'superadmin']), async (req, res) => {
   try {
     const { branchId, productId } = req.params;
-    const { discountType, discountValue, promoStart, promoEnd, isPromoActive } = req.body || {};
-    if (req.user.role === 'admin' && String(req.user.branch) !== String(branchId)) {
-      return res.status(403).json({ success: false, message: 'Ushbu filial uchun ruxsat yo\'q' });
+    const { discountType, discountValue, promoStart, promoEnd, isPromoActive } = req.body;
+
+    // Filial va mahsulot mavjudligini tekshirish
+    const [branch, product] = await Promise.all([
+      Branch.findById(branchId),
+      Product.findById(productId)
+    ]);
+
+    if (!branch || !product) {
+      return res.status(404).json({ success: false, message: 'Filial yoki mahsulot topilmadi!' });
     }
-    const BranchProduct = require('../../models/BranchProduct');
-    const update = { };
-    if (discountType !== undefined) update.discountType = discountType || null;
-    if (discountValue !== undefined) update.discountValue = discountValue === '' ? null : Number(discountValue);
-    if (promoStart !== undefined) update.promoStart = promoStart ? new Date(promoStart) : null;
-    if (promoEnd !== undefined) update.promoEnd = promoEnd ? new Date(promoEnd) : null;
-    if (isPromoActive !== undefined) update.isPromoActive = Boolean(isPromoActive);
-    const doc = await BranchProduct.findOneAndUpdate({ branch: branchId, product: productId }, { $set: update, $setOnInsert: { branch: branchId, product: productId } }, { new: true, upsert: true });
-    res.json({ success: true, message: 'Promo yangilandi', data: doc });
-  } catch (e) {
-    console.error('Promo update error:', e);
-    res.status(500).json({ success: false, message: 'Promo yangilashda xatolik' });
+
+    // BranchProduct ni topish yoki yaratish
+    let branchProduct = await BranchProduct.findOne({ branch: branchId, product: productId });
+    
+    if (!branchProduct) {
+      branchProduct = new BranchProduct({
+        branch: branchId,
+        product: productId,
+        isAvailable: true
+      });
+    }
+
+    // Promo ma'lumotlarini yangilash
+    branchProduct.discountType = discountType;
+    branchProduct.discountValue = discountValue;
+    branchProduct.promoStart = promoStart;
+    branchProduct.promoEnd = promoEnd;
+    branchProduct.isPromoActive = isPromoActive;
+
+    await branchProduct.save();
+
+    res.json({ success: true, message: 'Promo muvaffaqiyatli yangilandi!' });
+  } catch (error) {
+    console.error('Promo update error:', error);
+    res.status(500).json({ success: false, message: 'Promo yangilashda xatolik!' });
+  }
+});
+
+// Barcha filiallarga promo qo'llash (superadmin uchun)
+router.post('/products/:productId/promo-all-branches', requireRole(['superadmin']), async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const { discountType, discountValue, promoStart, promoEnd, isPromoActive } = req.body;
+
+    // Mahsulot mavjudligini tekshirish
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ success: false, message: 'Mahsulot topilmadi!' });
+    }
+
+    // Barcha faol filiallarni topish
+    const branches = await Branch.find({ isActive: true });
+    
+    // Har bir filial uchun BranchProduct yaratish yoki yangilash
+    const operations = branches.map(branch => {
+      return BranchProduct.findOneAndUpdate(
+        { branch: branch._id, product: productId },
+        {
+          discountType,
+          discountValue,
+          promoStart,
+          promoEnd,
+          isPromoActive,
+          isAvailable: true
+        },
+        { upsert: true, new: true }
+      );
+    });
+
+    await Promise.all(operations);
+
+    res.json({ 
+      success: true, 
+      message: `${branches.length} ta filialga promo muvaffaqiyatli qo'llandi!` 
+    });
+  } catch (error) {
+    console.error('Promo all branches error:', error);
+    res.status(500).json({ success: false, message: 'Barcha filiallarga promo qo\'llashda xatolik!' });
   }
 });
 

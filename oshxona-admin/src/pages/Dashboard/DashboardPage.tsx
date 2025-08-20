@@ -455,10 +455,8 @@ const DashboardPage: React.FC = () => {
         value: String(datum.value),
       })
     },
-    label: {
-      type: 'spider',
-      content: (d: { type: string; value: number }) => `${d.type} ${Math.round((d.value / (pieData.reduce((s, v) => s + v.value, 0) || 1)) * 100)}%`,
-    },
+    // Spider label ba'zi versiyalarda qo'llab-quvvatlanmaydi, xatoni oldini olish uchun o'chirdik
+    label: false as const,
   };
 
   // Orders by hour (Column)
@@ -467,10 +465,8 @@ const DashboardPage: React.FC = () => {
     xField: 'hour',
     yField: 'count',
     columnWidthRatio: 0.6,
-    label: {
-      position: 'middle' as const,
-      style: { fill: '#fff' },
-    },
+    // 'middle' pozitsiyasi hamma buildlarda mavjud emas; xatoni oldini olish uchun oddiy labelni o'chiramiz
+    label: false as const,
     xAxis: { label: { formatter: (v: string) => v.padStart(5, '0') } },
   };
 
@@ -499,10 +495,8 @@ const DashboardPage: React.FC = () => {
     colorField: 'type',
     radius: 0.8,
     legend: { position: 'bottom' as const },
-    label: {
-      type: 'spider' as const,
-      content: (d: { type: string; value: number }) => `${d.type} ${(d.value / (categoryPieData.reduce((s, v) => s + v.value, 0) || 1) * 100).toFixed(0)}%`,
-    },
+    // Spider labelni o'chirdik – ba'zi versiyalarda komponent yo'q
+    label: false as const,
   };
 
   const courierColumns = [

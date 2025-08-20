@@ -10,84 +10,98 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Switch,
   FormControlLabel,
+  Checkbox,
   Box,
   Typography,
-  Alert,
-  CircularProgress
+  Alert
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { uz } from 'date-fns/locale';
-import apiService from '@/services/api';
+import { format, addDays } from 'date-fns';
 
 interface PromoModalProps {
   open: boolean;
   onClose: () => void;
-  productId: string;
-  productName: string;
-  branchId: string;
-  branchName: string;
-  currentPromo?: {
-    discountType: 'percent' | 'amount' | null;
-    discountValue: number | null;
-    promoStart: Date | null;
-    promoEnd: Date | null;
-    isPromoActive: boolean;
+  onSubmit: (promoData: PromoData) => Promise<void>;
+  product?: ProductWithPromo;
+  isSuperAdmin?: boolean;
+}
+
+interface PromoData {
+  discountType: 'percent' | 'amount';
+  discountValue: number;
+  promoStart: Date | null;
+  promoEnd: Date | null;
+  isPromoActive: boolean;
+  applyToAllBranches?: boolean;
+}
+
+interface ProductWithPromo {
+  _id: string;
+  name: string;
+  price: number;
+  discount?: {
+    type: 'percent' | 'amount';
+    value: number;
   };
-  onPromoUpdate: () => void;
+  originalPrice?: number;
 }
 
 const PromoModal: React.FC<PromoModalProps> = ({
   open,
   onClose,
-  productId,
-  productName,
-  branchId,
-  branchName,
-  currentPromo,
-  onPromoUpdate
+  onSubmit,
+  product,
+  isSuperAdmin = false
 }) => {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [formData, setFormData] = useState({
-    discountType: 'percent' as 'percent' | 'amount' | null,
-    discountValue: '',
-    promoStart: null as Date | null,
-    promoEnd: null as Date | null,
-    isPromoActive: false
+  const [formData, setFormData] = useState<PromoData>({
+    discountType: 'percent',
+    discountValue: 0,
+    promoStart: null,
+    promoEnd: null,
+    isPromoActive: true,
+    applyToAllBranches: false
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>('');
 
   useEffect(() => {
-    if (currentPromo) {
+    if (product && product.discount) {
       setFormData({
-        discountType: currentPromo.discountType,
-        discountValue: currentPromo.discountValue?.toString() || '',
-        promoStart: currentPromo.promoStart ? new Date(currentPromo.promoStart) : null,
-        promoEnd: currentPromo.promoEnd ? new Date(currentPromo.promoEnd) : null,
-        isPromoActive: currentPromo.isPromoActive
+        discountType: product.discount.type,
+        discountValue: product.discount.value,
+        promoStart: null,
+        promoEnd: null,
+        isPromoActive: true,
+        applyToAllBranches: false
       });
     } else {
       setFormData({
         discountType: 'percent',
-        discountValue: '',
+        discountValue: 0,
         promoStart: null,
         promoEnd: null,
-        isPromoActive: false
+        isPromoActive: true,
+        applyToAllBranches: false
       });
     }
-  }, [currentPromo]);
+  }, [product]);
 
   const handleSubmit = async () => {
-    if (!formData.discountValue || parseFloat(formData.discountValue) <= 0) {
-      setError('Chegirma qiymati kiritilishi kerak');
+    if (formData.discountValue <= 0) {
+      setError('Chegirma qiymati 0 dan katta bo\'lishi kerak');
       return;
     }
 
-    if (formData.discountType === 'percent' && parseFloat(formData.discountValue) > 100) {
+    if (formData.discountType === 'percent' && formData.discountValue > 100) {
       setError('Foiz chegirma 100% dan oshmasligi kerak');
+      return;
+    }
+
+    if (formData.promoStart && formData.promoEnd && formData.promoStart >= formData.promoEnd) {
+      setError('Boshlanish sanasi tugash sanasidan oldin bo\'lishi kerak');
       return;
     }
 
@@ -95,54 +109,29 @@ const PromoModal: React.FC<PromoModalProps> = ({
     setError('');
 
     try {
-      const payload = {
-        discountType: formData.discountType,
-        discountValue: parseFloat(formData.discountValue),
-        promoStart: formData.promoStart,
-        promoEnd: formData.promoEnd,
-        isPromoActive: formData.isPromoActive
-      };
-
-      await apiService.patch(`/admin/branches/${branchId}/products/${productId}/promo`, payload);
-      onPromoUpdate();
+      await onSubmit(formData);
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'Promo yangilashda xatolik');
+    } catch (err) {
+      setError('Promo qo\'shishda xatolik yuz berdi');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleClearPromo = async () => {
-    setLoading(true);
-    setError('');
-
-    try {
-      const payload = {
-        discountType: null,
-        discountValue: null,
-        promoStart: null,
-        promoEnd: null,
-        isPromoActive: false
-      };
-
-      await apiService.patch(`/admin/branches/${branchId}/products/${productId}/promo`, payload);
-      onPromoUpdate();
-      onClose();
-    } catch (err: any) {
-      setError(err.message || 'Promoni o\'chirishda xatolik');
-    } finally {
-      setLoading(false);
-    }
+  const handleQuickDates = (days: number) => {
+    const start = new Date();
+    const end = addDays(start, days);
+    setFormData(prev => ({
+      ...prev,
+      promoStart: start,
+      promoEnd: end
+    }));
   };
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>
-        🎯 Promo boshqaruvi
-        <Typography variant="body2" color="text.secondary">
-          {productName} - {branchName}
-        </Typography>
+        {product ? 'Promo tahrirlash' : 'Yangi promo qo\'shish'}
       </DialogTitle>
       
       <DialogContent>
@@ -152,83 +141,128 @@ const PromoModal: React.FC<PromoModalProps> = ({
           </Alert>
         )}
 
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={formData.isPromoActive}
-                onChange={(e) => setFormData(prev => ({ ...prev, isPromoActive: e.target.checked }))}
-              />
-            }
-            label="Promo faol"
-          />
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="h6" gutterBottom>
+            {product?.name}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Asosiy narx: {product?.price?.toLocaleString()} so'm
+          </Typography>
+        </Box>
 
+        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
           <FormControl fullWidth>
             <InputLabel>Chegirma turi</InputLabel>
             <Select
-              value={formData.discountType || ''}
-              onChange={(e) => setFormData(prev => ({ ...prev, discountType: e.target.value as 'percent' | 'amount' | null }))}
-              label="Chegirma turi"
+              value={formData.discountType}
+              onChange={(e) => setFormData(prev => ({ ...prev, discountType: e.target.value as 'percent' | 'amount' }))}
             >
               <MenuItem value="percent">Foiz (%)</MenuItem>
-              <MenuItem value="amount">Miqdori (so'm)</MenuItem>
+              <MenuItem value="amount">So'm</MenuItem>
             </Select>
           </FormControl>
 
           <TextField
             fullWidth
-            label={`Chegirma qiymati ${formData.discountType === 'percent' ? '(foiz)' : '(so\'m)'}`}
-            value={formData.discountValue}
-            onChange={(e) => setFormData(prev => ({ ...prev, discountValue: e.target.value }))}
+            label={formData.discountType === 'percent' ? 'Foiz (%)' : 'So\'m'}
             type="number"
+            value={formData.discountValue}
+            onChange={(e) => setFormData(prev => ({ ...prev, discountValue: Number(e.target.value) }))}
             inputProps={{
               min: 0,
               max: formData.discountType === 'percent' ? 100 : undefined
             }}
           />
+        </Box>
 
-          <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={uz}>
+        {formData.discountValue > 0 && (
+          <Box sx={{ mb: 2, p: 2, bgcolor: 'success.light', borderRadius: 1 }}>
+            <Typography variant="body2" color="success.contrastText">
+              Yangi narx: {(() => {
+                if (!product?.price) return 'N/A';
+                const originalPrice = product.price;
+                let newPrice = originalPrice;
+                
+                if (formData.discountType === 'percent') {
+                  newPrice = Math.max(Math.round(originalPrice * (1 - formData.discountValue / 100)), 0);
+                } else {
+                  newPrice = Math.max(originalPrice - formData.discountValue, 0);
+                }
+                
+                return `${newPrice.toLocaleString()} so'm`;
+              })()}
+            </Typography>
+          </Box>
+        )}
+
+        <LocalizationProvider dateAdapter={AdapterDateFns}>
+          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
             <DatePicker
-              label="Promo boshlanishi"
+              label="Boshlanish sanasi"
               value={formData.promoStart}
               onChange={(date) => setFormData(prev => ({ ...prev, promoStart: date }))}
               slotProps={{ textField: { fullWidth: true } }}
             />
-            
             <DatePicker
-              label="Promo tugashi"
+              label="Tugash sanasi"
               value={formData.promoEnd}
               onChange={(date) => setFormData(prev => ({ ...prev, promoEnd: date }))}
               slotProps={{ textField: { fullWidth: true } }}
             />
-          </LocalizationProvider>
+          </Box>
+        </LocalizationProvider>
 
-          <Typography variant="body2" color="text.secondary">
-            * Vaqt belgilanmasa, promo doimiy bo'ladi
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            Tezkor sanalar:
           </Typography>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            <Button size="small" variant="outlined" onClick={() => handleQuickDates(1)}>
+              1 kun
+            </Button>
+            <Button size="small" variant="outlined" onClick={() => handleQuickDates(7)}>
+              1 hafta
+            </Button>
+            <Button size="small" variant="outlined" onClick={() => handleQuickDates(30)}>
+              1 oy
+            </Button>
+          </Box>
         </Box>
+
+        {isSuperAdmin && (
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={formData.applyToAllBranches}
+                onChange={(e) => setFormData(prev => ({ ...prev, applyToAllBranches: e.target.checked }))}
+              />
+            }
+            label="Barcha filiallarga qo'llash"
+          />
+        )}
+
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={formData.isPromoActive}
+              onChange={(e) => setFormData(prev => ({ ...prev, isPromoActive: e.target.checked }))}
+            />
+          }
+          label="Promo faol"
+        />
       </DialogContent>
 
       <DialogActions>
-        {currentPromo && (
-          <Button 
-            onClick={handleClearPromo} 
-            color="error" 
-            disabled={loading}
-          >
-            Promoni o'chirish
-          </Button>
-        )}
         <Button onClick={onClose} disabled={loading}>
-          Bekor
+          Bekor qilish
         </Button>
         <Button 
           onClick={handleSubmit} 
           variant="contained" 
-          disabled={loading}
-          startIcon={loading ? <CircularProgress size={16} /> : null}
+          color="primary"
+          disabled={loading || formData.discountValue <= 0}
         >
-          {loading ? 'Saqlanmoqda...' : 'Saqlash'}
+          {loading ? 'Saqlanmoqda...' : (product ? 'Yangilash' : 'Qo\'shish')}
         </Button>
       </DialogActions>
     </Dialog>
