@@ -27,7 +27,7 @@ async function list(req, res) {
     if (isPublic === 'true' && branch) {
       const productIds = products.map(p => p._id);
       const bp = await BranchProduct.find({ branch, product: { $in: productIds } })
-        .select('product isAvailable stock dailyLimit soldToday priceOverride');
+        .select('product isAvailable priceOverride discountType discountValue promoStart promoEnd isPromoActive');
       const map = new Map(bp.map(x => [String(x.product), x]));
       products = products
         .map(p => {
@@ -39,7 +39,17 @@ async function list(req, res) {
           if (!isAvail) return null;
           const obj = p.toObject();
           if (inv.priceOverride !== null) obj.price = inv.priceOverride;
-          obj.inventory = { isAvailable: inv.isAvailable, stock: inv.stock, dailyLimit: inv.dailyLimit, soldToday: inv.soldToday };
+          // promo hisoblash
+          const now = new Date();
+          const inWindow = (!inv.promoStart || inv.promoStart <= now) && (!inv.promoEnd || inv.promoEnd >= now);
+          if (inv.isPromoActive && inWindow && inv.discountType && inv.discountValue) {
+            const base = obj.price;
+            const discounted = inv.discountType === 'percent' ? Math.max(Math.round(base * (1 - inv.discountValue/100)), 0) : Math.max(base - inv.discountValue, 0);
+            obj.originalPrice = base;
+            obj.price = discounted;
+            obj.discount = { type: inv.discountType, value: inv.discountValue };
+          }
+          obj.inventory = { isAvailable: inv.isAvailable };
           return obj;
         })
         .filter(Boolean);

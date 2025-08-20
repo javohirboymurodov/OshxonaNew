@@ -93,6 +93,29 @@ function registerUserCallbacks(bot) {
 
   bot.action('show_categories', async (ctx) => { await CatalogHandlers.showCategories(ctx); });
 
+  // Katalog
+  bot.action('show_catalog', async (ctx) => { await CatalogHandlers.showCategories(ctx); });
+
+  // Savat va Aksiyalar
+  bot.action('show_cart', async (ctx) => {
+    try {
+      const { showCart } = require('../handlers/user/cart');
+      await showCart(ctx);
+    } catch (e) {
+      console.error('show_cart error', e);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Savatni ochib bo\'lmadi');
+    }
+  });
+
+  bot.action('show_promotions', async (ctx) => {
+    try {
+      await ctx.reply('🎉 Aksiyalar: hozircha faol aksiyalar mavjud emas.');
+      if (ctx.answerCbQuery) await ctx.answerCbQuery();
+    } catch (e) {
+      console.error('show_promotions error', e);
+    }
+  });
+  
   // Filiallar
   bot.action('show_branches', async (ctx) => { await CatalogHandlers.showBranches(ctx, 1); });
   // Branch tanlash va tafsilotlar (nearest/branch_<id>)

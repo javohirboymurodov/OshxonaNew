@@ -12,25 +12,27 @@ import {
   Avatar,
   Switch,
   Tooltip,
-  TextField,
   Box,
-  Typography
+  Typography,
+  Button
 } from '@mui/material';
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Visibility as ViewIcon
+  Visibility as ViewIcon,
+  LocalOffer as PromoIcon
 } from '@mui/icons-material';
 import { Product } from '../../hooks/useProducts';
 import apiService from '@/services/api';
 import { useAuth } from '@/hooks/useAuth';
+import PromoModal from './PromoModal';
 
 interface ProductsTableProps {
   products: Product[];
   onEdit: (product: Product) => void;
   onView: (product: Product) => void;
   onDelete: (id: string) => void;
-  onToggleStatus?: (id: string, next: boolean) => void;
+  onToggleStatus?: (id: string) => Promise<void>;
   page?: number;
   rowsPerPage?: number;
   total?: number;
@@ -40,6 +42,15 @@ interface ProductsTableProps {
   onInventoryUpdate?: () => void;
   inventoryBranchId?: string;
   inventoryBranchName?: string;
+}
+
+// Extended Product type for promo data
+interface ProductWithPromo extends Product {
+  originalPrice?: number;
+  discount?: {
+    type: 'percent' | 'amount';
+    value: number;
+  };
 }
 
 const getImageUrl = (imagePath: string | undefined): string | undefined => {
@@ -67,9 +78,28 @@ const ProductsTable: React.FC<ProductsTableProps> = ({
   const { user } = useAuth() as { user?: { role?: string; branch?: string } };
   const isSuper = String(user?.role || '').toLowerCase() === 'superadmin';
   const branchId = isSuper ? undefined : user?.branch;
+  
+  // Promo modal state
+  const [promoModalOpen, setPromoModalOpen] = React.useState(false);
+  const [selectedProduct, setSelectedProduct] = React.useState<ProductWithPromo | null>(null);
+
+  const handlePromoClick = (product: ProductWithPromo) => {
+    setSelectedProduct(product);
+    setPromoModalOpen(true);
+  };
+
+  const handlePromoClose = () => {
+    setPromoModalOpen(false);
+    setSelectedProduct(null);
+  };
+
+  const handlePromoUpdate = () => {
+    if (onInventoryUpdate) onInventoryUpdate();
+  };
 
   return (
-          <Paper>
+    <>
+      <Paper>
         {inventoryBranchId && (
           <Box p={2} bgcolor="primary.light" color="white">
             <Typography variant="body2" fontWeight="bold">
@@ -85,100 +115,128 @@ const ProductsTable: React.FC<ProductsTableProps> = ({
               <TableCell>Nom</TableCell>
               <TableCell>Kategoriya</TableCell>
               <TableCell>Narx</TableCell>
+              <TableCell>Promo</TableCell>
               <TableCell>Holat</TableCell>
               <TableCell>Yaratilgan</TableCell>
               <TableCell>Amallar</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {products.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((product) => (
-              <TableRow key={product._id}>
-                <TableCell>
-                  <Avatar 
-                    src={getImageUrl(product.image)} 
-                    alt={product.name}
-                    sx={{ width: 50, height: 50 }}
-                  >
-                    {product.name.charAt(0).toUpperCase()}
-                  </Avatar>
-                </TableCell>
-                <TableCell>{product.name}</TableCell>
-                <TableCell>
-                  {product.categoryId?.emoji} {product.categoryId?.name}
-                </TableCell>
-                <TableCell>{product.price.toLocaleString()} so'm</TableCell>
-                <TableCell>
-                  {(() => {
-                    const inventoryData = (inventoryMap as Record<string, { isAvailable?: boolean }>)[product._id];
-                    const currentAvailability = inventoryData?.isAvailable ?? true;
-                    const targetBranch = inventoryBranchId || branchId || (user as { branch?: string } | undefined)?.branch || undefined;
-                    const canToggle = Boolean(targetBranch);
-                    
-                    console.log('🔍 Toggle debug:', {
-                      productId: product._id,
-                      productName: product.name,
-                      inventoryData,
-                      currentAvailability,
-                      targetBranch,
-                      inventoryBranchId,
-                      branchId,
-                      userBranch: (user as { branch?: string } | undefined)?.branch,
-                      canToggle,
-                      inventoryMapSize: Object.keys(inventoryMap || {}).length
-                    });
-                    
-                    return (
-                      <Tooltip title={canToggle ? (currentAvailability ? 'Faol' : 'Nofaol') : 'Filialni tanlang'}>
-                        <span>
-                          <Switch
-                            color="success"
-                            checked={currentAvailability}
-                            disabled={!canToggle}
-                            onChange={async (e) => {
-                              try {
-                                const tb = targetBranch;
-                                if (!tb) {
-                                  console.error('❌ No target branch for toggle');
-                                  return;
+            {products.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((product) => {
+              const productWithPromo = product as ProductWithPromo;
+              return (
+                <TableRow key={product._id}>
+                  <TableCell>
+                    <Avatar 
+                      src={getImageUrl(product.image)} 
+                      alt={product.name}
+                      sx={{ width: 50, height: 50 }}
+                    >
+                      {product.name.charAt(0).toUpperCase()}
+                    </Avatar>
+                  </TableCell>
+                  <TableCell>{product.name}</TableCell>
+                  <TableCell>
+                    {product.categoryId?.emoji} {product.categoryId?.name}
+                  </TableCell>
+                  <TableCell>
+                    {(() => {
+                      const original = productWithPromo.originalPrice;
+                      if (original && original > product.price) {
+                        return <span><s>{original.toLocaleString()} so'm</s> <b>{product.price.toLocaleString()} so'm</b></span>;
+                      }
+                      return <span>{product.price.toLocaleString()} so'm</span>;
+                    })()}
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" component="div">
+                      {productWithPromo.discount ? (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <span style={{ color: '#f50' }}>
+                            -{productWithPromo.discount.value}{productWithPromo.discount.type==='percent'?'%':' so\'m'}
+                          </span>
+                          {productWithPromo.discount && (
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              startIcon={<PromoIcon />}
+                              onClick={() => handlePromoClick(productWithPromo)}
+                              sx={{ ml: 1 }}
+                            >
+                              Tahrirlash
+                            </Button>
+                          )}
+                        </Box>
+                      ) : (
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          startIcon={<PromoIcon />}
+                          onClick={() => handlePromoClick(productWithPromo)}
+                        >
+                          Promo qo'shish
+                        </Button>
+                      )}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    {(() => {
+                      const inventoryData = (inventoryMap as Record<string, { isAvailable?: boolean }>)[product._id];
+                      const currentAvailability = inventoryData?.isAvailable ?? true;
+                      const targetBranch = inventoryBranchId || branchId || (user as { branch?: string } | undefined)?.branch || undefined;
+                      const canToggle = Boolean(targetBranch);
+                      
+                      return (
+                        <Tooltip title={canToggle ? (currentAvailability ? 'Faol' : 'Nofaol') : 'Filialni tanlang'}>
+                          <Box component="span">
+                            <Switch
+                              color="success"
+                              checked={currentAvailability}
+                              disabled={!canToggle}
+                              onChange={async (e) => {
+                                try {
+                                  if (onToggleStatus) {
+                                    await onToggleStatus(product._id);
+                                  } else {
+                                    const tb = targetBranch;
+                                    if (!tb) {
+                                      console.error('❌ No target branch for toggle');
+                                      return;
+                                    }
+                                    await apiService.updateInventory(tb, product._id, { isAvailable: e.target.checked });
+                                    if (onInventoryUpdate) onInventoryUpdate();
+                                  }
+                                } catch (err) {
+                                  console.error('❌ Inventory toggle error:', err);
                                 }
-                                console.log('📤 Updating inventory:', {
-                                  branch: tb,
-                                  product: product._id,
-                                  isAvailable: e.target.checked
-                                });
-                                const result = await apiService.updateInventory(tb, product._id, { isAvailable: e.target.checked });
-                                console.log('✅ Inventory updated:', result);
-                                if (onInventoryUpdate) onInventoryUpdate();
-                              } catch (err) {
-                                console.error('❌ Inventory toggle error:', err);
-                              }
-                            }}
-                          />
-                        </span>
-                      </Tooltip>
-                    );
-                  })()}
-                </TableCell>
-                <TableCell>
-                  {new Date(product.createdAt).toLocaleDateString('uz-UZ')}
-                </TableCell>
-                <TableCell>
-                  <IconButton onClick={() => onView(product)}>
-                    <ViewIcon />
-                  </IconButton>
-                  {isSuper && (
-                    <>
-                      <IconButton onClick={() => onEdit(product)}>
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton onClick={() => onDelete(product._id)}>
-                        <DeleteIcon />
-                      </IconButton>
-                    </>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
+                              }}
+                            />
+                          </Box>
+                        </Tooltip>
+                      );
+                    })()}
+                  </TableCell>
+                  <TableCell>
+                    {new Date(product.createdAt).toLocaleDateString('uz-UZ')}
+                  </TableCell>
+                  <TableCell>
+                    <IconButton onClick={() => onView(product)}>
+                      <ViewIcon />
+                    </IconButton>
+                    {isSuper && (
+                      <>
+                        <IconButton onClick={() => onEdit(product)}>
+                          <EditIcon />
+                        </IconButton>
+                        <IconButton onClick={() => onDelete(product._id)}>
+                          <DeleteIcon />
+                        </IconButton>
+                      </>
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </TableContainer>
@@ -192,6 +250,27 @@ const ProductsTable: React.FC<ProductsTableProps> = ({
         rowsPerPageOptions={[5, 10, 25, 50]}
       />
     </Paper>
+
+    {/* Promo Modal */}
+    {selectedProduct && (
+      <PromoModal
+        open={promoModalOpen}
+        onClose={handlePromoClose}
+        productId={selectedProduct._id}
+        productName={selectedProduct.name}
+        branchId={inventoryBranchId || branchId || ''}
+        branchName={inventoryBranchName || 'Filial'}
+        currentPromo={selectedProduct.discount ? {
+          discountType: selectedProduct.discount.type,
+          discountValue: selectedProduct.discount.value,
+          promoStart: null, // TODO: API'dan olish kerak
+          promoEnd: null,   // TODO: API'dan olish kerak
+          isPromoActive: true
+        } : undefined}
+        onPromoUpdate={handlePromoUpdate}
+      />
+    )}
+    </>
   );
 };
 

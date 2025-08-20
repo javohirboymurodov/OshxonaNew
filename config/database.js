@@ -15,6 +15,7 @@ class Database {
 
         try {
             // MongoDB connection with timeout
+            const db='mongodb+srv://javohir:<db_password>@cluster0.jjsllqm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0'
             const connectionString = process.env.MONGODB_URI || 'mongodb://localhost:27017/pizza_bot';
             
             logger.info(`🔌 Attempting to connect to MongoDB: ${connectionString}`);

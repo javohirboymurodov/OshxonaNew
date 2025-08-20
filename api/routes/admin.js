@@ -72,4 +72,27 @@ router.patch('/branches/:branchId/products/:productId', AdminController.updateIn
 // GET inventory for a branch (optionally filter by productIds)
 router.get('/branches/:branchId/inventory', AdminController.getInventory);
 
+// Promo/discount endpoints for BranchProduct
+router.patch('/branches/:branchId/products/:productId/promo', async (req, res) => {
+  try {
+    const { branchId, productId } = req.params;
+    const { discountType, discountValue, promoStart, promoEnd, isPromoActive } = req.body || {};
+    if (req.user.role === 'admin' && String(req.user.branch) !== String(branchId)) {
+      return res.status(403).json({ success: false, message: 'Ushbu filial uchun ruxsat yo\'q' });
+    }
+    const BranchProduct = require('../../models/BranchProduct');
+    const update = { };
+    if (discountType !== undefined) update.discountType = discountType || null;
+    if (discountValue !== undefined) update.discountValue = discountValue === '' ? null : Number(discountValue);
+    if (promoStart !== undefined) update.promoStart = promoStart ? new Date(promoStart) : null;
+    if (promoEnd !== undefined) update.promoEnd = promoEnd ? new Date(promoEnd) : null;
+    if (isPromoActive !== undefined) update.isPromoActive = Boolean(isPromoActive);
+    const doc = await BranchProduct.findOneAndUpdate({ branch: branchId, product: productId }, { $set: update, $setOnInsert: { branch: branchId, product: productId } }, { new: true, upsert: true });
+    res.json({ success: true, message: 'Promo yangilandi', data: doc });
+  } catch (e) {
+    console.error('Promo update error:', e);
+    res.status(500).json({ success: false, message: 'Promo yangilashda xatolik' });
+  }
+});
+
 module.exports = router;

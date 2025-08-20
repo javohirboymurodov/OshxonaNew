@@ -26,9 +26,10 @@ app.use(cors({
   origin: [
     'http://localhost:3000',
     'http://localhost:3001',
-    'http://localhost:5173', // Vite default port
+    'http://localhost:3003', // Vite default port
     process.env.ADMIN_PANEL_URL || 'http://localhost:3000',
-    process.env.USER_FRONTEND_URL || 'http://localhost:3001'
+    process.env.USER_FRONTEND_URL || 'http://localhost:3001',
+    process.env.WEBAPP_URL || 'http://localhost:3003'
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],

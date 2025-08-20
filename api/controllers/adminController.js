@@ -50,12 +50,82 @@ async function getProducts(req, res) {
     const branchId = req.user.role === 'superadmin' ? null : req.user.branch;
     const query = {};
     if (branchId) query.$or = [{ branch: branchId }, { branch: { $exists: false } }, { branch: null }];
-    if (req.user.role === 'superadmin' && branch) query.branch = branch;
+    // Superadmin uchun Product ro'yxatini filial bo'yicha FILTRLAMAYMIZ.
+    // `branch` parametri faqat promo/chegirma hisoblash (BranchProduct) uchun ishlatiladi.
     if (category) query.categoryId = category;
     if (search) query.$or = [{ name: { $regex: search, $options: 'i' } }, { description: { $regex: search, $options: 'i' } }];
-    const products = await Product.find(query).populate('categoryId', 'name nameRu nameEn emoji').limit(parseInt(limit)).skip((parseInt(page) - 1) * parseInt(limit)).sort({ createdAt: -1 });
+    
+    const products = await Product.find(query)
+      .populate('categoryId', 'name nameRu nameEn emoji')
+      .limit(parseInt(limit))
+      .skip((parseInt(page) - 1) * parseInt(limit))
+      .sort({ createdAt: -1 });
+    
+    // Promo ma'lumotlarini qo'shish
+    const productIds = products.map(p => p._id);
+    const targetBranch = branch || branchId || (req.user.role === 'superadmin' ? null : req.user.branch);
+    
+    let branchProducts = [];
+    if (targetBranch) {
+      branchProducts = await BranchProduct.find({
+        product: { $in: productIds },
+        branch: targetBranch
+      }).select('product discountType discountValue promoStart promoEnd isPromoActive');
+    }
+    
+    // Promo ma'lumotlarini product'larga birlashtirish
+    const productsWithPromo = products.map(product => {
+      const branchProduct = branchProducts.find(bp => bp.product.toString() === product._id.toString());
+      console.log(`🔍 Product ${product.name} (${product._id}):`, {
+        hasBranchProduct: !!branchProduct,
+        branchProduct: branchProduct ? {
+          discountType: branchProduct.discountType,
+          discountValue: branchProduct.discountValue,
+          isPromoActive: branchProduct.isPromoActive
+        } : null
+      });
+
+      if (branchProduct && branchProduct.isPromoActive && branchProduct.discountType && branchProduct.discountValue) {
+        const discount = {
+          type: branchProduct.discountType,
+          value: branchProduct.discountValue
+        };
+
+        // Hisoblangan chegirma narxi
+        const basePrice = Number(product.price) || 0;
+        const discountedPrice = discount.type === 'percent'
+          ? Math.max(0, Math.round(basePrice * (1 - discount.value / 100)))
+          : Math.max(0, Math.round(basePrice - discount.value));
+
+        console.log(`✅ Promo applied to ${product.name}:`, {
+          basePrice,
+          discount,
+          discountedPrice
+        });
+
+        return {
+          ...product.toObject(),
+          price: discountedPrice,          // joriy ko'rsatiladigan narx
+          originalPrice: basePrice,        // ustiga chizilishi uchun
+          discount
+        };
+      }
+      return product.toObject();
+    });
+    
     const total = await Product.countDocuments(query);
-    res.json({ success: true, data: { items: products, pagination: { current: parseInt(page), pageSize: parseInt(limit), pages: Math.ceil(total / parseInt(limit)), total } } });
+    res.json({ 
+      success: true, 
+      data: { 
+        items: productsWithPromo, 
+        pagination: { 
+          current: parseInt(page), 
+          pageSize: parseInt(limit), 
+          pages: Math.ceil(total / parseInt(limit)), 
+          total 
+        } 
+      } 
+    });
   } catch (error) {
     console.error('Get products error:', error);
     res.status(500).json({ success: false, message: 'Mahsulotlarni olishda xatolik!' });

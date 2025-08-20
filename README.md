@@ -134,3 +134,42 @@ Troubleshooting:
 
 ## 📄 LICENSE
 MIT
+
+## 🚀 Yangi Xususiyatlar
+
+### 📱 User WebApp (Telegram Interactive Catalog)
+- **Loyiha**: `apps/user-webapp/` - Telegram WebApp uchun interaktiv katalog
+- **Texnologiyalar**: React + Vite + TypeScript
+- **Xususiyatlar**:
+  - Kategoriyalar bo'yicha filtrlash
+  - Filial tanlash
+  - Savat boshqaruvi
+  - Telegram bot bilan integratsiya
+  - `sendData` orqali savat ma'lumotlarini yuborish
+
+### 🎯 Promo/Aksiyalar Tizimi
+- **Model**: `BranchProduct` ga promo maydonlari qo'shildi
+  - `discountType`: 'percent' | 'amount'
+  - `discountValue`: chegirma qiymati
+  - `promoStart/promoEnd`: vaqt chegarasi
+  - `isPromoActive`: promo holati
+- **Admin Panel**: 
+  - Har bir mahsulot uchun promo modal
+  - Promo filtri va statistikasi
+  - Vaqt chegarasi bilan chegirma
+- **API**: `PATCH /admin/branches/:branchId/products/:productId/promo`
+- **Bot**: WebApp'dan kelgan savat ma'lumotlarini qabul qilish
+
+## 🏗️ Loyiha Tuzilishi
+
+```
+OshxonaNew/
+├── api/                    # Backend API (Node.js + Express)
+├── bot/                    # Telegram bot (Telegraf)
+├── oshxona-admin/          # Admin panel (React + Ant Design)
+├── apps/
+│   └── user-webapp/        # User WebApp (React + Vite)
+├── models/                 # MongoDB schemas
+├── services/               # Business logic
+└── utils/                  # Utility functions
+```

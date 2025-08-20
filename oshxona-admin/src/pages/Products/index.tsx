@@ -37,6 +37,7 @@ const ProductsPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<string>('all');
   const [status, setStatus] = useState<'all' | 'active' | 'inactive'>('all');
+  const [promotions, setPromotions] = useState<'all' | 'promo' | 'no-promo'>('all');
   // useAuth tipini uyg'unlashtirish
   type AuthShape = { user?: { role?: string; branch?: string } };
   const { user } = useAuth() as AuthShape;
@@ -58,7 +59,7 @@ const ProductsPage: React.FC = () => {
   });
   const branches: { _id: string; name?: string; title?: string }[] = branchesQuery.data || [];
 
-  const productsKey = ['products', { search, category, status, branch }];
+  const productsKey = ['products', { search, category, status, branch, promotions }];
 
   const productsQuery = useQuery<Product[]>({
     queryKey: productsKey,
@@ -68,6 +69,10 @@ const ProductsPage: React.FC = () => {
       // Superadmin filial tanlaganda mahsulotlarni FILTRLASH KERAK EMAS
       // Chunki biz inventory orqali boshqaramiz, API hamma mahsulotlarni qaytarsin
       if (category && category !== 'all') params.push(`category=${encodeURIComponent(category)}`);
+      // Promo hisoblash backendda filial bo'yicha amalga oshadi. Superadmin uchun tanlangan (yoki avt. birinchi) filialni yuboramiz
+      const branchForQuery = isSuper ? (branch && branch !== 'all' ? branch : (branches.length > 0 ? branches[0]._id : undefined)) : undefined;
+      if (branchForQuery) params.push(`branch=${encodeURIComponent(branchForQuery)}`);
+      if (isSuper && branch && branch !== 'all') params.push(`branch=${encodeURIComponent(branch)}`);
       if (search && search.trim()) params.push(`search=${encodeURIComponent(search.trim())}`);
       if (params.length) url += `?${params.join('&')}`;
       
@@ -88,6 +93,15 @@ const ProductsPage: React.FC = () => {
         const isActive = status === 'active';
         items = items.filter(p => Boolean(p.isActive) === isActive);
       }
+
+      // Promo filter
+      if (promotions !== 'all') {
+        items = items.filter(p => {
+          const hasPromo = Boolean((p as any).discount);
+          return promotions === 'promo' ? hasPromo : !hasPromo;
+        });
+      }
+      
       return items;
     },
     placeholderData: [] as Product[],
@@ -99,7 +113,7 @@ const ProductsPage: React.FC = () => {
   }, [productsQuery.data, productsQuery.isLoading]);
 
   // Filter/pagination reset on key changes
-  useEffect(() => { setPage(0); }, [search, category, status, branch]);
+  useEffect(() => { setPage(0); }, [search, category, status, branch, promotions]);
 
   // Inventory prefetch for selected branch (admin: own branch; superadmin: selected branch)
   // Superadmin uchun branch 'all' bo'lsa, birinchi filialni tanlaymiz
@@ -294,6 +308,17 @@ const ProductsPage: React.FC = () => {
               <MenuItem value="inactive">Nofaol</MenuItem>
             </TextField>
           </Box>
+          <Box>
+            <TextField select fullWidth label="Promotions" size="small" value={promotions} onChange={(e) => {
+              const v = e.target.value as 'all' | 'promo' | 'no-promo';
+              setPromotions(v);
+              queryClient.invalidateQueries({ queryKey: productsKey });
+            }}>
+              <MenuItem value="all">Barchasi</MenuItem>
+              <MenuItem value="promo">Promo</MenuItem>
+              <MenuItem value="no-promo">Promo emas</MenuItem>
+            </TextField>
+          </Box>
         </Box>
       </Paper>
 
@@ -304,6 +329,8 @@ const ProductsPage: React.FC = () => {
           <Chip label={`Faol: ${products.filter(p => p.isActive).length}`} color="success" />
           <Chip label={`Nofaol: ${products.filter(p => !p.isActive).length}`} />
           <Chip label={`Kategoriyalar: ${new Set(products.map(p => p.categoryId?._id)).size}`} color="secondary" />
+          <Chip label={`Promo: ${products.filter(p => Boolean((p as any).discount)).length}`} color="warning" />
+          <Chip label={`Promo emas: ${products.filter(p => !Boolean((p as any).discount)).length}`} />
         </Box>
       </Paper>
 
@@ -328,6 +355,7 @@ const ProductsPage: React.FC = () => {
         inventoryMap={inventoryQuery.data || {}}
         onInventoryUpdate={() => {
           queryClient.invalidateQueries({ queryKey: ['inventory', { branch: targetBranchId, ids: productIds }] });
+          queryClient.invalidateQueries({ queryKey: productsKey });
         }}
         inventoryBranchId={targetBranchId}
         inventoryBranchName={targetBranchId ? branches.find(b => b._id === targetBranchId)?.name || branches.find(b => b._id === targetBranchId)?.title || 'Filial' : undefined}

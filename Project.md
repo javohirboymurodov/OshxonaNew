@@ -416,3 +416,55 @@ curl -X PATCH -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/j
 curl -H "Authorization: Bearer <TOKEN>" http://localhost:5000/api/superadmin/branches
 ```
 
+## 🎯 Yangi Xususiyatlar (2024)
+
+### 📱 User WebApp (Telegram Interactive Catalog)
+**Maqsad**: Telegram bot ichida interaktiv katalog va savat boshqaruvi
+**Loyiha**: `apps/user-webapp/` - alohida React + Vite + TypeScript loyiha
+
+**Xususiyatlar**:
+- Kategoriyalar bo'yicha filtrlash
+- Filial tanlash (dropdown)
+- Mahsulotlar grid ko'rinishida
+- Savat boshqaruvi (+/- tugmalar)
+- Telegram bot bilan integratsiya
+- `sendData` orqali savat ma'lumotlarini yuborish
+
+**Texnik jihatlar**:
+- `window.Telegram.WebApp` orqali initData
+- API endpoints: `/categories/public`, `/products?public=true&branch=...`
+- Responsive design (mobile-first)
+- TypeScript type safety
+
+### 🎯 Promo/Aksiyalar Tizimi
+**Maqsad**: Mahsulotlarga chegirma va aksiyalar qo'shish
+
+**Model o'zgarishlari** (`BranchProduct.js`):
+```javascript
+// Promo maydonlari qo'shildi
+discountType: { type: String, enum: ['percent', 'amount', null], default: null },
+discountValue: { type: Number, default: null },
+promoStart: { type: Date, default: null },
+promoEnd: { type: Date, default: null },
+isPromoActive: { type: Boolean, default: false }
+```
+
+**Admin Panel**:
+- `PromoModal` komponenti - promo boshqaruvi
+- Products jadvalida "Promo" ustuni
+- Promo filtri (Promo/Promo emas)
+- Promo statistikasi
+- Vaqt chegarasi bilan chegirma
+
+**API Endpoints**:
+- `PATCH /admin/branches/:branchId/products/:productId/promo` - promo yangilash
+- `GET /products?public=true&branch=...` - promo narxlar bilan
+
+**Bot integratsiyasi**:
+- WebApp'dan kelgan savat ma'lumotlarini qabul qilish
+- `web_app_data` event handler
+- Savatni Cart modeliga saqlash
+- Buyurtma oqimiga yo'naltirish
+
+## 🔄 O'zgarishlar Tarixi
+

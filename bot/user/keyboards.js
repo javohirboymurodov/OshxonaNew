@@ -2,20 +2,26 @@ const { Markup } = require('telegraf');
 
 const mainMenuKeyboard = Markup.inlineKeyboard([
   [
-    Markup.button.callback('🍽️ Buyurtma berish', 'show_categories'),
-    Markup.button.callback('🛒 Savat', 'show_cart')
+    Markup.button.callback('🍽️ Tezkor buyurtma', 'quick_order'),
+    Markup.button.callback('🏪 Filiallar', 'show_branches')
   ],
   [
-    Markup.button.callback('⚡ Tezkor buyurtma', 'quick_order'),
-    Markup.button.callback('📋 Buyurtmalarim', 'my_orders')
-  ],
-  [
-    Markup.button.callback('🏬 Filiallar', 'show_branches'),
-    Markup.button.callback('👤 Profil', 'my_profile'),
-    Markup.button.callback('📞 Bog\'lanish', 'contact')
-  ],
-  [
+    Markup.button.callback('📱 Bog\'lanish', 'contact'),
     Markup.button.callback('ℹ️ Ma\'lumot', 'about')
+  ],
+  [
+    Markup.button.callback('🛒 Savat', 'show_cart'),
+    Markup.button.callback('🎉 Aksiyalar', 'show_promotions')
+  ],
+  [
+    // HTTPS bo'lsa WebApp, aks holda callback fallback
+    (process.env.WEBAPP_URL && /^https:\/\//.test(process.env.WEBAPP_URL))
+      ? Markup.button.webApp('🛒 Katalog', process.env.WEBAPP_URL)
+      : Markup.button.callback('🛒 Katalog', 'show_catalog'),
+    Markup.button.callback('👤 Mening profilim', 'my_profile')
+  ],
+  [
+    Markup.button.callback('📋 Mening buyurtmalarim', 'my_orders')
   ]
 ]);
 

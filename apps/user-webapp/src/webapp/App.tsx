@@ -1,0 +1,134 @@
+import React from 'react'
+
+declare global {
+  interface Window { Telegram?: any }
+}
+
+type Product = { _id: string; name: string; price: number; image?: string; categoryId?: { _id: string; name?: string } };
+type Category = { _id: string; name: string };
+type Branch = { _id: string; name: string; title?: string };
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+
+function useInitData() {
+  const [telegramId, setTelegramId] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    try {
+      const tg = window.Telegram?.WebApp;
+      tg?.ready?.();
+      const initDataUnsafe = tg?.initDataUnsafe;
+      const id = initDataUnsafe?.user?.id ? String(initDataUnsafe.user.id) : null;
+      setTelegramId(id);
+    } catch {}
+  }, []);
+  return telegramId;
+}
+
+export default function App() {
+  const telegramId = useInitData();
+  const [categories, setCategories] = React.useState<Category[]>([]);
+  const [branches, setBranches] = React.useState<Branch[]>([]);
+  const [activeCat, setActiveCat] = React.useState<string>('all');
+  const [products, setProducts] = React.useState<Product[]>([]);
+  const [cart, setCart] = React.useState<Record<string, number>>({});
+  const [branch, setBranch] = React.useState<string>('');
+
+  React.useEffect(() => {
+    fetch(`${API_BASE}/categories/public`).then(r=>r.json()).then(r=>{
+      const list: Category[] = (Array.isArray(r?.data) ? r.data : r?.data?.items) || [];
+      setCategories(list);
+    }).catch(()=>{});
+  }, []);
+
+  React.useEffect(() => {
+    fetch(`${API_BASE}/admin/branches`).then(r=>r.json()).then(r=>{
+      const list: Branch[] = (Array.isArray(r?.data) ? r.data : r?.data?.items) || [];
+      setBranches(list);
+      if (list.length > 0 && !branch) {
+        setBranch(list[0]._id);
+      }
+    }).catch(()=>{});
+  }, [branch]);
+
+  React.useEffect(() => {
+    if (!branch) return;
+    const qp: string[] = [];
+    if (activeCat !== 'all') qp.push(`category=${encodeURIComponent(activeCat)}`);
+    const url = `${API_BASE}/products?public=true&branch=${encodeURIComponent(branch)}${qp.length?`&${qp.join('&')}`:''}`;
+    fetch(url).then(r=>r.json()).then(r=>{
+      const items: Product[] = r?.data?.items || r?.data || [];
+      setProducts(items);
+    }).catch(()=>{});
+  }, [activeCat, branch]);
+
+  const total = Object.entries(cart).reduce((sum,[pid,qty])=>{
+    const p = products.find(x=>x._id===pid); return sum + (p? p.price*qty:0)
+  },0);
+
+  const sendToBot = () => {
+    if (!branch) {
+      alert('Iltimos, filialni tanlang!');
+      return;
+    }
+    if (Object.keys(cart).length === 0) {
+      alert('Savat bo\'sh!');
+      return;
+    }
+    const payload = { telegramId, branch, items: Object.entries(cart).map(([productId, quantity])=>({ productId, quantity })) };
+    try {
+      const tg = window.Telegram?.WebApp; tg?.sendData?.(JSON.stringify(payload));
+    } catch {}
+  };
+
+  return (
+    <div style={{ fontFamily:'system-ui, sans-serif', padding:12 }}>
+      <h3>🍽️ Katalog</h3>
+      
+      {/* Branch selection */}
+      <div style={{ marginBottom: 16 }}>
+        <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>🏪 Filial:</label>
+        <select 
+          value={branch} 
+          onChange={(e) => setBranch(e.target.value)}
+          style={{ width: '100%', padding: '8px', borderRadius: 8, border: '1px solid #ddd' }}
+        >
+          <option value="">Filialni tanlang</option>
+          {branches.map(b => (
+            <option key={b._id} value={b._id}>{b.name || b.title}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Categories */}
+      <div style={{ display:'flex', gap:8, overflowX:'auto', marginBottom:12 }}>
+        <button onClick={()=>setActiveCat('all')} style={{ padding:'6px 10px', borderRadius:8, border:'1px solid #ddd', background: activeCat==='all'?'#1677ff':'#fff', color:activeCat==='all'?'#fff':'#000' }}>Barchasi</button>
+        {categories.map(c=> (
+          <button key={c._id} onClick={()=>setActiveCat(c._id)} style={{ padding:'6px 10px', borderRadius:8, border:'1px solid #ddd', background: activeCat===c._id?'#1677ff':'#fff', color:activeCat===c._id?'#fff':'#000' }}>{c.name}</button>
+        ))}
+      </div>
+
+      {/* Products grid */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))', gap:10 }}>
+        {products.map(p=> (
+          <div key={p._id} style={{ border:'1px solid #eee', borderRadius:10, padding:10 }}>
+            <div style={{ fontWeight:600 }}>{p.name}</div>
+            <div style={{ color:'#666', margin:'4px 0' }}>{p.price.toLocaleString()} so'm</div>
+            <div style={{ display:'flex', gap:6, alignItems:'center', justifyContent:'center' }}>
+              <button onClick={()=> setCart(prev=> ({ ...prev, [p._id]: Math.max((prev[p._id]||0)-1,0) }))} style={{ width: 30, height: 30, borderRadius: '50%', border: '1px solid #ddd', background: '#fff' }}>−</button>
+              <div style={{ minWidth: 20, textAlign: 'center' }}>{cart[p._id]||0}</div>
+              <button onClick={()=> setCart(prev=> ({ ...prev, [p._id]: (prev[p._id]||0)+1 }))} style={{ width: 30, height: 30, borderRadius: '50%', border: '1px solid #ddd', background: '#fff' }}>+</button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Fixed bottom bar */}
+      <div style={{ position:'fixed', left:0, right:0, bottom:0, padding:12, background:'#fff', borderTop:'1px solid #eee', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+        <div>🧺 Jami: <b>{total.toLocaleString()} so'm</b></div>
+        <button onClick={sendToBot} style={{ background:'#52c41a', color:'#fff', padding:'10px 14px', border:'none', borderRadius:8 }}>Buyurtma berish</button>
+      </div>
+    </div>
+  )
+}
+
+

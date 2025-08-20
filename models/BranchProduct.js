@@ -8,6 +8,12 @@ const branchProductSchema = new mongoose.Schema({
   isAvailable: { type: Boolean, default: true },
   // Ixtiyoriy narx o'zgarishi
   priceOverride: { type: Number, default: null },
+  // Promo/chegirma maydonlari
+  discountType: { type: String, enum: ['percent', 'amount', null], default: null },
+  discountValue: { type: Number, default: null },
+  promoStart: { type: Date, default: null },
+  promoEnd: { type: Date, default: null },
+  isPromoActive: { type: Boolean, default: false },
 }, {
   timestamps: true,
 });
