@@ -89,6 +89,33 @@ app.get('/webhook', (req, res) => {
   });
 });
 
+// =============================
+// Telegram diagnostics endpoints
+// =============================
+app.get('/api/telegram/webhook-info', async (req, res) => {
+  try {
+    const { bot } = require('../index');
+    if (!bot) return res.status(503).json({ success: false, message: 'Bot hali yuklanmagan' });
+    const info = await bot.telegram.getWebhookInfo();
+    res.json({ success: true, info });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+app.post('/api/telegram/reset-webhook', async (req, res) => {
+  try {
+    const { bot } = require('../index');
+    if (!bot) return res.status(503).json({ success: false, message: 'Bot hali yuklanmagan' });
+    const url = `${process.env.WEBHOOK_URL}/webhook`;
+    await bot.telegram.setWebhook(url, { drop_pending_updates: true });
+    const info = await bot.telegram.getWebhookInfo();
+    res.json({ success: true, message: 'Webhook reset qildi', info });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
 // Auth routes
 app.use('/api/auth', require('./routes/auth'));
 
