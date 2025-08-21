@@ -17,6 +17,13 @@ class Database {
             // MongoDB connection with timeout
             const db='mongodb+srv://javohir:<db_password>@cluster0.jjsllqm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0'
             const connectionString = process.env.MONGODB_URI || 'mongodb://localhost:27017/pizza_bot';
+            const inProduction = process.env.NODE_ENV === 'production';
+
+            // Productionda majburiy env var tekshiruvi
+            if (inProduction && (!process.env.MONGODB_URI || !process.env.MONGODB_URI.trim())) {
+                logger.error('❌ MONGODB_URI env variable topilmadi. Productionda majburiy.');
+                throw new Error('MONGODB_URI is required in production');
+            }
             
             logger.info(`🔌 Attempting to connect to MongoDB: ${connectionString}`);
             
@@ -48,6 +55,11 @@ class Database {
 
         } catch (error) {
             logger.error('❌ MongoDB connection failed:', error.message);
+            const inProduction = process.env.NODE_ENV === 'production';
+            if (inProduction) {
+                // Productionda ulanish bo'lmasa xato bilan to'xtatamiz
+                throw error;
+            }
             logger.warn('🔄 Continuing without database (memory mode)');
             this.isConnected = false;
             return null;
