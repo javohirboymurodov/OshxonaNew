@@ -26,6 +26,17 @@ const initializeApp = async () => {
     // Database ready bo'lgandan keyin botni ishga tushirish
     console.log('✅ Database ready, bot ishga tushirilmoqda...');
     
+    // API server'ga database ready signal yuborish
+    try {
+      const { setDatabaseReady } = require('./api/server');
+      if (setDatabaseReady) {
+        setDatabaseReady();
+        console.log('✅ Database ready signal sent to API server');
+      }
+    } catch (error) {
+      console.log('⚠️ Could not set database ready flag:', error.message);
+    }
+    
     // ========================================
     // 🤖 BOT INITIALIZATION
     // ========================================

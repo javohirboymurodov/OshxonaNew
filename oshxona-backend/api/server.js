@@ -62,6 +62,27 @@ app.use('/uploads', (req, res, next) => {
 // Debug: Route'lar yuklanganini tekshirish
 console.log('🔍 Loading API routes...');
 
+// Database connection ready bo'lguncha kutish
+let isDatabaseReady = false;
+
+// Database ready bo'lganda flag'ni o'zgartirish
+const setDatabaseReady = () => {
+  isDatabaseReady = true;
+  console.log('✅ Database ready flag set');
+};
+
+// Database ready bo'lmaguncha kutish middleware
+const waitForDatabase = (req, res, next) => {
+  if (!isDatabaseReady) {
+    return res.status(503).json({
+      success: false,
+      message: 'Database hali tayyor emas. Iltimos, biroz kutib qayta urinib ko\'ring.',
+      retryAfter: 5
+    });
+  }
+  next();
+};
+
 // Bot webhook endpoint
 app.post('/webhook', (req, res) => {
   console.log('📥 Webhook received:', req.body);
@@ -91,7 +112,7 @@ app.use('/api/superadmin', require('./routes/superadmin'));
 
 // Public routes
 console.log('🔍 Loading public routes...');
-app.use('/api/public', require('./routes/public'));
+app.use('/api/public', waitForDatabase, require('./routes/public'));
 console.log('✅ Public routes loaded');
 
 console.log('🔍 Loading other routes...');
@@ -249,5 +270,6 @@ module.exports = {
   app,
   createServer,
   startAPIServer,
-  SocketManager
+  SocketManager,
+  setDatabaseReady
 };
