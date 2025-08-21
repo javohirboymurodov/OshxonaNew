@@ -6,6 +6,7 @@ const compression = require('compression');
 const path = require('path');
 
 const SocketManager = require('../config/socketConfig');
+const Database = require('../config/database');
 const { specs, swaggerUi } = require('../docs/swagger');
 
 // Express app yaratish
@@ -62,27 +63,6 @@ app.use('/uploads', (req, res, next) => {
 // Debug: Route'lar yuklanganini tekshirish
 console.log('🔍 Loading API routes...');
 
-// Database connection ready bo'lguncha kutish
-let isDatabaseReady = false;
-
-// Database ready bo'lganda flag'ni o'zgartirish
-const setDatabaseReady = () => {
-  isDatabaseReady = true;
-  console.log('✅ Database ready flag set');
-};
-
-// Database ready bo'lmaguncha kutish middleware
-const waitForDatabase = (req, res, next) => {
-  if (!isDatabaseReady) {
-    return res.status(503).json({
-      success: false,
-      message: 'Database hali tayyor emas. Iltimos, biroz kutib qayta urinib ko\'ring.',
-      retryAfter: 5
-    });
-  }
-  next();
-};
-
 // Bot webhook endpoint
 app.post('/webhook', (req, res) => {
   console.log('📥 Webhook received:', req.body);
@@ -112,7 +92,7 @@ app.use('/api/superadmin', require('./routes/superadmin'));
 
 // Public routes
 console.log('🔍 Loading public routes...');
-app.use('/api/public', waitForDatabase, require('./routes/public'));
+app.use('/api/public', require('./routes/public'));
 console.log('✅ Public routes loaded');
 
 console.log('🔍 Loading other routes...');
@@ -181,6 +161,16 @@ app.get('/api/health', (req, res) => {
       status: 'healthy'
     }
   });
+});
+
+// DB status diagnostics (temporary)
+app.get('/api/db/status', (req, res) => {
+  try {
+    const status = Database.getConnectionStatus();
+    res.json({ success: true, status });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
 });
 
 // 🚫 ERROR HANDLING
@@ -270,6 +260,5 @@ module.exports = {
   app,
   createServer,
   startAPIServer,
-  SocketManager,
-  setDatabaseReady
+  SocketManager
 };
