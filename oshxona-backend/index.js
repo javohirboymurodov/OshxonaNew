@@ -201,6 +201,9 @@ function emitCourierStateToBranch(user, isStaleForced) {
 // 🔧 OPTIMIZED: Birlashtirilgan kuryer lokatsiyasi va stale check (5 daqiqada)
 setInterval(async () => {
   try {
+    // Bot ready bo'lmaguncha kutish
+    if (!bot) return;
+    
     const { User } = require('./models');
     const now = Date.now();
     const onlineCouriers = await User.find({ 
