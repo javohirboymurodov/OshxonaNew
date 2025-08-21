@@ -113,12 +113,20 @@ const startUnifiedServer = async (bot) => {
     // Step 2: Bot ishga tushirish (development yoki production)
     console.log('🤖 2. Telegram Bot ishga tushirilmoqda...');
     
-    if (process.env.NODE_ENV === 'production' && process.env.WEBHOOK_URL) {
-      // Production: Webhook mode
-      const webhookUrl = `${process.env.WEBHOOK_URL}/webhook`;
-      console.log(`🔗 Webhook URL: ${webhookUrl}`);
-      await bot.telegram.setWebhook(webhookUrl);
-      console.log('✅ Webhook o\'rnatildi');
+    const isProd = process.env.NODE_ENV === 'production';
+    if (isProd) {
+      const baseUrl = (process.env.WEBHOOK_URL || process.env.RENDER_EXTERNAL_URL || '').replace(/\/+$/, '');
+      if (!baseUrl || !/^https:\/\//i.test(baseUrl)) {
+        console.warn(`⚠️  Webhook bazaviy URL topilmadi yoki noto'g'ri: "${baseUrl}". Polling rejimiga o'tiladi.`);
+        await bot.telegram.deleteWebhook({ drop_pending_updates: true });
+        await bot.launch();
+        console.log('✅ Bot polling rejimida ishga tushdi (fallback)');
+      } else {
+        const webhookUrl = `${baseUrl}/webhook`;
+        console.log(`🔗 Webhook URL: ${webhookUrl}`);
+        await bot.telegram.setWebhook(webhookUrl, { drop_pending_updates: true });
+        console.log('✅ Webhook o\'rnatildi');
+      }
     } else {
       // Development: Polling mode
       console.log('🧹 Development rejimi: webhook tozalanmoqda...');

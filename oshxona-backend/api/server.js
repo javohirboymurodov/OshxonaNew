@@ -122,7 +122,11 @@ app.post('/api/telegram/reset-webhook', async (req, res) => {
   try {
     const { bot } = require('../index');
     if (!bot) return res.status(503).json({ success: false, message: 'Bot hali yuklanmagan' });
-    const url = `${process.env.WEBHOOK_URL}/webhook`;
+    const baseUrl = (process.env.WEBHOOK_URL || process.env.RENDER_EXTERNAL_URL || '').replace(/\/+$/, '');
+    if (!baseUrl || !/^https:\/\//i.test(baseUrl)) {
+      return res.status(400).json({ success: false, message: 'Webhook URL noto\'g\'ri yoki yo\'q (WEBHOOK_URL/RENDER_EXTERNAL_URL)' });
+    }
+    const url = `${baseUrl}/webhook`;
     await bot.telegram.setWebhook(url, { drop_pending_updates: true });
     const info = await bot.telegram.getWebhookInfo();
     res.json({ success: true, message: 'Webhook reset qildi', info });
