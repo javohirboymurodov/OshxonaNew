@@ -52,6 +52,22 @@ const initializeApp = async () => {
         waitingFor: null
       })
     }));
+
+    // Hydrate session.user from DB for every update
+    bot.use(async (ctx, next) => {
+      try {
+        if (!ctx.from) return next();
+        const { User } = require('./models');
+        ctx.session = ctx.session || {};
+        if (!ctx.session.user) {
+          const user = await User.findOne({ telegramId: ctx.from.id });
+          if (user) ctx.session.user = user;
+        }
+      } catch (e) {
+        console.error('hydrateUser middleware error:', e.message);
+      }
+      return next();
+    });
     
     // Debug middleware - Bot javob bermaslik muammosini tracking qilish uchun
     bot.use((ctx, next) => {
