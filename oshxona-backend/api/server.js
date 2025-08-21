@@ -68,10 +68,11 @@ app.post('/webhook', (req, res) => {
   console.log('📥 Webhook received:', req.body);
   // Bot update'ni qayta ishlash
   try {
-    const { bot } = require('../index');
+    const bot = global.botInstance;
     if (bot && bot.handleUpdate) {
       bot.handleUpdate(req.body, res);
     } else {
+      console.warn('⚠️ Bot instance topilmadi yoki tayyor emas');
       res.sendStatus(200);
     }
   } catch (error) {
