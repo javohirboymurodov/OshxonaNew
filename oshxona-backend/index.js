@@ -64,7 +64,8 @@ const startUnifiedServer = async () => {
 
     // Step 1: API Server ishga tushirish
     console.log('📡 1. API Server ishga tushirilmoqda...');
-    const server = await startAPIServer(process.env.API_PORT || 5000);
+    const apiPort = Number(process.env.PORT || process.env.API_PORT || 5000);
+    const server = await startAPIServer(apiPort);
     
     // Step 2: Bot ishga tushirish (development yoki production)
     console.log('🤖 2. Telegram Bot ishga tushirilmoqda...');
@@ -88,9 +89,9 @@ const startUnifiedServer = async () => {
 
     console.log('\n🎉 Barcha servislar muvaffaqiyatli ishga tushdi!\n');
     console.log('🔗 Mavjud endpointlar:');
-    console.log(`   🌐 API: http://localhost:${process.env.API_PORT || 5000}/api`);
-    console.log(`   🏥 Health: http://localhost:${process.env.API_PORT || 5000}/health`);
-    console.log(`   🔌 Socket.IO: ws://localhost:${process.env.API_PORT || 5000}`);
+    console.log(`   🌐 API: http://localhost:${apiPort}/api`);
+    console.log(`   🏥 Health: http://localhost:${apiPort}/health`);
+    console.log(`   🔌 Socket.IO: ws://localhost:${apiPort}`);
     console.log(`   🤖 Bot: @${bot.botInfo?.username || 'oshxona_bot'}\n`);
 
     return { bot, server, SocketManager };
