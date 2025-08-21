@@ -22,20 +22,34 @@ app.use(helmet({
   contentSecurityPolicy: false // Development uchun CSP o'chirish
 }));
 
-// CORS configuration - kengaytirilgan
+// CORS configuration - kengaytirilgan (dinamik allowlist)
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:3003', // Vite default port
+  process.env.ADMIN_PANEL_URL,
+  process.env.USER_FRONTEND_URL,
+  process.env.WEBAPP_URL,
+  'https://oshxona-new.vercel.app'
+].filter(Boolean);
+
 app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'http://localhost:3003', // Vite default port
-    process.env.ADMIN_PANEL_URL || 'http://localhost:3000',
-    process.env.USER_FRONTEND_URL || 'http://localhost:3001',
-    process.env.WEBAPP_URL || 'http://localhost:3003'
-  ],
+  origin: (origin, callback) => {
+    // Mobile apps yoki server-to-server uchun origin yo'q bo'lishi mumkin
+    if (!origin) return callback(null, true);
+    const isAllowed =
+      allowedOrigins.includes(origin) ||
+      /\.vercel\.app$/i.test(origin); // Preview deploymentlar uchun
+    if (isAllowed) return callback(null, true);
+    return callback(new Error(`CORS blocked: ${origin}`));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// Preflight OPTIONS ga tezkor javob
+app.options('*', cors());
 
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));
