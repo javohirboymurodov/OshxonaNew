@@ -45,164 +45,92 @@ const validateTelegramId = async (req, res, next) => {
   }
 };
 
-// GET /api/public/branches - Get all active branches (telegram ID required)
-router.get('/branches', async (req, res) => {
+// Helper: DB readiness
+function ensureDbReady(res) {
+  const dbStatus = Database.getConnectionStatus();
+  if (!dbStatus.isConnected || dbStatus.readyState !== 1) {
+    console.log('❌ Database not ready');
+    res.status(503).json({ 
+      success: false, 
+      message: 'Database hali tayyor emas. Iltimos, biroz kutib qayta urinib ko\'ring.',
+      retryAfter: 5,
+      status: dbStatus
+    });
+    return false;
+  }
+  return true;
+}
+
+// Handlers
+const getBranchesHandler = async (req, res) => {
   try {
     console.log('🔍 Fetching branches...');
-    
-    // Database connection status'ni tekshirish
-    const dbStatus = Database.getConnectionStatus();
-    console.log('📊 Database status:', dbStatus);
-    
-    if (!dbStatus.isConnected || dbStatus.readyState !== 1) {
-      console.log('❌ Database not ready, waiting...');
-      return res.status(503).json({ 
-        success: false, 
-        message: 'Database not ready',
-        status: dbStatus
-      });
-    }
-    
-    // Database'da branches bor-yo'qligini tekshirish
+    if (!ensureDbReady(res)) return;
     const totalBranches = await Branch.countDocuments();
-    console.log(`📊 Total branches in DB: ${totalBranches}`);
-    
     const branches = await Branch.find({ isActive: true })
       .select('_id name title address phone coordinates')
       .sort({ name: 1 });
-    
-    console.log(`✅ Found ${branches.length} active branches`);
-    
-    res.json({
-      success: true,
-      data: branches,
-      total: totalBranches,
-      active: branches.length
-    });
+    res.json({ success: true, data: branches, total: totalBranches, active: branches.length });
   } catch (error) {
     console.error('Public branches error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Server error',
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+    res.status(500).json({ success: false, message: 'Server error', error: error.message, stack: process.env.NODE_ENV === 'development' ? error.stack : undefined });
   }
-});
+};
 
-// GET /api/public/categories - Get all active categories (telegram ID required)
-router.get('/categories', async (req, res) => {
+const getCategoriesHandler = async (req, res) => {
   try {
     console.log('🔍 Fetching categories...');
-    
-    // Database connection status'ni tekshirish
-    const dbStatus = Database.getConnectionStatus();
-    console.log('📊 Database status:', dbStatus);
-    
-    if (!dbStatus.isConnected || dbStatus.readyState !== 1) {
-      console.log('❌ Database not ready, waiting...');
-      return res.status(503).json({ 
-        success: false, 
-        message: 'Database not ready',
-        status: dbStatus
-      });
-    }
-    
-    // Database'da categories bor-yo'qligini tekshirish
+    if (!ensureDbReady(res)) return;
     const totalCategories = await Category.countDocuments();
-    console.log(`📊 Total categories in DB: ${totalCategories}`);
-    
     const categories = await Category.find({ isActive: true })
       .select('_id name description')
       .sort({ name: 1 });
-    
-    console.log(`✅ Found ${categories.length} active categories`);
-    
-    res.json({
-      success: true,
-      data: categories,
-      total: totalCategories,
-      active: categories.length
-    });
+    res.json({ success: true, data: categories, total: totalCategories, active: categories.length });
   } catch (error) {
     console.error('Public categories error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Server error',
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+    res.status(500).json({ success: false, message: 'Server error', error: error.message, stack: process.env.NODE_ENV === 'development' ? error.stack : undefined });
   }
-});
+};
 
-// GET /api/public/products - Get products by branch/category (telegram ID required)
-router.get('/products', async (req, res) => {
+const getProductsHandler = async (req, res) => {
   try {
     console.log('🔍 Fetching products...');
-    
-    // Database connection status'ni tekshirish
-    const dbStatus = Database.getConnectionStatus();
-    console.log('📊 Database status:', dbStatus);
-    
-    if (!dbStatus.isConnected || dbStatus.readyState !== 1) {
-      console.log('❌ Database not ready, waiting...');
-      return res.status(503).json({ 
-        success: false, 
-        message: 'Database not ready',
-        status: dbStatus
-      });
-    }
-    
+    if (!ensureDbReady(res)) return;
     const { branch, category, page = 1, limit = 50 } = req.query;
-    
     let query = { isActive: true };
-    
-    // Branch filter
-    if (branch) {
-      query.branch = branch;
-    }
-    
-    // Category filter
-    if (category && category !== 'all') {
-      query.categoryId = category;
-    }
-    
-    // Database'da products bor-yo'qligini tekshirish
+    if (branch) query.branch = branch;
+    if (category && category !== 'all') query.categoryId = category;
     const totalProducts = await Product.countDocuments();
     console.log(`📊 Total products in DB: ${totalProducts}`);
-    
     const skip = (parseInt(page) - 1) * parseInt(limit);
-    
     const products = await Product.find(query)
       .populate('categoryId', 'name')
       .populate('branch', 'name')
       .skip(skip)
       .limit(parseInt(limit))
       .sort({ createdAt: -1 });
-    
     const total = await Product.countDocuments(query);
-    
-    console.log(`✅ Found ${products.length} products matching query`);
-    
-    res.json({
-      success: true,
-      data: {
-        items: products,
-        total,
-        page: parseInt(page),
-        limit: parseInt(limit),
-        pages: Math.ceil(total / parseInt(limit))
-      }
-    });
+    res.json({ success: true, data: { items: products, total, page: parseInt(page), limit: parseInt(limit), pages: Math.ceil(total / parseInt(limit)) } });
   } catch (error) {
     console.error('Public products error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Server error',
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+    res.status(500).json({ success: false, message: 'Server error', error: error.message, stack: process.env.NODE_ENV === 'development' ? error.stack : undefined });
   }
-});
+};
+
+// Routes + aliases
+// Branches
+router.get('/branches', getBranchesHandler);
+router.get('/branch', getBranchesHandler); // alias
+router.get('/nranches', getBranchesHandler); // common typo alias
+
+// Categories
+router.get('/categories', getCategoriesHandler);
+router.get('/category', getCategoriesHandler); // alias
+
+// Products
+router.get('/products', getProductsHandler);
+router.get('/product', getProductsHandler); // alias
+router.get('/praduct', getProductsHandler); // typo alias
+router.get('/praducts', getProductsHandler); // typo alias
 
 module.exports = router;

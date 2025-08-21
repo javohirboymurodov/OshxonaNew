@@ -80,6 +80,15 @@ app.post('/webhook', (req, res) => {
   }
 });
 
+// Friendly GET for webhook (for human checks)
+app.get('/webhook', (req, res) => {
+  res.status(405).json({
+    success: false,
+    message: 'Webhook faqat POST orqali ishlaydi',
+    method: 'GET'
+  });
+});
+
 // Auth routes
 app.use('/api/auth', require('./routes/auth'));
 
