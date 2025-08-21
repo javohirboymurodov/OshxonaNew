@@ -18,8 +18,17 @@ function useInitData() {
       tg?.ready?.();
       const initDataUnsafe = tg?.initDataUnsafe;
       const id = initDataUnsafe?.user?.id ? String(initDataUnsafe.user.id) : null;
-      setTelegramId(id);
-    } catch {}
+      // Fallback: allow testing via query param if not inside Telegram
+      const url = new URL(window.location.href);
+      const qpId = url.searchParams.get('telegramId') || url.searchParams.get('tgId');
+      setTelegramId(id || qpId);
+    } catch {
+      try {
+        const url = new URL(window.location.href);
+        const qpId = url.searchParams.get('telegramId') || url.searchParams.get('tgId');
+        setTelegramId(qpId);
+      } catch {}
+    }
   }, []);
   return telegramId;
 }
