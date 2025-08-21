@@ -14,6 +14,9 @@ const { initializeBot } = require('./bot/botManager');
 // 💾 DATABASE CONNECTION
 // ========================================
 
+// Global bot instance
+let bot = null;
+
 // Database connection ready bo'lguncha kutish
 const initializeApp = async () => {
   try {
@@ -27,7 +30,7 @@ const initializeApp = async () => {
     // 🤖 BOT INITIALIZATION
     // ========================================
     
-    const bot = new Telegraf(process.env.BOT_TOKEN);
+    bot = new Telegraf(process.env.BOT_TOKEN);
     global.botInstance = bot;
     
     // Session middleware
@@ -138,10 +141,13 @@ const startUnifiedServer = async (bot) => {
 const gracefulShutdown = (signal) => {
   console.log(`\n🛑 ${signal} signal qabul qilindi. Server to'xtatilmoqda...`);
   
-  Promise.all([
-    bot.stop(signal),
-    // server.close() - server startUnifiedServer dan qaytariladi
-  ]).then(() => {
+  const shutdownPromises = [];
+  
+  if (bot) {
+    shutdownPromises.push(bot.stop(signal));
+  }
+  
+  Promise.all(shutdownPromises).then(() => {
     console.log('✅ Barcha servislar to\'xtatildi');
     process.exit(0);
   }).catch((error) => {
