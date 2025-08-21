@@ -117,20 +117,14 @@ const getProductsHandler = async (req, res) => {
   }
 };
 
-// Routes + aliases
+// Routes
 // Branches
 router.get('/branches', getBranchesHandler);
-router.get('/branch', getBranchesHandler); // alias
-router.get('/nranches', getBranchesHandler); // common typo alias
 
 // Categories
 router.get('/categories', getCategoriesHandler);
-router.get('/category', getCategoriesHandler); // alias
 
 // Products
 router.get('/products', getProductsHandler);
-router.get('/product', getProductsHandler); // alias
-router.get('/praduct', getProductsHandler); // typo alias
-router.get('/praducts', getProductsHandler); // typo alias
 
 module.exports = router;
