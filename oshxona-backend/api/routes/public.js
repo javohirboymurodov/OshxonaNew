@@ -19,8 +19,16 @@ const validateTelegramId = async (req, res, next) => {
       });
     }
 
-    // User mavjudligini tekshirish
-    const user = await User.findOne({ telegramId: parseInt(telegramId) });
+    // User mavjudligini tekshirish - telegramId ni number ga o'tkazish
+    const telegramIdNum = parseInt(telegramId);
+    if (isNaN(telegramIdNum)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Noto\'g\'ri Telegram ID format!' 
+      });
+    }
+
+    const user = await User.findOne({ telegramId: telegramIdNum });
     if (!user) {
       return res.status(401).json({ 
         success: false, 
@@ -37,7 +45,7 @@ const validateTelegramId = async (req, res, next) => {
 };
 
 // GET /api/public/branches - Get all active branches (telegram ID required)
-router.get('/branches', validateTelegramId, async (req, res) => {
+router.get('/branches', async (req, res) => {
   try {
     const branches = await Branch.find({ isActive: true })
       .select('_id name title address phone coordinates')
@@ -54,7 +62,7 @@ router.get('/branches', validateTelegramId, async (req, res) => {
 });
 
 // GET /api/public/categories - Get all active categories (telegram ID required)
-router.get('/categories', validateTelegramId, async (req, res) => {
+router.get('/categories', async (req, res) => {
   try {
     const categories = await Category.find({ isActive: true })
       .select('_id name description')
@@ -71,7 +79,7 @@ router.get('/categories', validateTelegramId, async (req, res) => {
 });
 
 // GET /api/public/products - Get products by branch/category (telegram ID required)
-router.get('/products', validateTelegramId, async (req, res) => {
+router.get('/products', async (req, res) => {
   try {
     const { branch, category, page = 1, limit = 50 } = req.query;
     
