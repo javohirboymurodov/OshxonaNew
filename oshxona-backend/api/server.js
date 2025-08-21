@@ -59,6 +59,9 @@ app.use('/uploads', (req, res, next) => {
 
 // 🌐 API ROUTES
 
+// Debug: Route'lar yuklanganini tekshirish
+console.log('🔍 Loading API routes...');
+
 // Bot webhook endpoint
 app.post('/webhook', (req, res) => {
   console.log('📥 Webhook received:', req.body);
@@ -87,7 +90,11 @@ app.use('/api/admin/users', require('./routes/users'));
 app.use('/api/superadmin', require('./routes/superadmin'));
 
 // Public routes
+console.log('🔍 Loading public routes...');
 app.use('/api/public', require('./routes/public'));
+console.log('✅ Public routes loaded');
+
+console.log('🔍 Loading other routes...');
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/couriers', require('./routes/couriers'));
 app.use('/api/dashboard', require('./routes/dashboard'));
@@ -95,6 +102,7 @@ app.use('/api/products', require('./routes/products'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/categories', require('./routes/categories'));
 app.use('/api/tables', require('./routes/tables'));
+console.log('✅ All routes loaded');
 
 // 📚 API DOCUMENTATION (Swagger)
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(specs, {
@@ -124,6 +132,23 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Test route - API ishlayotganini tekshirish uchun
+app.get('/test', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Test route ishlayapti!',
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/api/test', (req, res) => {
+  res.json({
+    success: true,
+    message: 'API test route ishlayapti!',
+    timestamp: new Date().toISOString()
+  });
+});
+
 app.get('/api/health', (req, res) => {
   res.json({
     success: true,
@@ -141,6 +166,12 @@ app.get('/api/health', (req, res) => {
 
 // 404 handler
 app.use('*', (req, res) => {
+  console.log('❌ 404 Not Found:', {
+    path: req.originalUrl,
+    method: req.method,
+    timestamp: new Date().toISOString()
+  });
+  
   res.status(404).json({
     success: false,
     message: 'API endpoint topilmadi',
