@@ -34,32 +34,34 @@ export default function App() {
   const [branch, setBranch] = React.useState<string>('');
 
   React.useEffect(() => {
-    fetch(`${API_BASE}/categories/public`).then(r=>r.json()).then(r=>{
+    if (!telegramId) return;
+    fetch(`${API_BASE}/public/categories?telegramId=${telegramId}`).then(r=>r.json()).then(r=>{
       const list: Category[] = (Array.isArray(r?.data) ? r.data : r?.data?.items) || [];
       setCategories(list);
     }).catch(()=>{});
-  }, []);
+  }, [telegramId]);
 
   React.useEffect(() => {
-    fetch(`${API_BASE}/admin/branches`).then(r=>r.json()).then(r=>{
+    if (!telegramId) return;
+    fetch(`${API_BASE}/public/branches?telegramId=${telegramId}`).then(r=>r.json()).then(r=>{
       const list: Branch[] = (Array.isArray(r?.data) ? r.data : r?.data?.items) || [];
       setBranches(list);
       if (list.length > 0 && !branch) {
         setBranch(list[0]._id);
       }
     }).catch(()=>{});
-  }, [branch]);
+  }, [telegramId, branch]);
 
   React.useEffect(() => {
-    if (!branch) return;
+    if (!branch || !telegramId) return;
     const qp: string[] = [];
     if (activeCat !== 'all') qp.push(`category=${encodeURIComponent(activeCat)}`);
-    const url = `${API_BASE}/products?public=true&branch=${encodeURIComponent(branch)}${qp.length?`&${qp.join('&')}`:''}`;
+    const url = `${API_BASE}/public/products?telegramId=${telegramId}&branch=${encodeURIComponent(branch)}${qp.length?`&${qp.join('&')}`:''}`;
     fetch(url).then(r=>r.json()).then(r=>{
       const items: Product[] = r?.data?.items || r?.data || [];
       setProducts(items);
     }).catch(()=>{});
-  }, [activeCat, branch]);
+  }, [activeCat, branch, telegramId]);
 
   const total = Object.entries(cart).reduce((sum,[pid,qty])=>{
     const p = products.find(x=>x._id===pid); return sum + (p? p.price*qty:0)

@@ -23,6 +23,9 @@ router.get('/available/for-order', requireAdmin, CouriersController.availableFor
 // Update courier status (Admin can force offline)
 router.patch('/:id/status', requireAdmin, CouriersController.updateStatus);
 
+// 🔧 YANGI: Real-time courier locations update
+router.post('/locations/refresh', requireAdmin, CouriersController.refreshLocations);
+
 // Advanced analytics
 router.get('/heatmap', requireAdmin, CouriersController.heatmap);
 router.get('/zones', requireAdmin, CouriersController.zones);

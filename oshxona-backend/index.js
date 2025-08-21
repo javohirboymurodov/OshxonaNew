@@ -66,16 +66,24 @@ const startUnifiedServer = async () => {
     console.log('📡 1. API Server ishga tushirilmoqda...');
     const server = await startAPIServer(process.env.API_PORT || 5000);
     
-    // Step 2: Webhook tozalash (development rejimida)
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('🧹 2. Development rejimi: webhook tozalanmoqda...');
+    // Step 2: Bot ishga tushirish (development yoki production)
+    console.log('🤖 2. Telegram Bot ishga tushirilmoqda...');
+    
+    if (process.env.NODE_ENV === 'production' && process.env.WEBHOOK_URL) {
+      // Production: Webhook mode
+      const webhookUrl = `${process.env.WEBHOOK_URL}/webhook`;
+      console.log(`🔗 Webhook URL: ${webhookUrl}`);
+      await bot.telegram.setWebhook(webhookUrl);
+      console.log('✅ Webhook o\'rnatildi');
+    } else {
+      // Development: Polling mode
+      console.log('🧹 Development rejimi: webhook tozalanmoqda...');
       await bot.telegram.deleteWebhook({ drop_pending_updates: true });
       console.log('✅ Webhook tozalandi');
+      await bot.launch();
+      console.log('✅ Bot polling rejimida ishga tushdi');
     }
-
-    // Step 3: Bot ishga tushirish
-    console.log('🤖 3. Telegram Bot ishga tushirilmoqda...');
-    await bot.launch();
+    
     console.log('✅ Telegram Bot muvaffaqiyatli ishga tushdi!');
 
     console.log('\n🎉 Barcha servislar muvaffaqiyatli ishga tushdi!\n');
@@ -142,6 +150,10 @@ const COURIER_STALE_MS = Number(process.env.COURIER_STALE_MS || 5 * 60 * 1000);
 const COURIER_CHECK_INTERVAL_MS = Number(process.env.COURIER_CHECK_INTERVAL_MS || 5 * 60 * 1000);
 const COURIER_CHECK_LOGS = String(process.env.COURIER_CHECK_LOGS || 'false').toLowerCase() === 'true';
 
+// 🔧 OPTIMIZED: Kuryer lokatsiyasini 5 daqiqada yangilash (stale check bilan birga)
+const COURIER_UPDATE_INTERVAL_MS = Number(process.env.COURIER_UPDATE_INTERVAL_MS || 5 * 60 * 1000);
+const COURIER_UPDATE_LOGS = String(process.env.COURIER_UPDATE_LOGS || 'false').toLowerCase() === 'true';
+
 function emitCourierStateToBranch(user, isStaleForced) {
   try {
     const branchId = user.branch || user.courierInfo?.branch;
@@ -163,42 +175,54 @@ function emitCourierStateToBranch(user, isStaleForced) {
   }
 }
 
+// 🔧 OPTIMIZED: Birlashtirilgan kuryer lokatsiyasi va stale check (5 daqiqada)
 setInterval(async () => {
   try {
     const { User } = require('./models');
     const now = Date.now();
-    const couriers = await User.find({ role: 'courier', 'courierInfo.isOnline': true }).select('firstName lastName phone branch telegramId courierInfo');
+    const onlineCouriers = await User.find({ 
+      role: 'courier', 
+      'courierInfo.isOnline': true 
+    }).select('firstName lastName phone branch telegramId courierInfo');
     
-    if (COURIER_CHECK_LOGS) {
-      console.log('🔍 Checking courier locations...', { totalCouriers: couriers.length, currentTime: new Date().toISOString() });
+    if (COURIER_UPDATE_LOGS) {
+      console.log('📍 Courier location update & stale check:', { 
+        totalOnlineCouriers: onlineCouriers.length, 
+        currentTime: new Date().toISOString() 
+      });
     }
     
-    for (const u of couriers) {
-      const ts = u?.courierInfo?.currentLocation?.updatedAt ? new Date(u.courierInfo.currentLocation.updatedAt).getTime() : 0;
+    for (const courier of onlineCouriers) {
+      const loc = courier.courierInfo?.currentLocation;
+      const ts = loc?.updatedAt ? new Date(loc.updatedAt).getTime() : 0;
       const timeDiff = now - ts;
       const isStale = !ts || timeDiff > COURIER_STALE_MS;
       
-      if (COURIER_CHECK_LOGS) {
-        console.log('📍 Courier location check:', {
-          courierId: u._id,
-          name: `${u.firstName} ${u.lastName}`,
-          lastUpdate: ts ? new Date(ts).toISOString() : 'never',
-          timeDiffMinutes: Math.round(timeDiff / 60000),
-          isStale,
-          threshold: Math.round(COURIER_STALE_MS / 60000) + ' minutes'
-        });
+      // Har doim lokatsiyani yangilash (real-time uchun)
+      if (loc && loc.latitude && loc.longitude) {
+        emitCourierStateToBranch(courier, isStale);
+        
+        if (COURIER_UPDATE_LOGS) {
+          console.log('📍 Courier location updated:', {
+            courierId: courier._id,
+            name: `${courier.firstName} ${courier.lastName}`,
+            location: { lat: loc.latitude, lng: loc.longitude },
+            isStale,
+            timeDiffMinutes: Math.round(timeDiff / 60000),
+            lastUpdate: ts ? new Date(ts).toISOString() : 'never'
+          });
+        }
       }
       
-      if (isStale) {
-        emitCourierStateToBranch(u, true);
-        // Eslatma yuborish (spamni cheklash uchun)
-        const notifiedAt = u?.courierInfo?.staleNotifiedAt ? new Date(u.courierInfo.staleNotifiedAt).getTime() : 0;
-        if (u.telegramId && (!notifiedAt || now - notifiedAt > COURIER_STALE_MS)) {
+      // Stale location uchun ogohlantirish
+      if (isStale && courier.telegramId) {
+        const notifiedAt = courier?.courierInfo?.staleNotifiedAt ? new Date(courier.courierInfo.staleNotifiedAt).getTime() : 0;
+        if (!notifiedAt || now - notifiedAt > COURIER_STALE_MS) {
           try {
-            console.log('⚠️ Sending stale location warning to courier:', u.firstName);
-            await bot.telegram.sendMessage(u.telegramId, '⚠️ Joylashuvingiz 5 daqiqadan buyon yangilanmadi. Iltimos, live lokatsiyani qayta ulashing yoki "🛑 Ishni tugatish" tugmasini bosing.');
-            u.courierInfo.staleNotifiedAt = new Date();
-            await u.save();
+            console.log('⚠️ Sending stale location warning to courier:', courier.firstName);
+            await bot.telegram.sendMessage(courier.telegramId, '⚠️ Joylashuvingiz 5 daqiqadan buyon yangilanmadi. Iltimos, live lokatsiyani qayta ulashing yoki "🛑 Ishni tugatish" tugmasini bosing.');
+            courier.courierInfo.staleNotifiedAt = new Date();
+            await courier.save();
           } catch (e) {
             console.error('Notify stale courier error:', e?.message || e);
           }
@@ -206,9 +230,11 @@ setInterval(async () => {
       }
     }
   } catch (e) {
-    console.error('Stale courier checker error:', e?.message || e);
+    console.error('Courier location update & stale check error:', e?.message || e);
   }
-}, COURIER_CHECK_INTERVAL_MS);
+}, COURIER_UPDATE_INTERVAL_MS);
+
+// 🔧 Eski interval o'chirildi - birlashtirildi yuqorida
 
 // ========================================
 // 🚀 START THE UNIFIED SERVER
@@ -224,4 +250,4 @@ process.env.NTBA_FIX_350 = 1;
 // 📤 EXPORTS
 // ========================================
 
-module.exports = { bot, SocketManager };
+module.exports = { bot, SocketManager, startUnifiedServer };

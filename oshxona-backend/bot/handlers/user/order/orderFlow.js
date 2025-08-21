@@ -27,10 +27,7 @@ class OrderFlow extends BaseHandler {
         return;
       }
       
-      const cart = await Cart.findOne({ user: user._id, isActive: true });
-      if (!cart || cart.items.length === 0) {
-        return await ctx.answerCbQuery('❌ Savat bo\'sh!');
-      }
+      // Savat tekshiruvi olib tashlandi: avval buyurtma turi tanlanadi, keyin mahsulotlar tanlanadi
       
       // QR orqali stolga biriktirilgan bo'lsa
       if (ctx.session.orderType === 'dine_in_qr' && ctx.session.orderData?.tableCode) {
@@ -141,6 +138,7 @@ class OrderFlow extends BaseHandler {
   static async handlePickupFlow(ctx) {
     try {
       console.log('=== Starting pickup flow ===');
+      // Olib ketish: filial tanlash → kelish vaqti → mahsulot tanlash menyusi
       await this.askForBranchSelection(ctx, 'pickup');
     } catch (error) {
       console.error('Pickup flow error:', error);
@@ -155,6 +153,7 @@ class OrderFlow extends BaseHandler {
   static async handleDineInFlow(ctx) {
     try {
       console.log('=== Starting dine-in flow ===');
+      // Avvaldan buyurtma: filial tanlash → kelish vaqti → mahsulot tanlash menyusi → (keyinchalik to'lovdan so'ng "keldim" bosqichi mavjud)
       await this.askForBranchSelection(ctx, 'dine_in');
     } catch (error) {
       console.error('Dine-in flow error:', error);

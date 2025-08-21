@@ -42,7 +42,55 @@ async function updateStatus(req, res) {
   } catch (e) { res.status(500).json({ success: false, message: 'Haydovchi holatini yangilashda xatolik!' }); }
 }
 
-module.exports = { list, getOne, availableForOrder, updateStatus };
+// 🔧 YANGI: Kuryer lokatsiyalarini real-time'da yangilash
+async function refreshLocations(req, res) {
+  try {
+    const { branchId } = req.user;
+    
+    // Faqat admin'ning filialidagi kuryerlarni olish
+    const query = { role: 'courier' };
+    if (branchId && branchId !== 'default') {
+      query.branch = branchId;
+    }
+    
+    const couriers = await User.find(query).select('firstName lastName phone branch courierInfo');
+    
+    // Socket orqali real-time yangilash
+    try {
+      const SocketManager = require('../../config/socketConfig');
+      for (const courier of couriers) {
+        const loc = courier.courierInfo?.currentLocation;
+        if (loc && loc.latitude && loc.longitude) {
+          SocketManager.emitCourierLocationToBranch(courier.branch || branchId, {
+            courierId: courier._id,
+            firstName: courier.firstName,
+            lastName: courier.lastName,
+            phone: courier.phone,
+            location: { latitude: loc.latitude, longitude: loc.longitude },
+            isOnline: Boolean(courier.courierInfo?.isOnline),
+            isAvailable: Boolean(courier.courierInfo?.isAvailable),
+            updatedAt: loc.updatedAt || new Date()
+          });
+        }
+      }
+    } catch (socketError) {
+      console.error('Socket error during refresh:', socketError);
+    }
+    
+    res.json({ 
+      success: true, 
+      message: `${couriers.length} ta kuryer lokatsiyasi yangilandi`,
+      data: { 
+        totalCouriers: couriers.length,
+        updatedAt: new Date()
+      }
+    });
+  } catch (e) { 
+    res.status(500).json({ success: false, message: 'Kuryer lokatsiyalarini yangilashda xatolik!' }); 
+  }
+}
+
+module.exports = { list, getOne, availableForOrder, updateStatus, refreshLocations };
 
 // =============== Advanced analytics/endpoints ===============
 function haversineKm(a, b) {

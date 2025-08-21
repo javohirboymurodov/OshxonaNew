@@ -17,6 +17,8 @@ const router = express.Router();
 // GET /api/products - Get all products with pagination and caching
 router.get('/', ProductsController.list);
 
+
+
 // GET /api/products/:id - Get single product
 router.get('/:id', ProductsController.getOne);
 

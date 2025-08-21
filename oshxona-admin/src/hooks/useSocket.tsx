@@ -96,6 +96,11 @@ export const useSocket = (options: UseSocketOptions = {}): SocketHook => {
       }
     });
 
+    // 🔧 YANGI: Kuryer lokatsiyasi real-time yangilanishi
+    socketInstance.on('courier:location', (data) => {
+      console.log('🚚 Courier location update received:', data);
+    });
+
     setSocket(socketInstance);
 
     // Cleanup

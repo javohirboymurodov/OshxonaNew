@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: oshxona-backend
+    env: node
+    plan: starter
+    rootDir: oshxona-backend
+    buildCommand: npm install
+    startCommand: npm run api
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: BOT_TOKEN
+        sync: false
+      - key: WEBHOOK_URL
+        sync: false
+      - key: ADMIN_PANEL_URL
+        sync: false
+      - key: USER_FRONTEND_URL
+        sync: false
+      - key: WEBAPP_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: PORT
+        value: 5000
+    healthCheckPath: /health
+    autoDeploy: true

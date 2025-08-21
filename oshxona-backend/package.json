@@ -1,7 +1,7 @@
 {
-  "name": "oshxona-professional-bot",
+  "name": "oshxona-backend",
   "version": "1.0.0",
-  "description": "Professional restaurant ordering Telegram bot with advanced features",
+  "description": "Oshxona Backend API + Telegram Bot",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -9,15 +9,9 @@
     "api": "nodemon api/server.js",
     "dev:all": "concurrently \"npm run dev\" \"npm run api\"",
     "dev:debug": "nodemon --inspect index.js",
-    "admin:dev": "cd oshxona-admin && npm run dev",
-    "user:dev": "cd user-frontend && npm run dev",
-    "dev:full": "concurrently \"npm run dev\" \"npm run api\" \"npm run admin:dev\" \"npm run user:dev\"",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "format": "prettier --write .",
     "db:seed": "node scripts/seed.js",
     "db:reset": "node scripts/reset.js",
     "db:backup": "node scripts/backup.js",
@@ -34,7 +28,7 @@
     "pm2:stop": "pm2 stop oshxona-bot",
     "pm2:restart": "pm2 restart oshxona-bot",
     "pm2:logs": "pm2 logs oshxona-bot",
-    "build": "npm run lint && npm run test",
+    "build": "npm run test",
     "deploy": "npm run build && pm2 restart oshxona-bot",
     "setup": "npm run superadmin:create && npm run db:seed",
     "superadmin:create": "node scripts/createSuperAdmin.js",
@@ -49,7 +43,8 @@
     "delivery",
     "nodejs",
     "mongodb",
-    "professional"
+    "api",
+    "backend"
   ],
   "author": {
     "name": "Your Name",
@@ -97,33 +92,6 @@
   "devDependencies": {
     "@jest/globals": "^30.0.5",
     "@types/node": "^20.10.5",
-    "eslint": "^8.55.0",
-    "eslint-config-prettier": "^9.1.0",
-    "eslint-plugin-node": "^11.1.0",
-    "husky": "^8.0.3",
-    "jest": "^29.7.0",
-    "lint-staged": "^15.2.0",
-    "nodemon": "^3.0.2",
-    "prettier": "^3.1.1",
-    "supertest": "^6.3.4"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
-  },
-  "lint-staged": {
-    "*.js": [
-      "eslint --fix",
-      "prettier --write"
-    ]
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/yourusername/oshxona-professional-bot.git"
-  },
-  "bugs": {
-    "url": "https://github.com/yourusername/oshxona-professional-bot/issues"
-  },
-  "homepage": "https://github.com/yourusername/oshxona-professional-bot#readme"
+    "nodemon": "^3.0.2"
+  }
 }

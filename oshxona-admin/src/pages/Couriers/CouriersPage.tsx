@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Card, Tag, Space, Typography, Select, Alert } from 'antd';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import { Card, Tag, Space, Typography, Select, Alert, Button } from 'antd';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -51,6 +51,45 @@ const CouriersPage: React.FC = () => {
   const [markers, setMarkers] = useState<Record<string, CourierMarker>>({});
   const [branches, setBranches] = useState<BranchMarker[]>([]);
   const [filter, setFilter] = useState<'all'|'online'|'offline'|'stale'>('all');
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // 🔧 YANGI: Kuryer ma'lumotlarini yangilash funksiyasi
+  const refreshCouriers = useCallback(async () => {
+    try {
+      setIsRefreshing(true);
+      
+      // 🔧 YANGI: Backend'dan real-time yangilash
+      try {
+        await apiService.refreshCourierLocations();
+      } catch (e) {
+        console.warn('Backend refresh failed, falling back to direct API:', e);
+      }
+      
+      // Fallback: to'g'ridan-to'g'ri API dan olish
+      const courierData = await apiService.getCouriers();
+      const next: Record<string, CourierMarker> = {};
+      (courierData?.couriers || courierData || []).forEach((c: any) => {
+        const loc = c?.courierInfo?.currentLocation;
+        next[String(c._id)] = {
+          courierId: String(c._id),
+          firstName: c.firstName,
+          lastName: c.lastName,
+          phone: c.phone,
+          location: loc && loc.latitude && loc.longitude ? { latitude: loc.latitude, longitude: loc.longitude } : null,
+          isOnline: Boolean(c?.courierInfo?.isOnline),
+          isAvailable: Boolean(c?.courierInfo?.isAvailable),
+          updatedAt: loc?.updatedAt
+        };
+      });
+      setMarkers(next);
+      setLastUpdate(new Date());
+    } catch (e) {
+      console.error('Error refreshing couriers:', e);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, []);
 
   // Initial load: fetch current couriers list and branches
   useEffect(() => {
@@ -73,7 +112,10 @@ const CouriersPage: React.FC = () => {
             updatedAt: loc?.updatedAt
           };
         });
-        if (mounted) setMarkers(next);
+        if (mounted) {
+          setMarkers(next);
+          setLastUpdate(new Date());
+        }
 
         // Fetch branches
         const branchData = await apiService.getBranches();
@@ -103,7 +145,18 @@ const CouriersPage: React.FC = () => {
     return () => { mounted = false; };
   }, [branchId]);
 
-  // Realtime updates
+  // 🔧 YANGI: Auto-refresh interval (30 soniyada)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (connected) {
+        refreshCouriers();
+      }
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [connected, refreshCouriers]);
+
+  // Realtime updates via Socket.IO
   useEffect(() => {
     if (!socket || !connected) return;
     const onLocation = (payload: CourierMarker) => {
@@ -114,6 +167,7 @@ const CouriersPage: React.FC = () => {
           ...payload
         }
       }));
+      setLastUpdate(new Date());
     };
     socket.on('courier:location', onLocation);
     return () => { socket.off('courier:location', onLocation); };
@@ -154,6 +208,14 @@ const CouriersPage: React.FC = () => {
             ]}
             style={{ width: 160 }}
           />
+          <Button 
+            size="small" 
+            onClick={refreshCouriers} 
+            loading={isRefreshing}
+            type="primary"
+          >
+            🔄 Yangilash
+          </Button>
           {connected ? <Tag color="green">Socket ulandi</Tag> : <Tag>Ulanmagan</Tag>}
         </Space>
       }>
@@ -214,7 +276,13 @@ const CouriersPage: React.FC = () => {
             })}
           </MapContainer>
         </div>
-        <Alert style={{ marginTop: 12 }} type="info" showIcon message="Kuryerlar lokatsiyasi avtomatik ravishda real-vaqtda yangilanadi. 5 daqiqa yangilanmasa, Stale sifatida ajratiladi." />
+        <Alert style={{ marginTop: 12 }} type="info" showIcon message={
+          <div>
+            <div>Kuryerlar lokatsiyasi avtomatik ravishda real-vaqtda yangilanadi.</div>
+            <div>Oxirgi yangilanish: {lastUpdate.toLocaleTimeString()}</div>
+            <div>Auto-refresh: 30 soniyada | 5 daqiqa yangilanmasa, Stale sifatida ajratiladi.</div>
+          </div>
+        } />
       </Card>
     </Space>
   );

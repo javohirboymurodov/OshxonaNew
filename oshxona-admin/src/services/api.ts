@@ -269,6 +269,12 @@ class ApiService {
     return response.data.data;
   }
 
+  // 🔧 YANGI: Kuryer lokatsiyalarini real-time'da yangilash
+  async refreshCourierLocations() {
+    const response = await this.api.post('/couriers/locations/refresh');
+    return response.data;
+  }
+
   // Branch methods
   async getBranches() {
     try {

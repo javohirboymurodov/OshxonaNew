@@ -400,6 +400,40 @@ function registerUserCallbacks(bot) {
     await UserOrderHandlers.startOrder(ctx);
   });
 
+  // Savatdan chekout (tur qayta so'ralmaydi, mavjud orderTypega qarab davom etadi)
+  bot.action('checkout', async (ctx) => {
+    try {
+      const type = ctx.session?.orderType;
+      if (!type) {
+        // Agar hali tanlanmagan bo'lsa, standart start_order oqimiga yo'naltiramiz
+        return await UserOrderHandlers.startOrder(ctx);
+      }
+      // Tanlangan turga qarab keyingi bosqichga o'tish
+      if (type === 'delivery') {
+        // Yetkazib berish: agar manzil yo'q bo'lsa so'raymiz
+        if (!ctx.session?.orderData?.location) {
+          const OrderFlow = require('../handlers/user/order/orderFlow');
+          return await OrderFlow.handleDeliveryFlow(ctx);
+        }
+      } else if (type === 'pickup' || type === 'dine_in') {
+        if (!ctx.session?.orderData?.branch) {
+          const OrderFlow = require('../handlers/user/order/orderFlow');
+          return await OrderFlow.askForBranchSelection(ctx, type);
+        }
+        if (!ctx.session?.orderData?.arrivalTime) {
+          const { arrivalTimeKeyboard } = require('./keyboards');
+          const kb = arrivalTimeKeyboard();
+          return await ctx.editMessageText('⏰ Kelish vaqtini tanlang:', { reply_markup: kb.reply_markup });
+        }
+      }
+      // Hammasi tayyor bo'lsa to'lov bosqichiga o'tamiz
+      await UserOrderHandlers.askForPaymentMethod(ctx);
+    } catch (e) {
+      console.error('checkout error', e);
+      await ctx.answerCbQuery('❌ Xatolik yuz berdi');
+    }
+  });
+
   bot.action(/^order_type_(.+)$/, async (ctx) => {
     await UserOrderHandlers.handleOrderType(ctx);
   });

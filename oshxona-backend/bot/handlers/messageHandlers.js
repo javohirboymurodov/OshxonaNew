@@ -43,14 +43,46 @@ function registerMessageHandlers(bot) {
       const user = await User.findOne({ telegramId: ctx.from.id });
       if (!user) return;
       const { latitude, longitude, live_period } = ctx.message.location || {};
+      // Foydalanuvchi joylashuvi sessionga yozib qo'yiladi (aksiyalar va eng yaqin filial uchun)
+      ctx.session = ctx.session || {};
+      ctx.session.userLocation = { latitude, longitude };
       
       // Agar bu foydalanuvchi buyurtma (delivery) oqimida bo'lsa — lokatsiyani buyurtma uchun qabul qilamiz
-      if (user.role !== 'courier' && ctx.session?.waitingFor === 'delivery_location') {
+      const wf = ctx.session?.waitingFor;
+      if (user.role !== 'courier' && (wf === 'delivery_location' || wf === 'branch_location')) {
         // Avval foydalanuvchiga tasdiq xabari va keyboardni yopish
         try { await ctx.reply('✅ Joylashuv qabul qilindi.', { reply_markup: { remove_keyboard: true } }); } catch {}
-        const Orders = require('./user/order/index');
-        await Orders.processLocation(ctx, latitude, longitude);
-        ctx.session.waitingFor = null;
+        if (wf === 'delivery_location') {
+          const Orders = require('./user/order/index');
+          await Orders.processLocation(ctx, latitude, longitude);
+          ctx.session.waitingFor = null;
+          return;
+        }
+        // Eng yaqin filialni topish va ko'rsatish (branch_location)
+        try {
+          const DeliveryService = require('../../services/deliveryService');
+          const result = await DeliveryService.resolveBranchForLocation({ latitude, longitude });
+          if (result && result.branchId) {
+            const { Branch } = require('../../models');
+            const b = await Branch.findById(result.branchId).select('name title address phone');
+            const name = b?.name || b?.title || 'Filial';
+            const address = b?.address?.text || result?.address || 'Manzil aniqlanmadi';
+            await ctx.reply(`🏪 Eng yaqin filial: ${name}\n📍 ${address}`, {
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: 'Filial tafsiloti', callback_data: `branch_${result.branchId}` }],
+                  [{ text: '🔙 Orqaga', callback_data: 'show_branches' }]
+                ]
+              }
+            });
+          } else {
+            await ctx.reply('❌ Eng yaqin filial aniqlanmadi.');
+          }
+        } catch (e) {
+          console.error('nearest branch resolve error', e);
+        } finally {
+          ctx.session.waitingFor = null;
+        }
         return;
       }
       
@@ -104,6 +136,15 @@ function registerMessageHandlers(bot) {
             isOnline: Boolean(user.courierInfo?.isOnline),
             isAvailable: Boolean(user.courierInfo?.isAvailable),
             updatedAt: new Date()
+          });
+          
+          // 🔧 YANGI: Console log qo'shamiz
+          console.log('📍 Courier live location updated via Socket.IO:', {
+            courierId: user._id,
+            name: `${user.firstName} ${user.lastName}`,
+            location: { lat: latitude, lng: longitude },
+            branchId,
+            timestamp: new Date().toISOString()
           });
         }
       } catch {}

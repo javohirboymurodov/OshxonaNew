@@ -59,6 +59,23 @@ app.use('/uploads', (req, res, next) => {
 
 // 🌐 API ROUTES
 
+// Bot webhook endpoint
+app.post('/webhook', (req, res) => {
+  console.log('📥 Webhook received:', req.body);
+  // Bot update'ni qayta ishlash
+  try {
+    const { bot } = require('../index');
+    if (bot && bot.handleUpdate) {
+      bot.handleUpdate(req.body, res);
+    } else {
+      res.sendStatus(200);
+    }
+  } catch (error) {
+    console.error('Webhook error:', error);
+    res.sendStatus(200);
+  }
+});
+
 // Auth routes
 app.use('/api/auth', require('./routes/auth'));
 
@@ -70,6 +87,7 @@ app.use('/api/admin/users', require('./routes/users'));
 app.use('/api/superadmin', require('./routes/superadmin'));
 
 // Public routes
+app.use('/api/public', require('./routes/public'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/couriers', require('./routes/couriers'));
 app.use('/api/dashboard', require('./routes/dashboard'));

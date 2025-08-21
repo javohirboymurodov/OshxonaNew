@@ -112,7 +112,37 @@ class UserOrderHandlers extends BaseHandler {
       console.log('=== Arrival time selected ===');
       console.log('Time:', arrivalTime);
 
-      await PaymentFlow.askForPaymentMethod(ctx);
+      // Keyingi bosqich: mahsulot tanlash uchun menyu
+      const nextMenuText = '✅ Vaqt tanlandi! Endi mahsulot tanlang:';
+      if (ctx.updateType === 'callback_query') {
+        await ctx.editMessageText(nextMenuText, {
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '🍽️ Tezkor buyurtma', callback_data: 'quick_order' }],
+              [
+                { text: '🛒 Katalog', callback_data: 'show_catalog' },
+                { text: '🎉 Aksiyalar', callback_data: 'show_promotions' }
+              ],
+              [ { text: '🛒 Savat', callback_data: 'show_cart' } ],
+              [ { text: '🔙 Orqaga', callback_data: 'start_order' } ]
+            ]
+          }
+        });
+      } else {
+        await ctx.reply(nextMenuText, {
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '🍽️ Tezkor buyurtma', callback_data: 'quick_order' }],
+              [
+                { text: '🛒 Katalog', callback_data: 'show_catalog' },
+                { text: '🎉 Aksiyalar', callback_data: 'show_promotions' }
+              ],
+              [ { text: '🛒 Savat', callback_data: 'show_cart' } ],
+              [ { text: '🔙 Orqaga', callback_data: 'start_order' } ]
+            ]
+          }
+        });
+      }
       if (ctx.answerCbQuery) await ctx.answerCbQuery('✅ Vaqt tanlandi');
     }, ctx, '❌ Vaqt tanlashda xatolik!');
   }
