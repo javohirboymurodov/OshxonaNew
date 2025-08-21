@@ -47,40 +47,72 @@ const validateTelegramId = async (req, res, next) => {
 // GET /api/public/branches - Get all active branches (telegram ID required)
 router.get('/branches', async (req, res) => {
   try {
+    console.log('🔍 Fetching branches...');
+    
+    // Database'da branches bor-yo'qligini tekshirish
+    const totalBranches = await Branch.countDocuments();
+    console.log(`📊 Total branches in DB: ${totalBranches}`);
+    
     const branches = await Branch.find({ isActive: true })
       .select('_id name title address phone coordinates')
       .sort({ name: 1 });
     
+    console.log(`✅ Found ${branches.length} active branches`);
+    
     res.json({
       success: true,
-      data: branches
+      data: branches,
+      total: totalBranches,
+      active: branches.length
     });
   } catch (error) {
     console.error('Public branches error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
 // GET /api/public/categories - Get all active categories (telegram ID required)
 router.get('/categories', async (req, res) => {
   try {
+    console.log('🔍 Fetching categories...');
+    
+    // Database'da categories bor-yo'qligini tekshirish
+    const totalCategories = await Category.countDocuments();
+    console.log(`📊 Total categories in DB: ${totalCategories}`);
+    
     const categories = await Category.find({ isActive: true })
       .select('_id name description')
       .sort({ name: 1 });
     
+    console.log(`✅ Found ${categories.length} active categories`);
+    
     res.json({
       success: true,
-      data: categories
+      data: categories,
+      total: totalCategories,
+      active: categories.length
     });
   } catch (error) {
     console.error('Public categories error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
 // GET /api/public/products - Get products by branch/category (telegram ID required)
 router.get('/products', async (req, res) => {
   try {
+    console.log('🔍 Fetching products...');
+    
     const { branch, category, page = 1, limit = 50 } = req.query;
     
     let query = { isActive: true };
@@ -95,6 +127,10 @@ router.get('/products', async (req, res) => {
       query.categoryId = category;
     }
     
+    // Database'da products bor-yo'qligini tekshirish
+    const totalProducts = await Product.countDocuments();
+    console.log(`📊 Total products in DB: ${totalProducts}`);
+    
     const skip = (parseInt(page) - 1) * parseInt(limit);
     
     const products = await Product.find(query)
@@ -105,6 +141,8 @@ router.get('/products', async (req, res) => {
       .sort({ createdAt: -1 });
     
     const total = await Product.countDocuments(query);
+    
+    console.log(`✅ Found ${products.length} products matching query`);
     
     res.json({
       success: true,
@@ -118,7 +156,12 @@ router.get('/products', async (req, res) => {
     });
   } catch (error) {
     console.error('Public products error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
