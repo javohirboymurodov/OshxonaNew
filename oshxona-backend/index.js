@@ -14,51 +14,67 @@ const { initializeBot } = require('./bot/botManager');
 // 💾 DATABASE CONNECTION
 // ========================================
 
-Database.connect();
-
-// ========================================
-// 🤖 BOT INITIALIZATION
-// ========================================
-
-const bot = new Telegraf(process.env.BOT_TOKEN);
-global.botInstance = bot;
-
-// Session middleware
-bot.use(session({
-  defaultSession: () => ({
-    step: 'idle',
-    cart: [],
-    orderData: {},
-    phone: null,
-    address: null,
-    waitingFor: null
-  })
-}));
-
-// Debug middleware - Bot javob bermaslik muammosini tracking qilish uchun
-bot.use((ctx, next) => {
-  console.log('📥 Bot update received:', {
-    type: ctx.updateType,
-    from: ctx.from?.first_name,
-    userId: ctx.from?.id,
-    text: ctx.message?.text || ctx.callbackQuery?.data,
-    chatId: ctx.chat?.id
-  });
-  return next();
-});
-
-// ========================================
-// 🔧 BOT SETUP
-// ========================================
-
-// Barcha bot handlerlarini ulash
-initializeBot(bot);
+// Database connection ready bo'lguncha kutish
+const initializeApp = async () => {
+  try {
+    console.log('🔌 Database connection o\'rnatilmoqda...');
+    await Database.connect();
+    
+    // Database ready bo'lgandan keyin botni ishga tushirish
+    console.log('✅ Database ready, bot ishga tushirilmoqda...');
+    
+    // ========================================
+    // 🤖 BOT INITIALIZATION
+    // ========================================
+    
+    const bot = new Telegraf(process.env.BOT_TOKEN);
+    global.botInstance = bot;
+    
+    // Session middleware
+    bot.use(session({
+      defaultSession: () => ({
+        step: 'idle',
+        cart: [],
+        orderData: {},
+        phone: null,
+        address: null,
+        waitingFor: null
+      })
+    }));
+    
+    // Debug middleware - Bot javob bermaslik muammosini tracking qilish uchun
+    bot.use((ctx, next) => {
+      console.log('📥 Bot update received:', {
+        type: ctx.updateType,
+        from: ctx.from?.first_name,
+        userId: ctx.from?.id,
+        text: ctx.message?.text || ctx.callbackQuery?.data,
+        chatId: ctx.chat?.id
+      });
+      return next();
+    });
+    
+    // ========================================
+    // 🔧 BOT SETUP
+    // ========================================
+    
+    // Barcha bot handlerlarini ulash
+    initializeBot(bot);
+    
+    // Bot ready bo'lgandan keyin server ishga tushirish
+    startUnifiedServer(bot);
+    
+  } catch (error) {
+    console.error('❌ App initialization error:', error);
+    process.exit(1);
+  }
+};
 
 // ========================================
 // 🚀 UNIFIED SERVER LAUNCH
 // ========================================
 
-const startUnifiedServer = async () => {
+const startUnifiedServer = async (bot) => {
   try {
     console.log('🚀 Oshxona Bot va API Server ishga tushirilmoqda...\n');
 
@@ -241,7 +257,8 @@ setInterval(async () => {
 // 🚀 START THE UNIFIED SERVER
 // ========================================
 
-startUnifiedServer();
+// Database connection ready bo'lgandan keyin appni ishga tushirish
+initializeApp();
 
 // Disable deprecated warnings
 process.env.NTBA_FIX_319 = 1;
