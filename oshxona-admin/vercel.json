@@ -1,33 +1,10 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "oshxona-admin/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "oshxona-admin/dist"
-      }
-    },
-    {
-      "src": "apps/user-webapp/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "apps/user-webapp/dist"
-      }
-    }
-  ],
-  "routes": [
-    {
-      "src": "/admin/(.*)",
-      "dest": "/oshxona-admin/$1"
-    },
-    {
-      "src": "/webapp/(.*)",
-      "dest": "/apps/user-webapp/$1"
-    },
-    {
-      "src": "/",
-      "dest": "/oshxona-admin"
-    }
+  "framework": "vite",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "installCommand": "npm install",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
