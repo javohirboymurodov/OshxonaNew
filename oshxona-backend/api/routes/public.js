@@ -4,6 +4,7 @@ const Branch = require('../../models/Branch');
 const Category = require('../../models/Category');
 const Product = require('../../models/Product');
 const User = require('../../models/User');
+const Database = require('../../config/database');
 
 const router = express.Router();
 
@@ -49,6 +50,19 @@ router.get('/branches', async (req, res) => {
   try {
     console.log('🔍 Fetching branches...');
     
+    // Database connection status'ni tekshirish
+    const dbStatus = Database.getConnectionStatus();
+    console.log('📊 Database status:', dbStatus);
+    
+    if (!dbStatus.isConnected || dbStatus.readyState !== 1) {
+      console.log('❌ Database not ready, waiting...');
+      return res.status(503).json({ 
+        success: false, 
+        message: 'Database not ready',
+        status: dbStatus
+      });
+    }
+    
     // Database'da branches bor-yo'qligini tekshirish
     const totalBranches = await Branch.countDocuments();
     console.log(`📊 Total branches in DB: ${totalBranches}`);
@@ -81,6 +95,19 @@ router.get('/categories', async (req, res) => {
   try {
     console.log('🔍 Fetching categories...');
     
+    // Database connection status'ni tekshirish
+    const dbStatus = Database.getConnectionStatus();
+    console.log('📊 Database status:', dbStatus);
+    
+    if (!dbStatus.isConnected || dbStatus.readyState !== 1) {
+      console.log('❌ Database not ready, waiting...');
+      return res.status(503).json({ 
+        success: false, 
+        message: 'Database not ready',
+        status: dbStatus
+      });
+    }
+    
     // Database'da categories bor-yo'qligini tekshirish
     const totalCategories = await Category.countDocuments();
     console.log(`📊 Total categories in DB: ${totalCategories}`);
@@ -112,6 +139,19 @@ router.get('/categories', async (req, res) => {
 router.get('/products', async (req, res) => {
   try {
     console.log('🔍 Fetching products...');
+    
+    // Database connection status'ni tekshirish
+    const dbStatus = Database.getConnectionStatus();
+    console.log('📊 Database status:', dbStatus);
+    
+    if (!dbStatus.isConnected || dbStatus.readyState !== 1) {
+      console.log('❌ Database not ready, waiting...');
+      return res.status(503).json({ 
+        success: false, 
+        message: 'Database not ready',
+        status: dbStatus
+      });
+    }
     
     const { branch, category, page = 1, limit = 50 } = req.query;
     
