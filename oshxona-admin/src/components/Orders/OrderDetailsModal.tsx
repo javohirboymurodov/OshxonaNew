@@ -92,6 +92,7 @@ const OrderDetailsModal: React.FC<Props> = ({ open, order, onClose, getOrderType
       on_delivery: { color: 'geekblue', text: 'Yetkazilmoqda' },
       picked_up: { color: 'green', text: 'Olib ketildi' },
       delivered: { color: 'green', text: 'Yetkazilgan' },
+      completed: { color: 'green', text: 'Yakunlangan' },
       cancelled: { color: 'red', text: 'Bekor qilingan' }
     };
     return map[status] || { color: 'default', text: status };
@@ -105,6 +106,7 @@ const OrderDetailsModal: React.FC<Props> = ({ open, order, onClose, getOrderType
       cancelled: [],
       delivered: [],
       picked_up: [],
+      completed: [],
       on_delivery: []
     };
     if (orderType === 'delivery') {

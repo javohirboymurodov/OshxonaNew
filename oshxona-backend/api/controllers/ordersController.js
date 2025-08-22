@@ -8,7 +8,10 @@ function getStatusMessage(status) {
     confirmed: 'Buyurtmangiz tasdiqlandi',
     preparing: 'Buyurtmangiz tayyorlanmoqda',
     ready: 'Buyurtmangiz tayyor!',
+    on_delivery: 'Buyurtmangiz yetkazilmoqda',
     delivered: 'Buyurtmangiz yetkazildi',
+    picked_up: 'Buyurtmangiz olib ketildi',
+    completed: 'Buyurtmangiz yakunlandi',
     cancelled: 'Buyurtmangiz bekor qilindi'
   };
   return messages[status] || 'Status yangilandi';
@@ -20,7 +23,10 @@ function getStatusEmoji(status) {
     confirmed: '✅',
     preparing: '👨‍🍳',
     ready: '🍽️',
-    delivered: '🚚',
+    on_delivery: '🚚',
+    delivered: '✅',
+    picked_up: '📦',
+    completed: '🎉',
     cancelled: '❌'
   };
   return emojis[status] || '📋';
@@ -194,7 +200,7 @@ async function updateStatus(req, res) {
     const { id } = req.params;
     const { status, message: customMessage } = req.body;
     const branchId = req.user.role === 'superadmin' ? null : req.user.branch;
-    const validStatuses = ['pending', 'confirmed', 'ready', 'assigned', 'on_delivery', 'delivered', 'picked_up', 'cancelled'];
+    const validStatuses = ['pending', 'confirmed', 'ready', 'assigned', 'on_delivery', 'delivered', 'picked_up', 'completed', 'cancelled'];
     if (!validStatuses.includes(status)) return res.status(400).json({ success: false, message: 'Noto\'g\'ri status!' });
     const existing = await Order.findById(id).populate('user', 'firstName lastName phone telegramId');
     if (!existing) return res.status(404).json({ success: false, message: 'Buyurtma topilmadi!' });

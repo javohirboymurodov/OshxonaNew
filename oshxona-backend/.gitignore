@@ -30,7 +30,6 @@ coverage/
 *.lcov
 
 # Uploads
-uploads/
 temp/
 
 # Backups

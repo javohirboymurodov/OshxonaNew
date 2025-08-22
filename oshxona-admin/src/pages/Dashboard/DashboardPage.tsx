@@ -312,7 +312,10 @@ const DashboardPage: React.FC = () => {
       confirmed: 'blue',
       preparing: 'purple',
       ready: 'cyan',
+      on_delivery: 'geekblue',
       delivered: 'green',
+      picked_up: 'green',
+      completed: 'green',
       cancelled: 'red'
     };
     return colors[status] || 'default';
@@ -324,7 +327,10 @@ const DashboardPage: React.FC = () => {
       confirmed: 'Tasdiqlangan',
       preparing: 'Tayyorlanmoqda',
       ready: 'Tayyor',
+      on_delivery: 'Yetkazilmoqda',
       delivered: 'Yetkazilgan',
+      picked_up: 'Olib ketildi',
+      completed: 'Yakunlangan',
       cancelled: 'Bekor qilingan'
     };
     return texts[status] || status;

@@ -78,6 +78,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ data, loading, pagination, on
       cancelled: [],
       delivered: [],
       picked_up: [],
+      completed: [],
       on_delivery: []
     };
     if (orderType === 'delivery') {
@@ -191,7 +192,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ data, loading, pagination, on
                 <Button type="link" size="small">Holat</Button>
               </Dropdown>
             )}
-            {record.orderType === 'delivery' && record.status !== 'delivered' && record.status !== 'completed' && onAssignCourier && (
+            {record.orderType === 'delivery' && !['delivered', 'completed', 'picked_up'].includes(record.status) && onAssignCourier && (
               <Button type="link" size="small" onClick={() => onAssignCourier(record)}>Kuryer</Button>
             )}
           </Space>

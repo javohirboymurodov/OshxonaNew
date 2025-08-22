@@ -15,8 +15,8 @@ class Database {
 
         try {
             // MongoDB connection with timeout
-            const db='mongodb+srv://javohir:<db_password>@cluster0.jjsllqm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0'
-            const connectionString = process.env.MONGODB_URI || 'mongodb://localhost:27017/pizza_bot';
+            const db='mongodb+srv://javohir:javohir99@cluster0.jjsllqm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0'
+            const connectionString = process.env.MONGODB_URI || db;
             const inProduction = process.env.NODE_ENV === 'production';
 
             // Productionda majburiy env var tekshiruvi
