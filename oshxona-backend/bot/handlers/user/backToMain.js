@@ -11,6 +11,12 @@ async function backToMain(ctx) {
       delete ctx.session.orderData;
       delete ctx.session.adminAction;
     }
+    
+    // Reply keyboard'ni tozalash (location tugmasi yo'qolishi uchun)
+    try {
+      await ctx.reply('', { reply_markup: { remove_keyboard: true } });
+    } catch {}
+    
     // Telefon bo'yicha jarayon bo'lsa ham to'xtatamiz (bo'sh xabar yubormaymiz)
     // Har safar to'liq welcome matn + main menyu ko'rsatamiz
     await startHandler(ctx);

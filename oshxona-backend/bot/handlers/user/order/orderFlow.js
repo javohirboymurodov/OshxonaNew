@@ -42,6 +42,12 @@ class OrderFlow extends BaseHandler {
       }
       
       const message = `📝 **Buyurtma berish**\n\nBuyurtma turini tanlang:`;
+      
+      // Reply keyboard'ni tozalash (location tugmasi yo'qolishi uchun)
+      try {
+        await ctx.reply('', { reply_markup: { remove_keyboard: true } });
+      } catch {}
+      
       await ctx.editMessageText(message, {
         parse_mode: 'Markdown',
         reply_markup: orderTypeKeyboard.reply_markup
@@ -119,7 +125,8 @@ class OrderFlow extends BaseHandler {
           reply_markup: {
             keyboard: [[{ text: '📍 Joylashuvni yuborish', request_location: true }]],
             resize_keyboard: true,
-            one_time_keyboard: true
+            one_time_keyboard: false, // Har doim ko'rinib turishi uchun
+            is_persistent: true // Persistent keyboard
           }
         });
       } catch {}

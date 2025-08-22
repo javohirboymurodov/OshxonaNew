@@ -56,7 +56,8 @@ Boshlash uchun quyidagi tugmalardan foydalaning!`;
             [{ text: '👤 Profil' }]
           ],
           resize_keyboard: true,
-          is_persistent: true
+          is_persistent: true,
+          one_time_keyboard: false // Har doim ko'rinib turishi uchun
         }
       });
     } catch {}
