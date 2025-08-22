@@ -22,7 +22,7 @@ export interface Order {
   total?: number;
   courier?: { firstName?: string; lastName?: string; phone?: string } | null;
   deliveryInfo?: { courier?: { firstName?: string; lastName?: string; phone?: string } | null } | null;
-  status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'assigned' | 'picked_up' | 'on_delivery' | 'delivered' | 'completed' | 'cancelled';
   orderType: 'delivery' | 'pickup' | 'dine_in' | 'table';
   paymentMethod: 'cash' | 'card' | 'online' | string;
   deliveryAddress?: string;
@@ -48,7 +48,11 @@ const getStatusConfig = (status: string) => {
     confirmed: { color: 'blue', text: 'Tasdiqlangan', icon: <CheckCircleOutlined /> },
     preparing: { color: 'purple', text: 'Tayyorlanmoqda', icon: <ClockCircleOutlined /> },
     ready: { color: 'cyan', text: 'Tayyor', icon: <CheckCircleOutlined /> },
-    delivered: { color: 'green', text: 'Yetkazilgan', icon: <TruckOutlined /> },
+    assigned: { color: 'green', text: 'Kuryer tayinlandi', icon: <CheckCircleOutlined /> },
+    picked_up: { color: 'blue', text: 'Olib ketildi', icon: <TruckOutlined /> },
+    on_delivery: { color: 'purple', text: 'Yo\'lda', icon: <TruckOutlined /> },
+    delivered: { color: 'green', text: 'Yetkazildi', icon: <TruckOutlined /> },
+    completed: { color: 'green', text: 'Yakunlandi', icon: <CheckCircleOutlined /> },
     cancelled: { color: 'red', text: 'Bekor qilingan', icon: <CloseCircleOutlined /> },
   } as const;
   return (configs as Record<string, { color: string; text: string; icon: React.ReactNode }>)[status] || configs.pending;
@@ -77,12 +81,19 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ data, loading, pagination, on
       ready: [],
       cancelled: [],
       delivered: [],
-      picked_up: [],
       completed: [],
+      assigned: [],
+      picked_up: [],
       on_delivery: []
     };
     if (orderType === 'delivery') {
-      const flow = { ...common, ready: ['on_delivery'], on_delivery: ['delivered'] } as Record<string, string[]>;
+      const flow = { 
+        ...common, 
+        ready: ['assigned'], 
+        assigned: ['ready', 'cancelled'],
+        picked_up: ['on_delivery', 'delivered'],
+        on_delivery: ['delivered']
+      } as Record<string, string[]>;
       return flow[currentStatus] || [];
     }
     if (orderType === 'pickup') {
@@ -194,6 +205,18 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ data, loading, pagination, on
             )}
             {record.orderType === 'delivery' && !['delivered', 'completed', 'picked_up'].includes(record.status) && onAssignCourier && (
               <Button type="link" size="small" onClick={() => onAssignCourier(record)}>Kuryer</Button>
+            )}
+            {record.orderType === 'delivery' && record.status === 'assigned' && (
+              <Button type="link" size="small" style={{ color: 'green' }}>✅ Qabul qildi</Button>
+            )}
+            {record.orderType === 'delivery' && record.status === 'ready' && record.deliveryInfo?.courier && (
+              <Button type="link" size="small" style={{ color: 'blue' }}>📦 Olib ketdi</Button>
+            )}
+            {record.orderType === 'delivery' && record.status === 'picked_up' && (
+              <Button type="link" size="small" style={{ color: 'purple' }}>🚚 Yo'lda</Button>
+            )}
+            {record.orderType === 'delivery' && record.status === 'on_delivery' && (
+              <Button type="link" size="small" style={{ color: 'orange' }}>📍 Yetkazdi</Button>
             )}
           </Space>
         );

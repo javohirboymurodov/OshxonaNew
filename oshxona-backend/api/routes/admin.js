@@ -162,4 +162,85 @@ router.post('/products/:productId/promo-all-branches', requireRole(['superadmin'
   }
 });
 
+// ==============================================
+// 🚚 COURIER FLOW ENDPOINTS
+// ==============================================
+
+// Kuryer buyurtmani qabul qiladi
+router.post('/orders/:orderId/courier/accept', requireRole(['courier']), async (req, res) => {
+  try {
+    const { OrdersController } = require('../controllers/ordersController');
+    await OrdersController.courierAcceptOrder(req, res);
+  } catch (error) {
+    console.error('Courier accept route error:', error);
+    res.status(500).json({ success: false, message: 'Xatolik yuz berdi!' });
+  }
+});
+
+// Kuryer buyurtmani olib ketdi
+router.post('/orders/:orderId/courier/pickup', requireRole(['courier']), async (req, res) => {
+  try {
+    const { OrdersController } = require('../controllers/ordersController');
+    await OrdersController.courierPickedUpOrder(req, res);
+  } catch (error) {
+    console.error('Courier pickup route error:', error);
+    res.status(500).json({ success: false, message: 'Xatolik yuz berdi!' });
+  }
+});
+
+// Kuryer yo'lda
+router.post('/orders/:orderId/courier/onway', requireRole(['courier']), async (req, res) => {
+  try {
+    const { OrdersController } = require('../controllers/ordersController');
+    await OrdersController.courierOnWay(req, res);
+  } catch (error) {
+    console.error('Courier onway route error:', error);
+    res.status(500).json({ success: false, message: 'Xatolik yuz berdi!' });
+  }
+});
+
+// Kuryer yetkazdi
+router.post('/orders/:orderId/courier/delivered', requireRole(['courier']), async (req, res) => {
+  try {
+    const { OrdersController } = require('../controllers/ordersController');
+    await OrdersController.courierDeliveredOrder(req, res);
+  } catch (error) {
+    console.error('Courier delivered route error:', error);
+    res.status(500).json({ success: false, message: 'Xatolik yuz berdi!' });
+  }
+});
+
+// Kuryer bekor qildi
+router.post('/orders/:orderId/courier/cancel', requireRole(['courier']), async (req, res) => {
+  try {
+    const { OrdersController } = require('../controllers/ordersController');
+    await OrdersController.courierCancelledOrder(req, res);
+  } catch (error) {
+    console.error('Courier cancel route error:', error);
+    res.status(500).json({ success: false, message: 'Xatolik yuz berdi!' });
+  }
+});
+
+// Kuryer lokatsiyasini yangilash
+router.post('/orders/:orderId/courier/location', requireRole(['courier']), async (req, res) => {
+  try {
+    const { OrdersController } = require('../controllers/ordersController');
+    await OrdersController.updateCourierLocation(req, res);
+  } catch (error) {
+    console.error('Courier location update route error:', error);
+    res.status(500).json({ success: false, message: 'Xatolik yuz berdi!' });
+  }
+});
+
+// Masofa tekshirish
+router.post('/orders/:orderId/courier/check-distance', requireRole(['courier']), async (req, res) => {
+  try {
+    const { OrdersController } = require('../controllers/ordersController');
+    await OrdersController.checkCourierDistance(req, res);
+  } catch (error) {
+    console.error('Courier distance check route error:', error);
+    res.status(500).json({ success: false, message: 'Xatolik yuz berdi!' });
+  }
+});
+
 module.exports = router;

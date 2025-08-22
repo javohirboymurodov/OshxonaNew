@@ -175,10 +175,10 @@ async function showCart(ctx) {
       .populate('items.product', 'name price isAvailable');
 
     if (!cart || cart.items.length === 0) {
-      const message = '🛒 **Savat bo\'sh**\n\nMahsulot qo\'shish uchun kategoriyalarni ko\'ring';
+      const message = '🛒 **Savat bo\'sh**\n\nBuyurtma bering';
       const keyboard = {
         inline_keyboard: [
-          [{ text: '🍽️ Kategoriyalar', callback_data: 'show_categories' }],
+          [{ text: '🚀 Buyurtma berish', callback_data: 'start_order' }],
           [{ text: '🔙 Asosiy menyu', callback_data: 'back_to_main' }]
         ]
       };

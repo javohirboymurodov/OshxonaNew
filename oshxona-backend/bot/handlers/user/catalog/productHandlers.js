@@ -114,10 +114,49 @@ class ProductHandlers extends BaseHandler {
       
       const keyboard = { inline_keyboard: [] };
 
+      // Get promo prices for products
+      const branchProducts = await BranchProduct.find({
+        product: { $in: availableProducts.map(p => p._id) },
+        isPromoActive: true,
+        $or: [
+          { promoStart: { $lte: new Date() } },
+          { promoStart: null }
+        ],
+        $or: [
+          { promoEnd: { $gte: new Date() } },
+          { promoEnd: null }
+        ]
+      });
+
+      const promoMap = new Map();
+      branchProducts.forEach(bp => {
+        promoMap.set(bp.product.toString(), bp);
+      });
+
       availableProducts.forEach((product, index) => {
         const number = skip + index + 1;
         message += `${number}. **${product.name}**\n`;
-        message += `   💰 ${product.price.toLocaleString()} so'm\n`;
+        
+        // Check if product has promo
+        const promo = promoMap.get(product._id.toString());
+        if (promo && promo.isPromoActive) {
+          let discountedPrice = product.price;
+          if (promo.discountType === 'percent') {
+            discountedPrice = Math.max(Math.round(product.price * (1 - promo.discountValue / 100)), 0);
+          } else if (promo.discountType === 'amount') {
+            discountedPrice = Math.max(product.price - promo.discountValue, 0);
+          }
+          
+          message += `   💰 ~~${product.price.toLocaleString()} so'm~~ → **${discountedPrice.toLocaleString()} so'm**\n`;
+          if (promo.discountType === 'percent') {
+            message += `   🎯 **-${promo.discountValue}%** chegirma\n`;
+          } else {
+            message += `   🎯 **-${promo.discountValue.toLocaleString()} so'm** chegirma\n`;
+          }
+        } else {
+          message += `   💰 ${product.price.toLocaleString()} so'm\n`;
+        }
+        
         if (product.description) {
           const shortDesc = product.description.length > 50 ? 
             product.description.substring(0, 50) + '...' : 

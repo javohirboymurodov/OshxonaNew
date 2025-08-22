@@ -226,7 +226,74 @@ function registerUserCallbacks(bot) {
   // Filiallar
   bot.action('show_branches', async (ctx) => { await CatalogHandlers.showBranches(ctx, 1); });
   // Branch tanlash va tafsilotlar (nearest/branch_<id>)
-  bot.action(/^branch_.+$/, async (ctx) => { await CatalogHandlers.handleBranchSelection(ctx); });
+  bot.action(/^branch_.+$/, async (ctx) => { 
+    try {
+      await CatalogHandlers.handleBranchSelection(ctx);
+      
+      // Filial tanlangandan keyin aksiyalar ko'rsatish
+      const branchId = ctx.callbackQuery?.data?.replace('branch_', '');
+      if (branchId && branchId !== 'nearest') {
+        const { Branch, BranchProduct } = require('../../models');
+        const branch = await Branch.findById(branchId);
+        if (branch) {
+          // Filialdagi aktiv promolar
+          const now = new Date();
+          const branchProducts = await BranchProduct.find({
+            branch: branch._id,
+            isPromoActive: true,
+            $or: [
+              { promoStart: { $lte: now } },
+              { promoStart: null }
+            ],
+            $or: [
+              { promoEnd: { $gte: now } },
+              { promoEnd: null }
+            ]
+          }).populate('product', 'name price image categoryId');
+          
+          if (branchProducts.length > 0) {
+            let promoMessage = `🎉 **${branch.name} filialidagi aksiyalar:**\n\n`;
+            
+            for (const bp of branchProducts) {
+              const product = bp.product;
+              const originalPrice = product.price;
+              let discountedPrice = originalPrice;
+              
+              if (bp.discountType === 'percent') {
+                discountedPrice = Math.max(Math.round(originalPrice * (1 - bp.discountValue / 100)), 0);
+              } else if (bp.discountType === 'amount') {
+                discountedPrice = Math.max(originalPrice - bp.discountValue, 0);
+              }
+              
+              promoMessage += `🍽️ **${product.name}**\n`;
+              promoMessage += `💰 ~~${originalPrice.toLocaleString()} so'm~~ → **${discountedPrice.toLocaleString()} so'm**\n`;
+              if (bp.discountType === 'percent') {
+                promoMessage += `🎯 **-${bp.discountValue}%** chegirma\n`;
+              } else {
+                promoMessage += `🎯 **-${bp.discountValue.toLocaleString()} so'm** chegirma\n`;
+              }
+              promoMessage += `\n`;
+            }
+            
+            promoMessage += `📍 Filial: ${branch.name}\n`;
+            if (branch.address) promoMessage += `🏠 Manzil: ${branch.address}\n`;
+            
+            await ctx.reply(promoMessage, {
+              parse_mode: 'Markdown',
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: '🛒 Katalogga o\'tish', callback_data: 'show_catalog' }],
+                  [{ text: '🔙 Orqaga', callback_data: 'show_branches' }]
+                ]
+              }
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.error('branch selection error:', e);
+    }
+  });
   // Filial joylashuvini ulashish
   bot.action(/^share_branch_location_(.+)$/, async (ctx) => {
     try { await CatalogHandlers.shareBranchLocation(ctx, ctx.match[1]); } catch (e) { console.error('share_branch_location error', e); }
@@ -579,6 +646,100 @@ function registerUserCallbacks(bot) {
     } catch (error) {
       console.error('Feedback error:', error);
       await ctx.answerCbQuery('❌ Xatolik yuz berdi');
+    }
+  });
+
+  // ========================================
+  // 🚚 COURIER CALLBACKS
+  // ========================================
+
+  // Kuryer buyurtmani qabul qiladi
+  bot.action(/^courier_accept_(.+)$/, async (ctx) => {
+    try {
+      const orderId = ctx.match[1];
+      const user = await User.findOne({ telegramId: ctx.from.id });
+      
+      if (!user || user.role !== 'courier') {
+        await ctx.answerCbQuery('❌ Siz kuryer emassiz!');
+        return;
+      }
+
+      // Joylashuv so'rash
+      await ctx.reply('📍 Buyurtmani qabul qilish uchun joylashuvingizni yuboring:', {
+        reply_markup: {
+          keyboard: [[{ text: '📍 Joylashuvni yuborish', request_location: true }]],
+          resize_keyboard: true,
+          one_time_keyboard: true
+        }
+      });
+
+      // Session'ga ma'lumot saqlash
+      ctx.session.waitingFor = 'courier_accept_location';
+      ctx.session.courierOrderId = orderId;
+      
+    } catch (error) {
+      console.error('Courier accept error:', error);
+      await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // Kuryer buyurtmani olib ketdi
+  bot.action(/^courier_pickup_(.+)$/, async (ctx) => {
+    try {
+      const orderId = ctx.match[1];
+      const user = await User.findOne({ telegramId: ctx.from.id });
+      
+      if (!user || user.role !== 'courier') {
+        await ctx.answerCbQuery('❌ Siz kuryer emassiz!');
+        return;
+      }
+
+      // Joylashuv so'rash
+      await ctx.reply('📍 Buyurtmani olib ketish uchun joylashuvingizni yuboring:', {
+        reply_markup: {
+          keyboard: [[{ text: '📍 Joylashuvni yuborish', request_location: true }]],
+          resize_keyboard: true,
+          one_time_keyboard: true
+        }
+      });
+
+      // Session'ga ma'lumot saqlash
+      ctx.session.waitingFor = 'courier_pickup_location';
+      ctx.session.courierOrderId = orderId;
+      
+    } catch (error) {
+      console.error('Courier pickup error:', error);
+      await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // Kuryer yetkazdi
+  bot.action(/^courier_delivered_(.+)$/, async (ctx) => {
+    try {
+      const orderId = ctx.match[1];
+      const user = await User.findOne({ telegramId: ctx.from.id });
+      
+      if (!user || user.role !== 'courier') {
+        await ctx.answerCbQuery('❌ Siz kuryer emassiz!');
+        return;
+      }
+
+      // Joylashuv so'rash
+      await ctx.reply('📍 Buyurtmani yetkazish uchun joylashuvingizni yuboring:', {
+        reply_markup: {
+          keyboard: [[{ text: '📍 Joylashuvni yuborish', request_location: true }]],
+          resize_keyboard: true,
+          one_time_keyboard: true
+        }
+      });
+
+      // Session'ga ma'lumot saqlash
+      ctx.session.waitingFor = 'courier_delivered_location';
+      ctx.session.courierOrderId = orderId;
+      
+    } catch (error) {
+      console.error('Courier delivered error:', error);
+      await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
     }
   });
 

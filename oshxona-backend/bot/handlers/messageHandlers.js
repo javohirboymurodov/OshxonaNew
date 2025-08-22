@@ -86,18 +86,98 @@ function registerMessageHandlers(bot) {
         return;
       }
       
-      // Kuryerlar uchun: faqat live location qabul qilamiz
-      if (user.role !== 'courier') return; // user delivery holati yuqorida qayta ishlangan
-      
-      // 🔧 FIX: Live location tekshirish - static location qabul qilinmasin
-      if (!live_period) {
-        return ctx.reply('❌ Iltimos, **jonli lokatsiya** yuboring!\n\n📍 "Joylashuvni yuborish" tugmasini bosing va "Live Location" (jonli joylashuv) ni tanlang va "Poka ya ne otklyuchu" ni belgilang.', {
-          parse_mode: 'Markdown',
-          reply_markup: {
-            keyboard: [
-              [ { text: '📍 Joylashuvni yuborish', request_location: true } ],
-              [ { text: '⬅️ Kuryer menyusi' } ],
-            ],
+      // Kuryerlar uchun: joylashuv turini tekshirish
+      if (user.role === 'courier') {
+        // Kuryer oqimi uchun joylashuv qabul qilish
+        const waitingFor = ctx.session?.waitingFor;
+        if (waitingFor && waitingFor.startsWith('courier_')) {
+          const orderId = ctx.session?.courierOrderId;
+          if (!orderId) {
+            await ctx.reply('❌ Buyurtma ma\'lumoti topilmadi. Qaytadan urinib ko\'ring.');
+            ctx.session.waitingFor = null;
+            return;
+          }
+
+          // Joylashuvni qabul qilish va API'ga yuborish
+          try {
+            const axios = require('axios');
+            const baseUrl = process.env.SERVER_URL || 'http://localhost:5000';
+            
+            let endpoint = '';
+            let action = '';
+            
+            if (waitingFor === 'courier_accept_location') {
+              endpoint = `/api/admin/orders/${orderId}/courier/accept`;
+              action = 'qabul qilish';
+            } else if (waitingFor === 'courier_pickup_location') {
+              endpoint = `/api/admin/orders/${orderId}/courier/pickup`;
+              action = 'olib ketish';
+            } else if (waitingFor === 'courier_delivered_location') {
+              endpoint = `/api/admin/orders/${orderId}/courier/delivered`;
+              action = 'yetkazish';
+            }
+
+            if (endpoint) {
+              const response = await axios.post(`${baseUrl}${endpoint}`, {
+                latitude,
+                longitude
+              }, {
+                headers: {
+                  'Authorization': `Bearer ${user.token || 'temp'}`,
+                  'Content-Type': 'application/json'
+                }
+              });
+
+              if (response.data.success) {
+                await ctx.reply(`✅ Buyurtma ${action} muvaffaqiyatli bajarildi!`, {
+                  reply_markup: { remove_keyboard: true }
+                });
+              } else if (response.data.warning) {
+                // Masofa ogohlantirishi
+                await ctx.reply(response.data.message, {
+                  reply_markup: {
+                    keyboard: [[{ text: '📍 Joylashuvni yuborish', request_location: true }]],
+                    resize_keyboard: true,
+                    one_time_keyboard: true
+                  }
+                });
+                return; // Qayta joylashuv so'rash
+              } else {
+                await ctx.reply(`❌ ${action} da xatolik: ${response.data.message}`);
+              }
+            }
+
+            // Session'ni tozalash
+            ctx.session.waitingFor = null;
+            ctx.session.courierOrderId = null;
+            
+          } catch (error) {
+            console.error('Courier location API error:', error);
+            if (error.response?.data?.warning) {
+              // Masofa ogohlantirishi
+              await ctx.reply(error.response.data.message, {
+                reply_markup: {
+                  keyboard: [[{ text: '📍 Joylashuvni yuborish', request_location: true }]],
+                  resize_keyboard: true,
+                  one_time_keyboard: true
+                }
+              });
+              return;
+            }
+            await ctx.reply('❌ Xatolik yuz berdi. Qaytadan urinib ko\'ring.');
+          }
+          return;
+        }
+
+        // 🔧 FIX: Live location tekshirish - static location qabul qilinmasin
+        if (!live_period) {
+          return ctx.reply('❌ Iltimos, **jonli lokatsiya** yuboring!\n\n📍 "Joylashuvni yuborish" tugmasini bosing va "Live Location" (jonli joylashuv) ni tanlang va "Poka ya ne otklyuchu" ni belgilang.', {
+            parse_mode: 'Markdown',
+            reply_markup: {
+              keyboard: [
+                [ { text: '📍 Joylashuvni yuborish', request_location: true } ],
+                [ { text: '⬅️ Kuryer menyusi' } ],
+              ],
             resize_keyboard: true,
           }
         });

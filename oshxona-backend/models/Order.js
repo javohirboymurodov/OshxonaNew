@@ -53,6 +53,33 @@ const orderSchema = new mongoose.Schema({
     actualTime: Date,
     courier: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
   },
+
+  // Courier flow information
+  courierFlow: {
+    assignedAt: Date,
+    acceptedAt: Date,
+    pickedUpAt: Date,
+    pickedUpLocation: {
+      latitude: Number,
+      longitude: Number
+    },
+    onWayAt: Date,
+    deliveredAt: Date,
+    deliveredLocation: {
+      latitude: Number,
+      longitude: Number
+    },
+    cancelledAt: Date,
+    cancelledLocation: {
+      latitude: Number,
+      longitude: Number
+    },
+    currentLocation: {
+      latitude: Number,
+      longitude: Number,
+      timestamp: Date
+    }
+  },
   
   // Dine-in information
   dineInInfo: {
@@ -84,7 +111,7 @@ const orderSchema = new mongoose.Schema({
   // Status
   status: { 
     type: String, 
-    enum: ['pending', 'confirmed', 'preparing', 'ready', 'assigned', 'on_delivery', 'delivered', 'picked_up', 'completed', 'cancelled', 'refunded', 'customer_arrived'], 
+    enum: ['pending', 'confirmed', 'preparing', 'ready', 'assigned', 'picked_up', 'on_delivery', 'delivered', 'completed', 'cancelled', 'refunded', 'customer_arrived'], 
     default: 'pending'
   },
   
