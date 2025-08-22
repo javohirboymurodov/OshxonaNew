@@ -666,7 +666,7 @@ async function courierCancelledOrder(req, res) {
     order.statusHistory.push({
       status: 'cancelled',
       timestamp: new Date(),
-      note: `Kuryer bekor qildi: ${reason || 'Sabab ko'rsatilmagan'}`,
+      note: `Kuryer bekor qildi: ${reason || 'Sabab ko\'rsatilmagan'}`,
       updatedBy: 'courier'
     });
     
