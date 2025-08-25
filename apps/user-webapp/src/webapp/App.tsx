@@ -77,6 +77,8 @@ export default function App() {
   },0);
 
   const sendToBot = () => {
+    console.log('🚀 Send to bot clicked');
+    
     if (!branch) {
       alert('Iltimos, filialni tanlang!');
       return;
@@ -85,14 +87,45 @@ export default function App() {
       alert('Savat bo\'sh!');
       return;
     }
-    const payload = { telegramId, branch, items: Object.entries(cart).map(([productId, quantity])=>({ productId, quantity })) };
+    
+    const payload = { 
+      telegramId, 
+      branch, 
+      items: Object.entries(cart).map(([productId, quantity])=>({ productId, quantity })) 
+    };
+    
+    console.log('📦 Payload:', payload);
+    
     try {
-      const tg = window.Telegram?.WebApp; tg?.sendData?.(JSON.stringify(payload));
-    } catch {}
+      const tg = window.Telegram?.WebApp;
+      if (tg?.sendData) {
+        tg.sendData(JSON.stringify(payload));
+      } else {
+        console.log('📱 Telegram WebApp not available, payload would be:', payload);
+        alert('Buyurtma ma\'lumotlari tayyor! (Demo rejim)');
+      }
+    } catch (error) {
+      console.error('❌ Send error:', error);
+      alert('Xatolik yuz berdi, qayta urinib ko\'ring');
+    }
   };
 
   return (
-    <div style={{ fontFamily:'system-ui, sans-serif', padding:12 }}>
+    <div style={{ fontFamily:'system-ui, sans-serif', padding:12, position: 'relative' }}>
+      <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        .button-active {
+          transform: scale(0.95);
+          transition: transform 0.1s ease;
+        }
+        .button-hover:hover {
+          opacity: 0.8;
+          transition: opacity 0.2s ease;
+        }
+      `}</style>
       <h3>🍽️ Katalog</h3>
       
       {/* Branch selection */}
@@ -112,9 +145,38 @@ export default function App() {
 
       {/* Categories */}
       <div style={{ display:'flex', gap:8, overflowX:'auto', marginBottom:12 }}>
-        <button onClick={()=>setActiveCat('all')} style={{ padding:'6px 10px', borderRadius:8, border:'1px solid #ddd', background: activeCat==='all'?'#1677ff':'#fff', color:activeCat==='all'?'#fff':'#000' }}>Barchasi</button>
+        <button 
+          onClick={()=>setActiveCat('all')} 
+          className="button-hover"
+          style={{ 
+            padding:'6px 10px', 
+            borderRadius:8, 
+            border:'1px solid #ddd', 
+            background: activeCat==='all'?'#1677ff':'#fff', 
+            color:activeCat==='all'?'#fff':'#000',
+            cursor: 'pointer',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          Barchasi
+        </button>
         {categories.map(c=> (
-          <button key={c._id} onClick={()=>setActiveCat(c._id)} style={{ padding:'6px 10px', borderRadius:8, border:'1px solid #ddd', background: activeCat===c._id?'#1677ff':'#fff', color:activeCat===c._id?'#fff':'#000' }}>{c.name}</button>
+          <button 
+            key={c._id} 
+            onClick={()=>setActiveCat(c._id)} 
+            className="button-hover"
+            style={{ 
+              padding:'6px 10px', 
+              borderRadius:8, 
+              border:'1px solid #ddd', 
+              background: activeCat===c._id?'#1677ff':'#fff', 
+              color:activeCat===c._id?'#fff':'#000',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            {c.name}
+          </button>
         ))}
       </div>
 
@@ -125,18 +187,78 @@ export default function App() {
             <div style={{ fontWeight:600 }}>{p.name}</div>
             <div style={{ color:'#666', margin:'4px 0' }}>{p.price.toLocaleString()} so'm</div>
             <div style={{ display:'flex', gap:6, alignItems:'center', justifyContent:'center' }}>
-              <button onClick={()=> setCart(prev=> ({ ...prev, [p._id]: Math.max((prev[p._id]||0)-1,0) }))} style={{ width: 30, height: 30, borderRadius: '50%', border: '1px solid #ddd', background: '#fff' }}>−</button>
-              <div style={{ minWidth: 20, textAlign: 'center' }}>{cart[p._id]||0}</div>
-              <button onClick={()=> setCart(prev=> ({ ...prev, [p._id]: (prev[p._id]||0)+1 }))} style={{ width: 30, height: 30, borderRadius: '50%', border: '1px solid #ddd', background: '#fff' }}>+</button>
+              <button 
+                onClick={(e) => {
+                  e.preventDefault();
+                  console.log(`🔻 Decrease ${p.name}`);
+                  setCart(prev => ({ ...prev, [p._id]: Math.max((prev[p._id]||0)-1,0) }));
+                }} 
+                className="button-hover"
+                style={{ 
+                  width: 30, 
+                  height: 30, 
+                  borderRadius: '50%', 
+                  border: '1px solid #ddd', 
+                  background: '#fff',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '16px',
+                  fontWeight: 'bold'
+                }}
+              >
+                −
+              </button>
+              <div style={{ minWidth: 20, textAlign: 'center', fontWeight: '600' }}>{cart[p._id]||0}</div>
+              <button 
+                onClick={(e) => {
+                  e.preventDefault();
+                  console.log(`🔺 Increase ${p.name}`);
+                  setCart(prev => ({ ...prev, [p._id]: (prev[p._id]||0)+1 }));
+                }} 
+                className="button-hover"
+                style={{ 
+                  width: 30, 
+                  height: 30, 
+                  borderRadius: '50%', 
+                  border: '1px solid #ddd', 
+                  background: '#fff',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '16px',
+                  fontWeight: 'bold'
+                }}
+              >
+                +
+              </button>
             </div>
           </div>
         ))}
       </div>
 
       {/* Fixed bottom bar */}
-      <div style={{ position:'fixed', left:0, right:0, bottom:0, padding:12, background:'#fff', borderTop:'1px solid #eee', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+      <div style={{ position:'fixed', left:0, right:0, bottom:0, padding:12, background:'#fff', borderTop:'1px solid #eee', display:'flex', justifyContent:'space-between', alignItems:'center', zIndex: 1000 }}>
         <div>🧺 Jami: <b>{total.toLocaleString()} so'm</b></div>
-        <button onClick={sendToBot} style={{ background:'#52c41a', color:'#fff', padding:'10px 14px', border:'none', borderRadius:8 }}>Buyurtma berish</button>
+        <button 
+          onClick={sendToBot} 
+          className="button-hover"
+          style={{ 
+            background:'#52c41a', 
+            color:'#fff', 
+            padding:'10px 14px', 
+            border:'none', 
+            borderRadius:8,
+            cursor: 'pointer',
+            fontWeight: '600',
+            fontSize: '14px',
+            boxShadow: '0 2px 4px rgba(82, 196, 26, 0.3)'
+          }}
+        >
+          Buyurtma berish
+        </button>
       </div>
     </div>
   )
