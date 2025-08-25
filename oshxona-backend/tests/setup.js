@@ -1,105 +1,129 @@
-// tests/setup.js
-const { MongoMemoryServer } = require('mongodb-memory-server');
-const mongoose = require('mongoose');
+// Jest Test Setup
+require('dotenv').config({ path: '.env.test' });
 
-let mongoServer;
+// Set test environment
+process.env.NODE_ENV = 'test';
+process.env.MONGODB_URI = process.env.MONGODB_URI_TEST || 'mongodb://localhost:27017/oshxona_test';
 
-// Test database setup
-beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  const mongoUri = mongoServer.getUri();
+// Mock external services during tests
+jest.mock('../services/deliveryService', () => ({
+  calculateDeliveryFee: jest.fn().mockResolvedValue(5000),
+  resolveBranchForLocation: jest.fn().mockResolvedValue({
+    branch: { _id: 'test-branch-id', name: 'Test Branch' },
+    canDeliver: true,
+    distance: 2.5
+  })
+}));
+
+jest.mock('../services/geoService', () => ({
+  getAddressFromCoordinates: jest.fn().mockResolvedValue('Test Address'),
+  validateCoordinates: jest.fn().mockReturnValue(true)
+}));
+
+// Global test utilities
+global.testUtils = {
+  // Mock user data
+  mockUser: {
+    _id: '507f1f77bcf86cd799439011',
+    telegramId: 123456789,
+    firstName: 'Test',
+    lastName: 'User',
+    phone: '+998901234567',
+    role: 'user',
+    isActive: true
+  },
   
-  await mongoose.connect(mongoUri, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  });
+  // Mock admin data
+  mockAdmin: {
+    _id: '507f1f77bcf86cd799439012',
+    telegramId: 987654321,
+    firstName: 'Test',
+    lastName: 'Admin',
+    phone: '+998907654321',
+    role: 'admin',
+    isActive: true
+  },
+  
+  // Mock product data
+  mockProduct: {
+    _id: '507f1f77bcf86cd799439013',
+    name: 'Test Pizza',
+    description: 'Test pizza description',
+    price: 45000,
+    category: '507f1f77bcf86cd799439014',
+    isActive: true,
+    isVisible: true
+  },
+  
+  // Mock category data
+  mockCategory: {
+    _id: '507f1f77bcf86cd799439014',
+    name: 'Test Category',
+    description: 'Test category description',
+    isActive: true,
+    isVisible: true
+  },
+  
+  // Mock order data
+  mockOrder: {
+    _id: '507f1f77bcf86cd799439015',
+    orderId: 'ORD-TEST-001',
+    user: '507f1f77bcf86cd799439011',
+    items: [{
+      product: '507f1f77bcf86cd799439013',
+      quantity: 2,
+      price: 45000
+    }],
+    total: 90000,
+    status: 'new',
+    orderType: 'delivery',
+    paymentMethod: 'cash'
+  },
+  
+  // JWT token for tests
+  testToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test.token',
+  
+  // Helper to create mock Telegraf context
+  createMockCtx: (overrides = {}) => ({
+    from: { id: 123456789, first_name: 'Test', last_name: 'User' },
+    session: {},
+    callbackQuery: null,
+    message: null,
+    updateType: 'message',
+    reply: jest.fn().mockResolvedValue({}),
+    replyWithPhoto: jest.fn().mockResolvedValue({}),
+    editMessageText: jest.fn().mockResolvedValue({}),
+    answerCbQuery: jest.fn().mockResolvedValue({}),
+    replyWithLocation: jest.fn().mockResolvedValue({}),
+    ...overrides
+  }),
+  
+  // Helper to wait for async operations
+  waitFor: (ms = 100) => new Promise(resolve => setTimeout(resolve, ms))
+};
+
+// Console suppression during tests
+const originalConsoleLog = console.log;
+const originalConsoleError = console.error;
+const originalConsoleWarn = console.warn;
+
+beforeAll(() => {
+  // Suppress console output during tests unless VERBOSE=true
+  if (!process.env.VERBOSE) {
+    console.log = jest.fn();
+    console.error = jest.fn();
+    console.warn = jest.fn();
+  }
+});
+
+afterAll(() => {
+  // Restore console output
+  console.log = originalConsoleLog;
+  console.error = originalConsoleError;
+  console.warn = originalConsoleWarn;
 });
 
 // Clean up after each test
-afterEach(async () => {
-  const collections = mongoose.connection.collections;
-  for (const key in collections) {
-    const collection = collections[key];
-    await collection.deleteMany({});
-  }
+afterEach(() => {
+  jest.clearAllMocks();
 });
-
-// Close database connection after tests
-afterAll(async () => {
-  await mongoose.connection.dropDatabase();
-  await mongoose.connection.close();
-  await mongoServer.stop();
-});
-
-// Global test utilities
-global.createTestUser = async (userData = {}) => {
-  const User = require('../models/User');
-  const defaultUser = {
-    firstName: 'Test',
-    lastName: 'User',
-    telegramId: Math.floor(Math.random() * 1000000),
-    phone: '+998901234567',
-    role: 'user',
-    ...userData
-  };
-  
-  return await User.create(defaultUser);
-};
-
-global.createTestBranch = async (branchData = {}) => {
-  const Branch = require('../models/Branch');
-  const defaultBranch = {
-    name: 'Test Branch',
-    address: 'Test Address',
-    phone: '+998901234567',
-    isActive: true,
-    ...branchData
-  };
-  
-  return await Branch.create(defaultBranch);
-};
-
-global.createTestProduct = async (productData = {}) => {
-  const Product = require('../models/Product');
-  const Category = require('../models/Category');
-  
-  // Create default category if needed
-  let category = await Category.findOne();
-  if (!category) {
-    category = await Category.create({
-      name: 'Test Category',
-      isActive: true
-    });
-  }
-  
-  const defaultProduct = {
-    name: 'Test Product',
-    price: 10000,
-    categoryId: category._id,
-    isActive: true,
-    ...productData
-  };
-  
-  return await Product.create(defaultProduct);
-};
-
-// Mock JWT for tests
-global.mockAuthToken = (user) => {
-  const jwt = require('jsonwebtoken');
-  return jwt.sign(
-    { 
-      userId: user._id, 
-      role: user.role,
-      branchId: user.branch 
-    },
-    process.env.JWT_SECRET || 'test-secret',
-    { expiresIn: '1h' }
-  );
-};
-
-// Console output control for tests
-if (process.env.NODE_ENV === 'test') {
-  console.log = jest.fn();
-  console.error = jest.fn();
-  console.warn = jest.fn();
-}
