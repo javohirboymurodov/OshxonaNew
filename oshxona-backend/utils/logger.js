@@ -1,167 +1,130 @@
-const fs = require('fs');
+// utils/logger.js
+const winston = require('winston');
+const DailyRotateFile = require('winston-daily-rotate-file');
 const path = require('path');
-const moment = require('moment');
 
-class Logger {
-  constructor() {
-    this.logsDir = path.join(__dirname, '../logs');
-    this.createLogsDir();
-  }
-  
-  createLogsDir() {
-    if (!fs.existsSync(this.logsDir)) {
-      fs.mkdirSync(this.logsDir, { recursive: true });
-    }
-  }
-  
-  getLogFileName(type = 'app') {
-    const date = moment().format('YYYY-MM-DD');
-    return path.join(this.logsDir, `${type}-${date}.log`);
-  }
-  
-  writeLog(level, message, data = null) {
-    const timestamp = moment().format('YYYY-MM-DD HH:mm:ss');
-    const logEntry = {
-      timestamp,
-      level: level.toUpperCase(),
-      message,
-      data
-    };
-    
-    const logString = JSON.stringify(logEntry) + '\n';
-    
-    // Console ga chiqarish
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[${timestamp}] ${level.toUpperCase()}: ${message}`, data || '');
-    }
-    
-    // Faylga yozish
-    try {
-      fs.appendFileSync(this.getLogFileName(), logString);
-    } catch (error) {
-      console.error('Log write error:', error);
-    }
-  }
-  
-  info(message, data = null) {
-    this.writeLog('info', message, data);
-  }
-  
-  error(message, data = null) {
-    this.writeLog('error', message, data);
-    
-    // Error loglarini alohida faylga ham yozish
-    try {
-      const errorLogString = JSON.stringify({
-        timestamp: moment().format('YYYY-MM-DD HH:mm:ss'),
-        message,
-        data,
-        stack: data?.stack || null
-      }) + '\n';
-      
-      fs.appendFileSync(this.getLogFileName('error'), errorLogString);
-    } catch (err) {
-      console.error('Error log write failed:', err);
-    }
-  }
-  
-  warn(message, data = null) {
-    this.writeLog('warn', message, data);
-  }
-  
-  debug(message, data = null) {
-    if (process.env.NODE_ENV === 'development') {
-      this.writeLog('debug', message, data);
-    }
-  }
-  
-  // Foydalanuvchi faoliyatini loglash
-  logUserActivity(userId, action, details = null) {
-    this.info(`User activity: ${action}`, {
-      userId,
-      action,
-      details,
-      timestamp: moment().toISOString()
-    });
-    
-    // User activity loglarini alohida faylga yozish
-    try {
-      const activityLog = JSON.stringify({
-        timestamp: moment().format('YYYY-MM-DD HH:mm:ss'),
-        userId,
-        action,
-        details
-      }) + '\n';
-      
-      fs.appendFileSync(this.getLogFileName('activity'), activityLog);
-    } catch (error) {
-      console.error('Activity log write error:', error);
-    }
-  }
-  
-  // Buyurtma logini yozish
-  logOrder(orderId, action, userId, details = null) {
-    const logData = {
-      orderId,
-      action,
-      userId,
-      details,
-      timestamp: moment().toISOString()
-    };
-    
-    this.info(`Order ${action}: ${orderId}`, logData);
-    
-    try {
-      const orderLog = JSON.stringify({
-        timestamp: moment().format('YYYY-MM-DD HH:mm:ss'),
-        ...logData
-      }) + '\n';
-      
-      fs.appendFileSync(this.getLogFileName('orders'), orderLog);
-    } catch (error) {
-      console.error('Order log write error:', error);
-    }
-  }
-  
-  // Xatoliklarni loglash
-  logError(error, context = null) {
-    const errorData = {
-      message: error.message,
-      stack: error.stack,
-      context,
-      timestamp: moment().toISOString()
-    };
-    
-    this.error('Application error', errorData);
-  }
-  
-  // Eski loglarni tozalash (30 kundan eski)
-  cleanOldLogs() {
-    try {
-      const files = fs.readdirSync(this.logsDir);
-      const thirtyDaysAgo = moment().subtract(30, 'days');
-      
-      files.forEach(file => {
-        const filePath = path.join(this.logsDir, file);
-        const stats = fs.statSync(filePath);
-        
-        if (moment(stats.mtime).isBefore(thirtyDaysAgo)) {
-          fs.unlinkSync(filePath);
-          this.info(`Deleted old log file: ${file}`);
-        }
-      });
-    } catch (error) {
-      console.error('Clean old logs error:', error);
-    }
-  }
+// Log levels
+const levels = {
+  error: 0,
+  warn: 1,
+  info: 2,
+  http: 3,
+  debug: 4,
+};
+
+// Log colors
+const colors = {
+  error: 'red',
+  warn: 'yellow',
+  info: 'green',
+  http: 'magenta',
+  debug: 'white',
+};
+
+winston.addColors(colors);
+
+// Custom format
+const format = winston.format.combine(
+  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
+  winston.format.colorize({ all: true }),
+  winston.format.printf(
+    (info) => `${info.timestamp} ${info.level}: ${info.message}`
+  ),
+);
+
+// Console transport for development
+const consoleTransport = new winston.transports.Console({
+  format: winston.format.combine(
+    winston.format.colorize(),
+    winston.format.simple()
+  )
+});
+
+// File transports
+const errorFileTransport = new DailyRotateFile({
+  filename: path.join(__dirname, '../logs/error-%DATE%.log'),
+  datePattern: 'YYYY-MM-DD',
+  level: 'error',
+  maxSize: '20m',
+  maxFiles: '14d',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json()
+  )
+});
+
+const combinedFileTransport = new DailyRotateFile({
+  filename: path.join(__dirname, '../logs/combined-%DATE%.log'),
+  datePattern: 'YYYY-MM-DD',
+  maxSize: '20m',
+  maxFiles: '14d',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json()
+  )
+});
+
+// Create logs directory if it doesn't exist
+const fs = require('fs');
+const logsDir = path.join(__dirname, '../logs');
+if (!fs.existsSync(logsDir)) {
+  fs.mkdirSync(logsDir, { recursive: true });
 }
 
-// Singleton pattern
-const logger = new Logger();
+// Create logger instance
+const logger = winston.createLogger({
+  level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+  levels,
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.errors({ stack: true }),
+    winston.format.json()
+  ),
+  defaultMeta: { service: 'oshxona-backend' },
+  transports: [
+    errorFileTransport,
+    combinedFileTransport
+  ],
+});
 
-// Har kun eski loglarni tozalash
-setInterval(() => {
-  logger.cleanOldLogs();
-}, 24 * 60 * 60 * 1000); // 24 soat
+// Add console transport in development
+if (process.env.NODE_ENV !== 'production') {
+  logger.add(consoleTransport);
+}
+
+// HTTP request logging
+logger.http = (message, meta = {}) => {
+  logger.log('http', message, meta);
+};
+
+// Bot activity logging
+logger.bot = (message, meta = {}) => {
+  logger.info(`[BOT] ${message}`, meta);
+};
+
+// Database activity logging
+logger.db = (message, meta = {}) => {
+  logger.info(`[DB] ${message}`, meta);
+};
+
+// API activity logging
+logger.api = (message, meta = {}) => {
+  logger.info(`[API] ${message}`, meta);
+};
+
+// Socket activity logging
+logger.socket = (message, meta = {}) => {
+  logger.info(`[SOCKET] ${message}`, meta);
+};
+
+// Authentication logging
+logger.auth = (message, meta = {}) => {
+  logger.info(`[AUTH] ${message}`, meta);
+};
+
+// Security logging
+logger.security = (message, meta = {}) => {
+  logger.warn(`[SECURITY] ${message}`, meta);
+};
 
 module.exports = logger;
