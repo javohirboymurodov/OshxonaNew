@@ -102,11 +102,12 @@ function registerUserCallbacks(bot) {
   // Savat va Aksiyalar
   bot.action('show_cart', async (ctx) => {
     try {
+      await ctx.answerCbQuery();
       const { showCart } = require('../handlers/user/cart');
       await showCart(ctx);
     } catch (e) {
       console.error('show_cart error', e);
-      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Savatni ochib bo\'lmadi');
+      try { await ctx.answerCbQuery('❌ Savatni ochib bo\'lmadi'); } catch {}
     }
   });
 
