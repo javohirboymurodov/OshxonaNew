@@ -69,27 +69,17 @@ async function handleTextMessage(ctx, text) {
       }
       return await require('./order').askForPhone(ctx);
     }
-    // 🔧 Reply keyboard matnlarini boshqarish (main menu)
-    const plain = (messageText || '').replace(/\s+/g, ' ').trim();
-    if (plain) {
-      const isHome = /Asosiy sahifa/i.test(plain);
-      const isMyOrders = /Mening buyurtmalarim/i.test(plain) || /Buyurtmalarim/i.test(plain);
-      const isProfile = /Profil/i.test(plain);
-      if (isHome) {
-        const { startHandler } = require('./profile');
-        await startHandler(ctx);
-        return;
-      }
-      if (isMyOrders) {
-        const { showMyOrders } = require('./myOrders');
-        await showMyOrders(ctx);
-        return;
-      }
-      if (isProfile) {
-        const { showProfile } = require('./profile');
-        await showProfile(ctx);
-        return;
-      }
+    // Remove persistent reply keyboard if exists
+    if (messageText && messageText.match(/Asosiy sahifa|Mening buyurtmalarim|Profil/i)) {
+      // These are old reply keyboard texts, ignore them
+      await ctx.reply('Iltimos, pastdagi tugmalardan foydalaning:', {
+        reply_markup: { remove_keyboard: true }
+      });
+      
+      // Show main menu
+      const { mainMenuKeyboard } = require('../user/keyboards');
+      await ctx.reply('📋 Asosiy menyu:', mainMenuKeyboard);
+      return;
     }
 
     if (waitingFor) {
@@ -154,11 +144,81 @@ async function handlePhoneInput(ctx, phone) {
       user.phone = formattedPhone;
     }
     await user.save();
+    
+    // Process referral if exists and user is new
+    if (!user.phone && ctx.session.referralCode) {
+      try {
+        const LoyaltyService = require('../../../services/loyaltyService');
+        const referrerId = ctx.session.referralCode.replace('ref_', '');
+        const success = await LoyaltyService.processReferral(referrerId, user._id);
+        if (success) {
+          await ctx.reply(
+            '🎉 **Tabriklaymiz!**\n\n' +
+            '👥 Siz referral orqali qo\'shildingiz!\n' +
+            '🎁 Sizga 5,000 bonus ball berildi\n' +
+            '💎 Do\'stingiz ham 3,000 ball oldi\n\n' +
+            '🛒 Endi buyurtma berishingiz mumkin!',
+            { parse_mode: 'Markdown' }
+          );
+        }
+        ctx.session.referralCode = null;
+      } catch (referralError) {
+        console.error('Referral processing error:', referralError);
+      }
+    }
+    
     ctx.session.user = user;
     ctx.session.orderData = ctx.session.orderData || {};
     ctx.session.orderData.phone = formattedPhone;
     ctx.session.waitingFor = null;
-    // Keraksiz bo'sh xabar yubormaymiz; to'g'ridan-to'g'ri startHandler
+    
+    // Check if user was changing phone from profile
+    if (ctx.session.changingPhone) {
+      ctx.session.changingPhone = false;
+      await ctx.reply('✅ Telefon raqam muvaffaqiyatli o\'zgartirildi!', {
+        reply_markup: { remove_keyboard: true }
+      });
+      
+      // Return to profile
+      setTimeout(async () => {
+        try {
+          const { User } = require('../../../models');
+          const updatedUser = await User.findOne({ telegramId: ctx.from.id });
+          if (updatedUser) {
+            const stats = updatedUser.stats || { totalOrders: 0, totalSpent: 0 };
+            const loyalty = updatedUser.loyaltyPoints || 0;
+            const level = updatedUser.loyaltyLevel || 'STARTER';
+            
+            const profileText = `👤 **Profil ma'lumotlari**\n\n` +
+              `📝 **Ism:** ${updatedUser.firstName} ${updatedUser.lastName || ''}\n` +
+              `📞 **Telefon:** ${updatedUser.phone || 'Kiritilmagan'}\n` +
+              `🌐 **Til:** ${updatedUser.language || 'uz'}\n\n` +
+              `📊 **Statistika:**\n` +
+              `   🛒 Buyurtmalar: ${stats.totalOrders}\n` +
+              `   💰 Xarajat: ${stats.totalSpent.toLocaleString()} so'm\n` +
+              `   💎 Loyalty: ${loyalty.toLocaleString()} ball\n` +
+              `   🏆 Daraja: ${level}`;
+              
+            await ctx.reply(profileText, {
+              parse_mode: 'Markdown',
+              reply_markup: { 
+                inline_keyboard: [
+                  [{ text: '📞 Telefon o\'zgartirish', callback_data: 'change_phone' }],
+                  [{ text: '🌐 Tilni o\'zgartirish', callback_data: 'change_language' }],
+                  [{ text: '💎 Loyalty dasturi', callback_data: 'my_loyalty_level' }],
+                  [{ text: '🔙 Bosh sahifa', callback_data: 'back_to_main' }]
+                ] 
+              }
+            });
+          }
+        } catch (error) {
+          console.error('❌ Profile refresh error:', error);
+        }
+      }, 1000);
+      return;
+    }
+    
+    // Normal flow - show main menu
     await require('./profile').startHandler(ctx);
   } catch (error) {
     console.error('Handle phone input error:', error);

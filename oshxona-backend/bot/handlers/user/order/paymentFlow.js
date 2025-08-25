@@ -2,6 +2,8 @@
 const { User, Cart, Order } = require('../../../../models');
 const { paymentMethodKeyboard, orderConfirmKeyboard } = require('../../../user/keyboards');
 const BaseHandler = require('../../../../utils/BaseHandler');
+const LoyaltyService = require('../../../../services/loyaltyService');
+const orderTracker = require('../../../../services/orderTrackingService');
 
 /**
  * Payment Flow Handler - to'lov jarayonini boshqarish
@@ -281,6 +283,41 @@ class PaymentFlow extends BaseHandler {
       cart.isActive = false;
       await cart.save();
 
+      // Start order tracking
+      orderTracker.trackOrder(order._id.toString(), user._id.toString());
+      
+      // Update order status to confirmed and notify
+      setTimeout(async () => {
+        await orderTracker.updateOrderStatus(order._id.toString(), 'confirmed', {
+          prepTime: 20,
+          message: 'Buyurtmangiz qabul qilindi va tayyorlash boshlandi'
+        });
+      }, 2000);
+
+      // Process loyalty points for completed order
+      let loyaltyUpdate = null;
+      try {
+        // Calculate and award loyalty points
+        const earnedPoints = await LoyaltyService.calculatePoints(order.total, user._id);
+        
+        // Update user stats and points
+        user.loyaltyPoints += earnedPoints;
+        user.stats.totalOrders += 1;
+        user.stats.totalSpent += order.total;
+        user.stats.lastOrderDate = new Date();
+        await user.save();
+
+        // Check for level updates
+        loyaltyUpdate = await LoyaltyService.updateUserLoyaltyLevel(user._id);
+
+        // Check for birthday bonus
+        await LoyaltyService.checkBirthdayBonus(user._id);
+
+        console.log(`✅ Loyalty points processed: ${earnedPoints} points earned`);
+      } catch (loyaltyError) {
+        console.error('❌ Loyalty points processing error:', loyaltyError);
+      }
+
       // Prepare flags before clearing session
       const isDineInOrder = String(order.orderType) === 'dine_in' || String(order.orderType) === 'dine_in_qr' || String(order.orderType) === 'table';
 
@@ -289,8 +326,20 @@ class PaymentFlow extends BaseHandler {
       ctx.session.orderType = null;
       ctx.session.waitingFor = null;
 
-      // Success message
-      const message = `✅ **Buyurtma qabul qilindi!**\n\n📦 Buyurtma raqami: ${order.orderId}\n💰 Jami: ${order.total.toLocaleString()} so'm\n\nTez orada sizga aloqaga chiqamiz!`;
+      // Success message with loyalty info
+      let message = `✅ **Buyurtma qabul qilindi!**\n\n📦 Buyurtma raqami: ${order.orderId}\n💰 Jami: ${order.total.toLocaleString()} so'm`;
+      
+      // Add loyalty points info
+      if (loyaltyUpdate && user.loyaltyPoints > 0) {
+        const earnedPoints = await LoyaltyService.calculatePoints(order.total, user._id);
+        message += `\n\n🎉 **Loyalty bonusi:**\n💎 +${earnedPoints} ball olishingiz\n💰 Jami ballaringiz: ${user.loyaltyPoints.toLocaleString()}`;
+        
+        if (loyaltyUpdate.levelUp) {
+          message += `\n🏆 Tabriklaymiz! ${loyaltyUpdate.newLevel} darajasiga ko'tarildingiz!`;
+        }
+      }
+      
+      message += `\n\nTez orada sizga aloqaga chiqamiz!`;
 
       const extraButtons = isDineInOrder
         ? [[{ text: '🏁 Keldim (stol raqami)', callback_data: 'dinein_arrived_preview' }]]

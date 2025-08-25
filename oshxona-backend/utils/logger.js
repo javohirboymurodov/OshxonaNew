@@ -1,130 +1,113 @@
-// utils/logger.js
-const winston = require('winston');
-const DailyRotateFile = require('winston-daily-rotate-file');
+const fs = require('fs');
 const path = require('path');
 
-// Log levels
-const levels = {
-  error: 0,
-  warn: 1,
-  info: 2,
-  http: 3,
-  debug: 4,
-};
+/**
+ * Simple logger utility for the application
+ */
 
-// Log colors
-const colors = {
-  error: 'red',
-  warn: 'yellow',
-  info: 'green',
-  http: 'magenta',
-  debug: 'white',
-};
+class Logger {
+  constructor() {
+    this.logDir = path.join(__dirname, '../logs');
+    this.ensureLogDir();
+  }
 
-winston.addColors(colors);
+  ensureLogDir() {
+    if (!fs.existsSync(this.logDir)) {
+      fs.mkdirSync(this.logDir, { recursive: true });
+    }
+  }
 
-// Custom format
-const format = winston.format.combine(
-  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
-  winston.format.colorize({ all: true }),
-  winston.format.printf(
-    (info) => `${info.timestamp} ${info.level}: ${info.message}`
-  ),
-);
+  formatMessage(level, message, meta = {}) {
+    const timestamp = new Date().toISOString();
+    const metaStr = Object.keys(meta).length > 0 ? `\n${JSON.stringify(meta, null, 2)}` : '';
+    return `[${timestamp}] ${level.toUpperCase()}: ${message}${metaStr}`;
+  }
 
-// Console transport for development
-const consoleTransport = new winston.transports.Console({
-  format: winston.format.combine(
-    winston.format.colorize(),
-    winston.format.simple()
-  )
-});
+  writeToFile(filename, content) {
+    try {
+      const filePath = path.join(this.logDir, filename);
+      fs.appendFileSync(filePath, content + '\n');
+    } catch (error) {
+      console.error('Failed to write to log file:', error);
+    }
+  }
 
-// File transports
-const errorFileTransport = new DailyRotateFile({
-  filename: path.join(__dirname, '../logs/error-%DATE%.log'),
-  datePattern: 'YYYY-MM-DD',
-  level: 'error',
-  maxSize: '20m',
-  maxFiles: '14d',
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.json()
-  )
-});
+  info(message, meta = {}) {
+    const formatted = this.formatMessage('info', message, meta);
+    console.log(`ℹ️  ${formatted}`);
+    this.writeToFile('app.log', formatted);
+  }
 
-const combinedFileTransport = new DailyRotateFile({
-  filename: path.join(__dirname, '../logs/combined-%DATE%.log'),
-  datePattern: 'YYYY-MM-DD',
-  maxSize: '20m',
-  maxFiles: '14d',
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.json()
-  )
-});
+  warn(message, meta = {}) {
+    const formatted = this.formatMessage('warn', message, meta);
+    console.warn(`⚠️  ${formatted}`);
+    this.writeToFile('app.log', formatted);
+  }
 
-// Create logs directory if it doesn't exist
-const fs = require('fs');
-const logsDir = path.join(__dirname, '../logs');
-if (!fs.existsSync(logsDir)) {
-  fs.mkdirSync(logsDir, { recursive: true });
+  error(message, meta = {}) {
+    const formatted = this.formatMessage('error', message, meta);
+    console.error(`❌ ${formatted}`);
+    this.writeToFile('error.log', formatted);
+    this.writeToFile('app.log', formatted);
+  }
+
+  debug(message, meta = {}) {
+    if (process.env.NODE_ENV === 'development') {
+      const formatted = this.formatMessage('debug', message, meta);
+      console.log(`🐛 ${formatted}`);
+      this.writeToFile('debug.log', formatted);
+    }
+  }
+
+  // Telegram specific logging
+  telegram(message, meta = {}) {
+    const formatted = this.formatMessage('telegram', message, meta);
+    console.log(`📱 ${formatted}`);
+    this.writeToFile('telegram.log', formatted);
+  }
+
+  // Database specific logging
+  database(message, meta = {}) {
+    const formatted = this.formatMessage('database', message, meta);
+    console.log(`🗄️  ${formatted}`);
+    this.writeToFile('database.log', formatted);
+  }
+
+  // API specific logging
+  api(message, meta = {}) {
+    const formatted = this.formatMessage('api', message, meta);
+    console.log(`🌐 ${formatted}`);
+    this.writeToFile('api.log', formatted);
+  }
+
+  // Performance logging
+  performance(message, meta = {}) {
+    const formatted = this.formatMessage('performance', message, meta);
+    console.log(`⚡ ${formatted}`);
+    this.writeToFile('performance.log', formatted);
+  }
+
+  // Log cleanup (optional - removes old logs)
+  cleanup(daysToKeep = 7) {
+    try {
+      const files = fs.readdirSync(this.logDir);
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
+
+      files.forEach(file => {
+        const filePath = path.join(this.logDir, file);
+        const stats = fs.statSync(filePath);
+        
+        if (stats.mtime < cutoffDate) {
+          fs.unlinkSync(filePath);
+          console.log(`Cleaned up old log file: ${file}`);
+        }
+      });
+    } catch (error) {
+      console.error('Log cleanup failed:', error);
+    }
+  }
 }
 
-// Create logger instance
-const logger = winston.createLogger({
-  level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
-  levels,
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.errors({ stack: true }),
-    winston.format.json()
-  ),
-  defaultMeta: { service: 'oshxona-backend' },
-  transports: [
-    errorFileTransport,
-    combinedFileTransport
-  ],
-});
-
-// Add console transport in development
-if (process.env.NODE_ENV !== 'production') {
-  logger.add(consoleTransport);
-}
-
-// HTTP request logging
-logger.http = (message, meta = {}) => {
-  logger.log('http', message, meta);
-};
-
-// Bot activity logging
-logger.bot = (message, meta = {}) => {
-  logger.info(`[BOT] ${message}`, meta);
-};
-
-// Database activity logging
-logger.db = (message, meta = {}) => {
-  logger.info(`[DB] ${message}`, meta);
-};
-
-// API activity logging
-logger.api = (message, meta = {}) => {
-  logger.info(`[API] ${message}`, meta);
-};
-
-// Socket activity logging
-logger.socket = (message, meta = {}) => {
-  logger.info(`[SOCKET] ${message}`, meta);
-};
-
-// Authentication logging
-logger.auth = (message, meta = {}) => {
-  logger.info(`[AUTH] ${message}`, meta);
-};
-
-// Security logging
-logger.security = (message, meta = {}) => {
-  logger.warn(`[SECURITY] ${message}`, meta);
-};
-
-module.exports = logger;
+// Export singleton instance
+module.exports = new Logger();

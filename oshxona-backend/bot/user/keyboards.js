@@ -2,10 +2,12 @@ const { Markup } = require('telegraf');
 
 const mainMenuKeyboard = Markup.inlineKeyboard([
   [Markup.button.callback('📝 Buyurtma berish', 'start_order')],
+  [Markup.button.callback('⚡ Tezkor buyurtma', 'quick_order'), Markup.button.callback('❤️ Sevimlilar', 'show_favorites')],
   [Markup.button.callback('🏪 Filiallar', 'show_branches')],
   [Markup.button.callback('📱 Bog\'lanish', 'contact'), Markup.button.callback('ℹ️ Ma\'lumot', 'about')],
   [Markup.button.callback('🛒 Savat', 'show_cart'), Markup.button.callback('👤 Mening profilim', 'my_profile')],
-  [Markup.button.callback('📋 Mening buyurtmalarim', 'my_orders')]
+  [Markup.button.callback('📋 Mening buyurtmalarim', 'my_orders')],
+  [Markup.button.callback('💎 Loyalty dasturi', 'my_loyalty_level')]
 ]);
 
 function categoriesKeyboard(categories) {

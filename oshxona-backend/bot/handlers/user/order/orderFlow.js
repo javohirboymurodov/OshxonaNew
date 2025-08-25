@@ -102,7 +102,7 @@ class OrderFlow extends BaseHandler {
    * @param {Object} ctx - Telegraf context
    */
   static async handleDeliveryFlow(ctx) {
-    try {
+    return this.safeExecute(async () => {
       console.log('=== Starting delivery flow ===');
       
       // Location so'rash
@@ -112,31 +112,30 @@ class OrderFlow extends BaseHandler {
         parse_mode: 'Markdown',
         reply_markup: {
           inline_keyboard: [
-            // Telegram inline callback bilan real-time location yuborib bo'lmaydi.
-            // Foydalanuvchiga ko'rsatma va reply keyboard orqali location so'raymiz.
+            [{ text: '✍️ Manzilni yozish', callback_data: 'enter_address_text' }],
             [{ text: '🔙 Orqaga', callback_data: 'start_order' }]
           ]
         }
       });
       
       // Reply keyboard orqali real location so'rash
-      try {
-        await ctx.reply('📍 Joylashuvingizni yuboring:', {
-          reply_markup: {
-            keyboard: [[{ text: '📍 Joylashuvni yuborish', request_location: true }]],
-            resize_keyboard: true,
-            one_time_keyboard: false, // Har doim ko'rinib turishi uchun
-            is_persistent: true // Persistent keyboard
-          }
-        });
-      } catch {}
+      await ctx.reply('📍 Joylashuvingizni yuboring yoki manzilni yozing:', {
+        reply_markup: {
+          keyboard: [
+            [{ text: '📍 Joylashuvni yuborish', request_location: true }],
+            [{ text: '🔙 Bekor qilish' }]
+          ],
+          resize_keyboard: true,
+          one_time_keyboard: false,
+          is_persistent: false
+        }
+      });
       
       ctx.session.waitingFor = 'delivery_location';
-    } catch (error) {
-      console.error('Delivery flow error:', error);
-      await ctx.answerCbQuery('❌ Yetkazib berish oqimida xatolik!');
-    }
-  }
+      ctx.session.step = 'awaiting_location';
+      
+      console.log('✅ Delivery flow started, waiting for location');
+    }, ctx, '❌ Yetkazib berish oqimida xatolik!');
 
   /**
    * Pickup flow

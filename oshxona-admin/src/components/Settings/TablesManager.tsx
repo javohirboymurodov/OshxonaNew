@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Card, Button, Table, Space, Modal, Form, InputNumber, Input, message, Select } from 'antd';
-import { PlusOutlined, DeleteOutlined, FilePdfOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Card, Button, Table, Space, Modal, Form, InputNumber, Input, message, Select, Row, Col } from 'antd';
+import { PlusOutlined, DeleteOutlined, FilePdfOutlined, ReloadOutlined, FilterOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { TableItem } from './types';
 import apiService from '@/services/api';
@@ -13,11 +13,17 @@ const TablesManager: React.FC = () => {
   const [items, setItems] = useState<TableItem[]>([]);
   const [pagination, setPagination] = useState({ page: 1, pageSize: 20, total: 0 });
   const [branches, setBranches] = useState<Array<{ _id: string; name: string }>>([]);
+  const [selectedBranch, setSelectedBranch] = useState<string>('');
 
-  const fetchTables = async (page = 1, pageSize = 20) => {
+  const fetchTables = async (page = 1, pageSize = 20, branchFilter?: string) => {
     setLoading(true);
     try {
-      const data = await apiService.getTables({ page, limit: pageSize }) as unknown as { items?: TableItem[]; pagination?: { total?: number; page?: number; pageSize?: number } };
+      const params: any = { page, limit: pageSize };
+      if (branchFilter) {
+        params.branch = branchFilter;
+      }
+      
+      const data = await apiService.getTables(params) as unknown as { items?: TableItem[]; pagination?: { total?: number; page?: number; pageSize?: number } };
       const list: TableItem[] = (data?.items ?? []);
       const pag = (data?.pagination ?? { total: list.length, page, pageSize });
       setItems(list);
@@ -39,11 +45,20 @@ const TablesManager: React.FC = () => {
       } catch {
         // ignore
       }
-      await fetchTables(1, pagination.pageSize);
+      await fetchTables(1, pagination.pageSize, selectedBranch);
     };
     init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [selectedBranch]);
+
+  const handleBranchChange = (value: string) => {
+    setSelectedBranch(value);
+    setPagination(prev => ({ ...prev, page: 1 }));
+  };
+
+  const handleRefresh = () => {
+    fetchTables(pagination.page, pagination.pageSize, selectedBranch);
+  };
 
   const handleCreate = async (): Promise<void> => {
     try {
