@@ -227,7 +227,15 @@ function registerUserCallbacks(bot) {
   });
   
   // Filiallar
-  bot.action('show_branches', async (ctx) => { await CatalogHandlers.showBranches(ctx, 1); });
+  bot.action('show_branches', async (ctx) => {
+    try {
+      await ctx.answerCbQuery();
+      await CatalogHandlers.showBranches(ctx, 1);
+    } catch (e) {
+      console.error('show_branches error', e);
+      try { await ctx.answerCbQuery('❌ Xatolik yuz berdi!'); } catch {}
+    }
+  });
   // Branch tanlash va tafsilotlar (nearest/branch_<id>)
   bot.action(/^branch_.+$/, async (ctx) => { 
     try {
@@ -364,10 +372,12 @@ function registerUserCallbacks(bot) {
   // Bog'lanish
   bot.action('contact', async (ctx) => {
     try {
+      await ctx.answerCbQuery();
       const { contactKeyboard } = require('../user/keyboards');
       await ctx.reply('📞 Aloqa maʼlumotlari:', { reply_markup: contactKeyboard.reply_markup || contactKeyboard });
     } catch (e) {
       console.error('contact error:', e);
+      try { await ctx.answerCbQuery('❌ Xatolik yuz berdi!'); } catch {}
     }
   });
 
