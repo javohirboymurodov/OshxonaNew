@@ -69,27 +69,17 @@ async function handleTextMessage(ctx, text) {
       }
       return await require('./order').askForPhone(ctx);
     }
-    // 🔧 Reply keyboard matnlarini boshqarish (main menu)
-    const plain = (messageText || '').replace(/\s+/g, ' ').trim();
-    if (plain) {
-      const isHome = /Asosiy sahifa/i.test(plain);
-      const isMyOrders = /Mening buyurtmalarim/i.test(plain) || /Buyurtmalarim/i.test(plain);
-      const isProfile = /Profil/i.test(plain);
-      if (isHome) {
-        const { startHandler } = require('./profile');
-        await startHandler(ctx);
-        return;
-      }
-      if (isMyOrders) {
-        const { showMyOrders } = require('./myOrders');
-        await showMyOrders(ctx);
-        return;
-      }
-      if (isProfile) {
-        const { showProfile } = require('./profile');
-        await showProfile(ctx);
-        return;
-      }
+    // Remove persistent reply keyboard if exists
+    if (messageText && messageText.match(/Asosiy sahifa|Mening buyurtmalarim|Profil/i)) {
+      // These are old reply keyboard texts, ignore them
+      await ctx.reply('Iltimos, pastdagi tugmalardan foydalaning:', {
+        reply_markup: { remove_keyboard: true }
+      });
+      
+      // Show main menu
+      const { mainMenuKeyboard } = require('../user/keyboards');
+      await ctx.reply('📋 Asosiy menyu:', mainMenuKeyboard);
+      return;
     }
 
     if (waitingFor) {

@@ -337,14 +337,7 @@ Buyurtma №: ${order.orderId}`;
 
         console.log('=== Location processed successfully ===');
         
-        // Remove keyboard first
-        try {
-          await ctx.reply('✅ Joylashuv qabul qilindi!', { 
-            reply_markup: { remove_keyboard: true } 
-          });
-        } catch {}
-
-        // Show product selection options
+        // Show product selection options with location confirmation
         await ctx.reply('🎯 **Joylashuv qabul qilindi!**\n\nEndi mahsulotlarni tanlang:', {
           parse_mode: 'Markdown',
           reply_markup: {
@@ -365,11 +358,13 @@ Buyurtma №: ${order.orderId}`;
         ctx.session.orderData.location = { latitude, longitude };
         ctx.session.orderData.address = 'GPS joylashuv';
         
-        await ctx.reply('✅ Joylashuv qabul qilindi!\n\nEndi mahsulotlarni tanlang:', {
+        await ctx.reply('✅ **Joylashuv qabul qilindi!**\n\nEndi mahsulotlarni tanlang:', {
+          parse_mode: 'Markdown',
           reply_markup: {
             inline_keyboard: [
               [{ text: '🛒 Tezkor buyurtma', callback_data: 'quick_order' }],
               [{ text: '📋 Katalog', callback_data: 'show_catalog' }],
+              [{ text: '🎉 Aksiyalar', callback_data: 'show_promotions' }],
               [{ text: '🔙 Orqaga', callback_data: 'start_order' }]
             ]
           }

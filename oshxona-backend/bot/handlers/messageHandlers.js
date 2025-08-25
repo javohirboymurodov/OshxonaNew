@@ -50,13 +50,24 @@ function registerMessageHandlers(bot) {
       // Agar bu foydalanuvchi buyurtma (delivery) oqimida bo'lsa — lokatsiyani buyurtma uchun qabul qilamiz
       const wf = ctx.session?.waitingFor;
       if (user.role !== 'courier' && (wf === 'delivery_location' || wf === 'branch_location')) {
-        // Avval foydalanuvchiga tasdiq xabari va keyboardni yopish
-        try { await ctx.reply('✅ Joylashuv qabul qilindi.', { reply_markup: { remove_keyboard: true } }); } catch {}
+        // Remove keyboard first
+        try { 
+          await ctx.reply('✅ Joylashuv qabul qilindi.', { 
+            reply_markup: { remove_keyboard: true } 
+          }); 
+        } catch {}
+        
         if (wf === 'delivery_location') {
-          const Orders = require('./user/order/index');
-          await Orders.processLocation(ctx, latitude, longitude);
-          ctx.session.waitingFor = null;
-          return;
+          try {
+            const Orders = require('./user/order/index');
+            await Orders.processLocation(ctx, latitude, longitude);
+            ctx.session.waitingFor = null;
+            return;
+          } catch (error) {
+            console.error('❌ Location processing error:', error);
+            await ctx.reply('❌ Joylashuvni qayta ishlashda xatolik!');
+            return;
+          }
         }
         // Eng yaqin filialni topish va ko'rsatish (branch_location)
         try {

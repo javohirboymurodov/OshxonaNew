@@ -467,7 +467,17 @@ function registerUserCallbacks(bot) {
   // ========================================
 
   bot.action('start_order', async (ctx) => {
-    await UserOrderHandlers.startOrder(ctx);
+    try {
+      // Remove any reply keyboard first
+      try {
+        await ctx.reply('', { reply_markup: { remove_keyboard: true } });
+      } catch {}
+      
+      await UserOrderHandlers.startOrder(ctx);
+    } catch (error) {
+      console.error('❌ start_order error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
   });
 
   // Savatdan chekout (tur qayta so'ralmaydi, mavjud orderTypega qarab davom etadi)
