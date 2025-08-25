@@ -6,16 +6,19 @@ import { useAuth } from '../hooks/useAuth';
 import LoginPage from '../pages/Login/LoginPage';
 import MainLayout from '@/components/Layout/MainLayout';
 import LoadingSpinner from '@/components/Layout/LoadingSpinner';
+import LazyLoader from '@/components/LazyLoader';
 
-// Real components
-import DashboardPage from '@/pages/Dashboard/DashboardPage';
-import CategoriesPage from '@/pages/Categories/CategoriesPage'
-import ProductsPage from '@/pages/Products/index';
-import OrdersPage from '@/pages/Orders/OrdersPage';
-import UsersPage from '@/pages/Users/UsersPage';
-import CouriersPage from '@/pages/Couriers/CouriersPage';
-import SettingsPage from '@/pages/Settings/SettingsPage';
-import ProfilePage from '@/pages/Profile/ProfilePage';
+// Lazy loaded components for better performance
+import {
+  LazyDashboard,
+  LazyProducts,
+  LazyCategories,
+  LazyOrders,
+  LazyUsers,
+  LazyCouriers,
+  LazySettings,
+  LazyProfile
+} from '@/components/LazyComponents';
 
 const AppRouter: React.FC = () => {
   const { user, loading } = useAuth();
@@ -37,17 +40,78 @@ const AppRouter: React.FC = () => {
   return (
     <MainLayout>
       <Routes>
-        {isSuper && <Route path="/dashboard" element={<DashboardPage />} />}
-        <Route path="/categories" element={<CategoriesPage />} />
-        <Route path="/products" element={<ProductsPage />} />
-        <Route path="/orders" element={<OrdersPage />} />
-        <Route path="/couriers" element={<CouriersPage />} />
-        {isSuper && <Route path="/users" element={<UsersPage />} />}
+        {isSuper && (
+          <Route 
+            path="/dashboard" 
+            element={
+              <LazyLoader>
+                <LazyDashboard />
+              </LazyLoader>
+            } 
+          />
+        )}
+        <Route 
+          path="/categories" 
+          element={
+            <LazyLoader>
+              <LazyCategories />
+            </LazyLoader>
+          } 
+        />
+        <Route 
+          path="/products" 
+          element={
+            <LazyLoader>
+              <LazyProducts />
+            </LazyLoader>
+          } 
+        />
+        <Route 
+          path="/orders" 
+          element={
+            <LazyLoader>
+              <LazyOrders />
+            </LazyLoader>
+          } 
+        />
+        <Route 
+          path="/couriers" 
+          element={
+            <LazyLoader>
+              <LazyCouriers />
+            </LazyLoader>
+          } 
+        />
+        {isSuper && (
+          <Route 
+            path="/users" 
+            element={
+              <LazyLoader>
+                <LazyUsers />
+              </LazyLoader>
+            } 
+          />
+        )}
         <Route
           path="/settings"
-          element={isSuper ? <SettingsPage /> : <Navigate to="/orders" replace />}
+          element={
+            isSuper ? (
+              <LazyLoader>
+                <LazySettings />
+              </LazyLoader>
+            ) : (
+              <Navigate to="/orders" replace />
+            )
+          }
         />
-        <Route path="/profile" element={<ProfilePage />} />
+        <Route 
+          path="/profile" 
+          element={
+            <LazyLoader>
+              <LazyProfile />
+            </LazyLoader>
+          } 
+        />
         <Route path="/" element={<Navigate to={isSuper ? '/dashboard' : '/orders'} />} />
         <Route path="*" element={<Navigate to={isSuper ? '/dashboard' : '/orders'} />} />
       </Routes>

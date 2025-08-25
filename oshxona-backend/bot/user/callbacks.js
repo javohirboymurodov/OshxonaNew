@@ -709,6 +709,29 @@ function registerUserCallbacks(bot) {
     }
   });
 
+  // Manual address entry
+  bot.action('enter_address_text', async (ctx) => {
+    try {
+      await ctx.editMessageText(
+        '✍️ **Manzilni yozing**\n\nMisol: Toshkent, Chilonzor tumani, Bunyodkor 1-tor...',
+        {
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '🔙 Orqaga', callback_data: 'start_order' }]
+            ]
+          }
+        }
+      );
+      
+      ctx.session.waitingFor = 'delivery_address_text';
+      ctx.session.step = 'awaiting_address_text';
+    } catch (error) {
+      console.error('❌ enter_address_text error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
   // ========================================
   // ⚡ QUICK ORDER & MOBILE UX
   // ========================================
