@@ -28,12 +28,14 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const [imageError, setImageError] = useState(false);
 
   const handleDecrease = () => {
+    console.log(`🔻 ProductCard decrease: ${product.name}, current: ${quantity}`);
     if (quantity > 0) {
       onQuantityChange(product._id, quantity - 1);
     }
   };
 
   const handleIncrease = () => {
+    console.log(`🔺 ProductCard increase: ${product.name}, current: ${quantity}`);
     onQuantityChange(product._id, quantity + 1);
   };
 
@@ -97,7 +99,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
     cursor: 'pointer',
     fontSize: 18,
     fontWeight: 'bold',
-    transition: 'all 0.2s ease'
+    transition: 'all 0.2s ease',
+    userSelect: 'none',
+    outline: 'none',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
   };
 
   const quantityStyle: React.CSSProperties = {
@@ -108,7 +113,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   };
 
   return (
-    <div style={cardStyle}>
+    <div style={{...cardStyle, position: 'relative'}}>
       {/* Product Image */}
       {product.image && !imageError ? (
         <img
@@ -192,27 +197,32 @@ const ProductCard: React.FC<ProductCardProps> = ({
         justifyContent: 'center',
         marginTop: 8
       }}>
-        <div
+        <button
+          type="button"
           style={{
             ...buttonStyle,
             opacity: quantity > 0 ? 1 : 0.5,
             cursor: quantity > 0 ? 'pointer' : 'not-allowed'
           }}
           onClick={handleDecrease}
+          disabled={quantity <= 0}
+          onMouseDown={(e) => e.preventDefault()}
         >
           −
-        </div>
+        </button>
         
         <div style={quantityStyle}>
           {quantity || 0}
         </div>
         
-        <div
+        <button
+          type="button"
           style={buttonStyle}
           onClick={handleIncrease}
+          onMouseDown={(e) => e.preventDefault()}
         >
           +
-        </div>
+        </button>
       </div>
 
       {/* Loading Overlay */}
