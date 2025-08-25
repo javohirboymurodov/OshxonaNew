@@ -99,6 +99,36 @@ const userSchema = new mongoose.Schema({
     notifications: { type: Boolean, default: true },
     language: { type: String, default: 'uz' },
     favoriteCategories: [String]
+  },
+  
+  // Loyalty Program Fields
+  loyaltyPoints: {
+    type: Number,
+    default: 0
+  },
+  loyaltyLevel: {
+    type: String,
+    enum: ['STARTER', 'BRONZE', 'SILVER', 'GOLD', 'DIAMOND'],
+    default: 'STARTER'
+  },
+  birthDate: {
+    type: Date
+  },
+  bonuses: [{
+    type: {
+      type: String,
+      enum: ['referral_welcome', 'referral_reward', 'birthday', 'loyalty_bonus', 'promotion']
+    },
+    amount: Number,
+    message: String,
+    used: { type: Boolean, default: false },
+    expiresAt: Date,
+    createdAt: { type: Date, default: Date.now }
+  }],
+  referrals: {
+    referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    referredUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    totalReferrals: { type: Number, default: 0 }
   }
 }, {
   timestamps: true

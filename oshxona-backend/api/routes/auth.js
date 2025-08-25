@@ -3,11 +3,13 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { User } = require('../../models');
 const { authenticateToken } = require('../middleware/auth');
+const SecurityService = require('../../middleware/security');
+const validationSchemas = require('../../middleware/validationSchemas');
 
 const router = express.Router();
 
 // Login
-router.post('/login', async (req, res) => {
+router.post('/login', SecurityService.requestValidator(validationSchemas.login), async (req, res) => {
   try {
     const { email, password } = req.body;
     console.log("Received login request:", req.body);

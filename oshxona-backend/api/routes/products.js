@@ -2,6 +2,8 @@
 const express = require('express');
 const { authenticateToken, requireRole, requireAdmin } = require('../middleware/auth');
 const ProductsController = require('../controllers/productsController');
+const SecurityService = require('../../middleware/security');
+const validationSchemas = require('../../middleware/validationSchemas');
 
 // Local upload config'dan import qilish
 const { 
@@ -23,10 +25,25 @@ router.get('/', ProductsController.list);
 router.get('/:id', ProductsController.getOne);
 
 // POST /api/products - Create new product with local upload
-router.post('/', authenticateToken, requireRole(['superadmin', 'admin']), uploadSingle, handleUploadError, ProductsController.create);
+router.post('/', 
+  authenticateToken, 
+  requireRole(['superadmin', 'admin']), 
+  SecurityService.getFileUploadRateLimit(),
+  uploadSingle, 
+  handleUploadError, 
+  SecurityService.requestValidator(validationSchemas.createProduct),
+  ProductsController.create
+);
 
 // PUT /api/products/:id - Update product with image replacement
-router.put('/:id', authenticateToken, requireRole(['superadmin', 'admin']), uploadSingle, ProductsController.update);
+router.put('/:id', 
+  authenticateToken, 
+  requireRole(['superadmin', 'admin']), 
+  SecurityService.getFileUploadRateLimit(),
+  uploadSingle, 
+  SecurityService.requestValidator(validationSchemas.updateProduct),
+  ProductsController.update
+);
 
 // DELETE /api/products/:id - Delete product with image
 router.delete('/:id', authenticateToken, requireRole(['superadmin', 'admin']), ProductsController.remove);
