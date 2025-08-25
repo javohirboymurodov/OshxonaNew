@@ -50,13 +50,24 @@ function registerMessageHandlers(bot) {
       // Agar bu foydalanuvchi buyurtma (delivery) oqimida bo'lsa — lokatsiyani buyurtma uchun qabul qilamiz
       const wf = ctx.session?.waitingFor;
       if (user.role !== 'courier' && (wf === 'delivery_location' || wf === 'branch_location')) {
-        // Avval foydalanuvchiga tasdiq xabari va keyboardni yopish
-        try { await ctx.reply('✅ Joylashuv qabul qilindi.', { reply_markup: { remove_keyboard: true } }); } catch {}
+        // Remove keyboard first
+        try { 
+          await ctx.reply('✅ Joylashuv qabul qilindi.', { 
+            reply_markup: { remove_keyboard: true } 
+          }); 
+        } catch {}
+        
         if (wf === 'delivery_location') {
-          const Orders = require('./user/order/index');
-          await Orders.processLocation(ctx, latitude, longitude);
-          ctx.session.waitingFor = null;
-          return;
+          try {
+            const Orders = require('./user/order/index');
+            await Orders.processLocation(ctx, latitude, longitude);
+            ctx.session.waitingFor = null;
+            return;
+          } catch (error) {
+            console.error('❌ Location processing error:', error);
+            await ctx.reply('❌ Joylashuvni qayta ishlashda xatolik!');
+            return;
+          }
         }
         // Eng yaqin filialni topish va ko'rsatish (branch_location)
         try {
@@ -293,6 +304,44 @@ function registerMessageHandlers(bot) {
       
       if (!user) return;
       
+      // Delivery address text input
+      if (ctx.session?.waitingFor === 'delivery_address_text') {
+        try {
+          if (text === '🔙 Bekor qilish') {
+            ctx.session.waitingFor = null;
+            await ctx.reply('❌ Buyurtma bekor qilindi', {
+              reply_markup: { remove_keyboard: true }
+            });
+            return;
+          }
+          
+          // Save address text
+          ctx.session.orderData = ctx.session.orderData || {};
+          ctx.session.orderData.address = text;
+          ctx.session.waitingFor = null;
+          
+          // Proceed to product selection
+          await ctx.reply('✅ Manzil qabul qilindi!\n\nEndi mahsulotlarni tanlang:', {
+            reply_markup: {
+              remove_keyboard: true,
+              inline_keyboard: [
+                [{ text: '🛒 Tezkor buyurtma', callback_data: 'quick_order' }],
+                [{ text: '📋 Katalog', callback_data: 'show_catalog' }],
+                [{ text: '🎉 Aksiyalar', callback_data: 'show_promotions' }],
+                [{ text: '🔙 Orqaga', callback_data: 'start_order' }]
+              ]
+            }
+          });
+          
+          console.log('✅ Address text processed:', text);
+          return;
+        } catch (error) {
+          console.error('❌ Address text processing error:', error);
+          await ctx.reply('❌ Manzilni qayta ishlashda xatolik');
+          return;
+        }
+      }
+
       // Feedback yozish jarayoni
       if (ctx.session?.waitingFor === 'feedback' && ctx.session?.feedbackOrderId) {
         try {

@@ -11,6 +11,7 @@ const { specs, swaggerUi } = require('../docs/swagger');
 const logger = require('../utils/logger');
 const { errorHandler, notFoundHandler } = require('../utils/errorHandler');
 const requestLogger = require('../middleware/requestLogger');
+const SecurityService = require('../middleware/security');
 
 // Express app yaratish
 const app = express();
@@ -57,6 +58,18 @@ app.options('*', cors());
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// 🛡️ ENHANCED SECURITY MIDDLEWARE
+app.use(SecurityService.securityHeaders());
+app.use(SecurityService.mongoSanitization());
+app.use(SecurityService.activityLogger());
+
+// Global rate limiting
+app.use('/api', SecurityService.getAPIRateLimit());
+
+// Specific rate limits for sensitive endpoints
+app.use('/api/auth', SecurityService.getAuthRateLimit());
+app.use('/api/orders', SecurityService.getOrderRateLimit());
 
 // Request logging middleware
 app.use((req, res, next) => {

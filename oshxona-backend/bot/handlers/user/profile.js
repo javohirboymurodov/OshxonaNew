@@ -46,25 +46,14 @@ ${stats}
 
 Boshlash uchun quyidagi tugmalardan foydalaning!`;
 
-    // 🔧 FIX: Reply keyboard + asosiy inline menyu birga ko'rsatiladi
-    try {
-      await ctx.replyWithHTML(welcomeHtml, {
-        reply_markup: {
-          keyboard: [
-            [{ text: '🏠 Asosiy sahifa' }],
-            [{ text: '📋 Mening buyurtmalarim' }],
-            [{ text: '👤 Profil' }]
-          ],
-          resize_keyboard: true,
-          is_persistent: true,
-          one_time_keyboard: false // Har doim ko'rinib turishi uchun
-        }
-      });
-    } catch {}
+    // Send welcome message with inline keyboard only
     try {
       const { mainMenuKeyboard } = require('../../user/keyboards');
-      await ctx.reply('📋 Menyu:', mainMenuKeyboard);
-    } catch {}
+      await ctx.replyWithHTML(welcomeHtml, mainMenuKeyboard);
+    } catch (error) {
+      console.error('Welcome message error:', error);
+      await ctx.reply(welcomeHtml.replace(/<[^>]*>/g, ''));
+    }
   } catch (error) {
     console.error('Start handler error:', error);
     await ctx.reply('❌ Boshlashda xatolik yuz berdi. Qaytadan urinib ko\'ring.');

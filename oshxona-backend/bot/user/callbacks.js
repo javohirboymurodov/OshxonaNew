@@ -17,6 +17,9 @@ const { showMyOrders, myOrdersCallbackHandler } = require('../handlers/user/myOr
 const { mainMenuKeyboard, askPhoneInlineKeyboard, requestPhoneReplyKeyboard } = require('./keyboards');
 const { User } = require('../../models');
 const UXImprovements = require('../../improvements/ux-improvements');
+const loyaltyHandlers = require('../handlers/user/loyalty/loyaltyHandlers');
+const trackingHandlers = require('../handlers/user/tracking/trackingHandlers');
+const quickOrderHandlers = require('../handlers/user/ux/quickOrderHandlers');
 
 /**
  * User callback handlers ni bot instance ga ulash
@@ -464,7 +467,17 @@ function registerUserCallbacks(bot) {
   // ========================================
 
   bot.action('start_order', async (ctx) => {
-    await UserOrderHandlers.startOrder(ctx);
+    try {
+      // Remove any reply keyboard first
+      try {
+        await ctx.reply('', { reply_markup: { remove_keyboard: true } });
+      } catch {}
+      
+      await UserOrderHandlers.startOrder(ctx);
+    } catch (error) {
+      console.error('❌ start_order error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
   });
 
   // Savatdan chekout (tur qayta so'ralmaydi, mavjud orderTypega qarab davom etadi)
@@ -574,6 +587,232 @@ function registerUserCallbacks(bot) {
       await myOrdersCallbackHandler(ctx);
     } catch (error) {
       console.error('❌ back_to_my_orders error:', error);
+    }
+  });
+
+  // ========================================
+  // 💎 LOYALTY PROGRAM
+  // ========================================
+
+  // Loyalty darajam
+  bot.action('my_loyalty_level', async (ctx) => {
+    try {
+      await loyaltyHandlers.showMyLevel(ctx);
+    } catch (error) {
+      console.error('❌ my_loyalty_level error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // Bonuslarim
+  bot.action('my_bonuses', async (ctx) => {
+    try {
+      await loyaltyHandlers.showMyBonuses(ctx);
+    } catch (error) {
+      console.error('❌ my_bonuses error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // Referral dasturi
+  bot.action('referral_program', async (ctx) => {
+    try {
+      await loyaltyHandlers.showReferralProgram(ctx);
+    } catch (error) {
+      console.error('❌ referral_program error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // Balllarni ishlatish
+  bot.action('use_points', async (ctx) => {
+    try {
+      await loyaltyHandlers.usePoints(ctx);
+    } catch (error) {
+      console.error('❌ use_points error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // Balllarni ishlatish - miqdorlar
+  bot.action(/^use_points_(\d+)$/, async (ctx) => {
+    try {
+      const amount = parseInt(ctx.match[1]);
+      ctx.session.pointsToUse = amount;
+      
+      const user = await User.findOne({ telegramId: ctx.from.id });
+      if (!user || user.loyaltyPoints < amount) {
+        await ctx.answerCbQuery('❌ Yetarli ball yo\'q!', { show_alert: true });
+        return;
+      }
+
+      await ctx.answerCbQuery(`✅ ${amount.toLocaleString()} ball tanlandi`);
+      await ctx.editMessageText(
+        `✅ <b>${amount.toLocaleString()} ball tanlandi</b>\n\n💡 Keyingi buyurtmangizda avtomatik qo'llaniladi.\n\n🛒 Buyurtma berishni boshlaysizmi?`,
+        {
+          parse_mode: 'HTML',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '🛒 Buyurtma berish', callback_data: 'start_order' }],
+              [{ text: '🔙 Orqaga', callback_data: 'my_bonuses' }]
+            ]
+          }
+        }
+      );
+    } catch (error) {
+      console.error('❌ use_points_amount error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // Statistikalarim
+  bot.action('my_stats', async (ctx) => {
+    try {
+      await loyaltyHandlers.showMyStats(ctx);
+    } catch (error) {
+      console.error('❌ my_stats error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // ========================================
+  // 📍 ORDER TRACKING
+  // ========================================
+
+  // Buyurtmani kuzatish
+  bot.action(/^track_(.+)$/, async (ctx) => {
+    try {
+      await trackingHandlers.trackOrder(ctx);
+    } catch (error) {
+      console.error('❌ track_order error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // Kuryer lokatsiyasi
+  bot.action(/^courier_location_(.+)$/, async (ctx) => {
+    try {
+      await trackingHandlers.showCourierLocation(ctx);
+    } catch (error) {
+      console.error('❌ courier_location error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // Qayta buyurtma
+  bot.action(/^reorder_(.+)$/, async (ctx) => {
+    try {
+      await trackingHandlers.reorderItem(ctx);
+    } catch (error) {
+      console.error('❌ reorder error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // Qayta buyurtmani tasdiqlash
+  bot.action(/^confirm_reorder_(.+)$/, async (ctx) => {
+    try {
+      await trackingHandlers.confirmReorder(ctx);
+    } catch (error) {
+      console.error('❌ confirm_reorder error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // Manual address entry
+  bot.action('enter_address_text', async (ctx) => {
+    try {
+      await ctx.editMessageText(
+        '✍️ **Manzilni yozing**\n\nMisol: Toshkent, Chilonzor tumani, Bunyodkor 1-tor...',
+        {
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '🔙 Orqaga', callback_data: 'start_order' }]
+            ]
+          }
+        }
+      );
+      
+      ctx.session.waitingFor = 'delivery_address_text';
+      ctx.session.step = 'awaiting_address_text';
+    } catch (error) {
+      console.error('❌ enter_address_text error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // ========================================
+  // ⚡ QUICK ORDER & MOBILE UX
+  // ========================================
+
+  // Quick order menu
+  bot.action('quick_order', async (ctx) => {
+    try {
+      await quickOrderHandlers.showQuickOrder(ctx);
+    } catch (error) {
+      console.error('❌ quick_order error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // Quick popular products
+  bot.action('quick_popular', async (ctx) => {
+    try {
+      await quickOrderHandlers.showPopularProducts(ctx);
+    } catch (error) {
+      console.error('❌ quick_popular error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // Quick fast products
+  bot.action('quick_fast', async (ctx) => {
+    try {
+      await quickOrderHandlers.showFastProducts(ctx);
+    } catch (error) {
+      console.error('❌ quick_fast error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // Quick add product
+  bot.action(/^quick_add_(.+)$/, async (ctx) => {
+    try {
+      await quickOrderHandlers.quickAddProduct(ctx);
+    } catch (error) {
+      console.error('❌ quick_add error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // Add to favorites
+  bot.action(/^add_favorite_(.+)$/, async (ctx) => {
+    try {
+      await quickOrderHandlers.addToFavorites(ctx);
+    } catch (error) {
+      console.error('❌ add_favorite error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // Show favorites
+  bot.action('show_favorites', async (ctx) => {
+    try {
+      await quickOrderHandlers.showFavorites(ctx);
+    } catch (error) {
+      console.error('❌ show_favorites error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // Remove from favorites
+  bot.action(/^remove_favorite_(.+)$/, async (ctx) => {
+    try {
+      await quickOrderHandlers.removeFromFavorites(ctx);
+    } catch (error) {
+      console.error('❌ remove_favorite error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
     }
   });
 

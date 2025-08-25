@@ -90,7 +90,68 @@ async function refreshLocations(req, res) {
   }
 }
 
-module.exports = { list, getOne, availableForOrder, updateStatus, refreshLocations };
+// Kuryer lokatsiyasini yangilash (kuryer bot/app dan)
+async function updateLocation(req, res) {
+  try {
+    const { courierId, latitude, longitude, isOnline = true } = req.body;
+    
+    if (!courierId || latitude == null || longitude == null) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Kuryer ID, latitude va longitude majburiy!' 
+      });
+    }
+    
+    // Validate coordinate ranges
+    if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Noto\'g\'ri koordinatalar!' 
+      });
+    }
+    
+    const courier = await User.findOne({ _id: courierId, role: 'courier' });
+    if (!courier) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Kuryer topilmadi!' 
+      });
+    }
+    
+    // Update courier location and status
+    courier.courierInfo.currentLocation = {
+      latitude: parseFloat(latitude),
+      longitude: parseFloat(longitude),
+      updatedAt: new Date()
+    };
+    courier.courierInfo.isOnline = isOnline;
+    
+    await courier.save();
+    
+    // Real-time tracking service orqali yangilash
+    const orderTracker = require('../../services/orderTrackingService');
+    await orderTracker.updateCourierLocation(courierId, latitude, longitude);
+    
+    res.json({ 
+      success: true, 
+      message: 'Lokatsiya muvaffaqiyatli yangilandi',
+      data: { 
+        courierId,
+        location: { latitude, longitude },
+        updatedAt: new Date()
+      }
+    });
+    
+  } catch (error) {
+    console.error('Courier location update error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Lokatsiyani yangilashda xatolik!' 
+    });
+  }
+}
+
+module.exports = { list, getOne, availableForOrder, updateStatus, refreshLocations, updateLocation };
 
 // =============== Advanced analytics/endpoints ===============
 function haversineKm(a, b) {
