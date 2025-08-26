@@ -30,6 +30,7 @@ function initializeBot(bot) {
     console.log('✅ User callbacks loaded');
   } catch (error) {
     console.warn('⚠️ User callbacks load failed:', error.message);
+    console.error('⚠️ Full error:', error);
   }
 
   // ========================================
@@ -58,11 +59,9 @@ function initializeBot(bot) {
   // 🔧 SHARED MODULES
   // ========================================
 
-  // 5. Message handlers (text, contact, location)
+  // 5. Message handlers (text, contact, location) - keep disabled for now
   try {
-    const { registerMessageHandlers } = require('./handlers/messageHandlers');
-    registerMessageHandlers(bot);
-    console.log('✅ Message handlers loaded');
+    console.log('⚠️ Message handlers temporarily disabled');
   } catch (error) {
     console.warn('⚠️ Message handlers load failed:', error.message);
   }

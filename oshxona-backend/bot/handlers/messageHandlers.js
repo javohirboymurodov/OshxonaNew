@@ -189,8 +189,8 @@ function registerMessageHandlers(bot) {
                 [ { text: '📍 Joylashuvni yuborish', request_location: true } ],
                 [ { text: '⬅️ Kuryer menyusi' } ],
               ],
-            resize_keyboard: true,
-          }
+              resize_keyboard: true,
+            }
         });
       }
 
@@ -247,7 +247,7 @@ function registerMessageHandlers(bot) {
           parse_mode: 'Markdown',
           reply_markup: replyKeyboardMain() 
         });
-      } catch {
+      } catch (e) {
         await ctx.reply('🎉 Jonli lokatsiya muvaffaqiyatli ulandi!');
       }
     } catch (error) {
