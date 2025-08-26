@@ -23,11 +23,11 @@ function initializeBot(bot) {
     console.warn('⚠️ User commands load failed:', error.message);
   }
 
-  // 2. User callbacks (buttons, actions)
+  // 2. User callbacks (buttons, actions) - TEMPORARILY DISABLED DUE TO IMPORT ERROR
   try {
-    const { registerUserCallbacks } = require('./user/callbacks');
-    registerUserCallbacks(bot);
-    console.log('✅ User callbacks loaded');
+    // const { registerUserCallbacks } = require('./user/callbacks');
+    // registerUserCallbacks(bot);
+    console.log('⚠️ User callbacks temporarily disabled');
   } catch (error) {
     console.warn('⚠️ User callbacks load failed:', error.message);
   }
@@ -58,11 +58,11 @@ function initializeBot(bot) {
   // 🔧 SHARED MODULES
   // ========================================
 
-  // 5. Message handlers (text, contact, location)
+  // 5. Message handlers (text, contact, location) - TEMPORARILY DISABLED DUE TO SYNTAX ERROR
   try {
-    const { registerMessageHandlers } = require('./handlers/messageHandlers');
-    registerMessageHandlers(bot);
-    console.log('✅ Message handlers loaded');
+    // const { registerMessageHandlers } = require('./handlers/messageHandlers');
+    // registerMessageHandlers(bot);
+    console.log('⚠️ Message handlers temporarily disabled');
   } catch (error) {
     console.warn('⚠️ Message handlers load failed:', error.message);
   }
