@@ -12,7 +12,7 @@ class OrderFlow extends BaseHandler {
    * @param {Object} ctx - Telegraf context
    */
   static async startOrder(ctx) {
-    return this.safeExecute(async () => {
+    return BaseHandler.safeExecute(async () => {
       const telegramId = ctx.from.id;
       const user = await User.findOne({ telegramId });
       
@@ -60,7 +60,7 @@ class OrderFlow extends BaseHandler {
    * @param {Object} ctx - Telegraf context
    */
   static async handleOrderType(ctx) {
-    return this.safeExecute(async () => {
+    return BaseHandler.safeExecute(async () => {
       // Extract order type: order_type_dine_in -> dine_in (not dine!)
       const callbackData = ctx.callbackQuery.data;
       const orderType = callbackData.replace('order_type_', '');
@@ -74,20 +74,20 @@ class OrderFlow extends BaseHandler {
       
       switch (orderType) {
         case 'delivery':
-          await this.handleDeliveryFlow(ctx);
+          await OrderFlow.handleDeliveryFlow(ctx);
           break;
           
         case 'pickup':
-          await this.handlePickupFlow(ctx);
+          await OrderFlow.handlePickupFlow(ctx);
           break;
           
         case 'dine_in':
         case 'preorder':  // preorder = dine_in (same logic)
-          await this.handleDineInFlow(ctx);
+          await OrderFlow.handleDineInFlow(ctx);
           break;
           
         case 'table':
-          await this.handleTableFlow(ctx);
+          await OrderFlow.handleTableFlow(ctx);
           break;
           
         default:
@@ -102,7 +102,7 @@ class OrderFlow extends BaseHandler {
    * @param {Object} ctx - Telegraf context
    */
   static async handleDeliveryFlow(ctx) {
-    return this.safeExecute(async () => {
+    return BaseHandler.safeExecute(async () => {
       console.log('=== Starting delivery flow ===');
       
       // Location so'rash
@@ -145,7 +145,7 @@ class OrderFlow extends BaseHandler {
     try {
       console.log('=== Starting pickup flow ===');
       // Olib ketish: filial tanlash → kelish vaqti → mahsulot tanlash menyusi
-      await this.askForBranchSelection(ctx, 'pickup');
+      await OrderFlow.askForBranchSelection(ctx, 'pickup');
     } catch (error) {
       console.error('Pickup flow error:', error);
       await ctx.answerCbQuery('❌ Olib ketish oqimida xatolik!');
@@ -160,7 +160,7 @@ class OrderFlow extends BaseHandler {
     try {
       console.log('=== Starting dine-in flow ===');
       // Avvaldan buyurtma: filial tanlash → kelish vaqti → mahsulot tanlash menyusi → (keyinchalik to'lovdan so'ng "keldim" bosqichi mavjud)
-      await this.askForBranchSelection(ctx, 'dine_in');
+      await OrderFlow.askForBranchSelection(ctx, 'dine_in');
     } catch (error) {
       console.error('Dine-in flow error:', error);
       await ctx.answerCbQuery('❌ Avvaldan buyurtma oqimida xatolik!');
@@ -208,13 +208,13 @@ class OrderFlow extends BaseHandler {
    * @param {Object} ctx - Telegraf context
    */
   static async handleChooseBranch(ctx) {
-    return this.safeExecute(async () => {
+    return BaseHandler.safeExecute(async () => {
       const data = String(ctx.callbackQuery?.data || '');
       const branchMatch = data.match(/[0-9a-fA-F]{24}$/);
       const branchId = branchMatch ? branchMatch[0] : '';
       const type = data.includes('choose_branch_pickup_') ? 'pickup' : 'dine';
       
-      if (!this.isValidObjectId(branchId)) {
+      if (!BaseHandler.isValidObjectId(branchId)) {
         return await ctx.answerCbQuery('❌ Filial ID noto\'g\'ri!');
       }
       
@@ -275,7 +275,7 @@ class OrderFlow extends BaseHandler {
   static async handleDineInFlow(ctx) {
     try {
       console.log('=== Starting dine-in flow ===');
-      await this.askForBranchSelection(ctx, 'dine_in');
+      await OrderFlow.askForBranchSelection(ctx, 'dine_in');
     } catch (error) {
       console.error('Dine-in flow error:', error);
       await ctx.answerCbQuery('❌ Avvaldan buyurtma oqimida xatolik!');
@@ -284,7 +284,7 @@ class OrderFlow extends BaseHandler {
 
   static async handleDineInPreorder(ctx) {
     console.log('⚠️ DEPRECATED: handleDineInPreorder called - redirecting to handleDineInFlow');
-    return this.handleDineInFlow(ctx);
+    return OrderFlow.handleDineInFlow(ctx);
   }
 }
 
