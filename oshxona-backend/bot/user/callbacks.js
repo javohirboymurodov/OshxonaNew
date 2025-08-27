@@ -263,6 +263,74 @@ function registerUserCallbacks(bot) {
   });
 
   // ========================================
+  // 📝 ORDER TYPE HANDLERS
+  // ========================================
+
+  // Order type selection handlers
+  bot.action('order_type_delivery', async (ctx) => {
+    try {
+      const UserOrderHandlers = require('../handlers/user/order/index');
+      await UserOrderHandlers.handleOrderType(ctx);
+    } catch (e) {
+      console.error('order_type_delivery error:', e);
+      await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  bot.action('order_type_pickup', async (ctx) => {
+    try {
+      const UserOrderHandlers = require('../handlers/user/order/index');
+      await UserOrderHandlers.handleOrderType(ctx);
+    } catch (e) {
+      console.error('order_type_pickup error:', e);
+      await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  bot.action('order_type_dine_in', async (ctx) => {
+    try {
+      const UserOrderHandlers = require('../handlers/user/order/index');
+      await UserOrderHandlers.handleOrderType(ctx);
+    } catch (e) {
+      console.error('order_type_dine_in error:', e);
+      await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // Branch selection handlers
+  bot.action(/^choose_branch_(pickup|dine)_[0-9a-fA-F]{24}$/, async (ctx) => {
+    try {
+      const OrderFlow = require('../handlers/user/order/orderFlow');
+      await OrderFlow.handleChooseBranch(ctx);
+    } catch (e) {
+      console.error('choose_branch error:', e);
+      await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // Arrival time handlers
+  bot.action(/^arrival_time_.+$/, async (ctx) => {
+    try {
+      const UserOrderHandlers = require('../handlers/user/order/index');
+      await UserOrderHandlers.handleArrivalTime(ctx);
+    } catch (e) {
+      console.error('arrival_time error:', e);
+      await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // Order step back handler
+  bot.action('order_step_back', async (ctx) => {
+    try {
+      const UserOrderHandlers = require('../handlers/user/order/index');
+      await UserOrderHandlers.startOrder(ctx);
+    } catch (e) {
+      console.error('order_step_back error:', e);
+      await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // ========================================
   // 📋 MY ORDERS
   // ========================================
 
