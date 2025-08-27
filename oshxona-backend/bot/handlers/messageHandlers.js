@@ -120,18 +120,19 @@ function registerMessageHandlers(bot) {
             let endpoint = '';
             let action = '';
             
-            if (waitingFor === 'courier_accept_location') {
-              endpoint = `/api/admin/orders/${orderId}/courier/accept`;
-              action = 'qabul qilish';
-            } else if (waitingFor === 'courier_pickup_location') {
-              endpoint = `/api/admin/orders/${orderId}/courier/pickup`;
-              action = 'olib ketish';
-            } else if (waitingFor === 'courier_delivered_location') {
-              endpoint = `/api/admin/orders/${orderId}/courier/delivered`;
-              action = 'yetkazish';
-            }
+            // 🔧 DISABLED: Old courier location system - using new courier/handlers.js
+            // if (waitingFor === 'courier_accept_location') {
+            //   endpoint = `/api/admin/orders/${orderId}/courier/accept`;
+            //   action = 'qabul qilish';
+            // } else if (waitingFor === 'courier_pickup_location') {
+            //   endpoint = `/api/admin/orders/${orderId}/courier/pickup`;
+            //   action = 'olib ketish';
+            // } else if (waitingFor === 'courier_delivered_location') {
+            //   endpoint = `/api/admin/orders/${orderId}/courier/delivered`;
+            //   action = 'yetkazish';
+            // }
 
-            if (endpoint) {
+            if (endpoint && false) { // 🔧 DISABLED: Old courier location system
               const response = await axios.post(`${baseUrl}${endpoint}`, {
                 latitude,
                 longitude
