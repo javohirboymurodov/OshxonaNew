@@ -231,9 +231,7 @@ function registerUserCallbacks(bot) {
     await removeFromCart(ctx);
   });
 
-  bot.action('show_cart', async (ctx) => {
-    await showCart(ctx);
-  });
+
 
   bot.action('clear_cart', async (ctx) => {
     await clearCart(ctx);
@@ -253,12 +251,178 @@ function registerUserCallbacks(bot) {
     }
   });
 
-  // Fallback: checkout -> open cart view
+  // Fallback: checkout -> start order process
   bot.action('checkout', async (ctx) => {
     try {
-      await showCart(ctx);
+      const UserOrderHandlers = require('../handlers/user/order/index');
+      await UserOrderHandlers.startOrder(ctx);
     } catch (e) {
       console.error('checkout fallback error:', e);
+      await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // ========================================
+  // 📝 ORDER TYPE HANDLERS
+  // ========================================
+
+  // Order type selection handlers
+  bot.action('order_type_delivery', async (ctx) => {
+    try {
+      const UserOrderHandlers = require('../handlers/user/order/index');
+      await UserOrderHandlers.handleOrderType(ctx);
+    } catch (e) {
+      console.error('order_type_delivery error:', e);
+      await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  bot.action('order_type_pickup', async (ctx) => {
+    try {
+      const UserOrderHandlers = require('../handlers/user/order/index');
+      await UserOrderHandlers.handleOrderType(ctx);
+    } catch (e) {
+      console.error('order_type_pickup error:', e);
+      await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  bot.action('order_type_dine_in', async (ctx) => {
+    try {
+      const UserOrderHandlers = require('../handlers/user/order/index');
+      await UserOrderHandlers.handleOrderType(ctx);
+    } catch (e) {
+      console.error('order_type_dine_in error:', e);
+      await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // Branch selection handlers
+  bot.action(/^choose_branch_(pickup|dine)_[0-9a-fA-F]{24}$/, async (ctx) => {
+    try {
+      const OrderFlow = require('../handlers/user/order/orderFlow');
+      await OrderFlow.handleChooseBranch(ctx);
+    } catch (e) {
+      console.error('choose_branch error:', e);
+      await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // Arrival time handlers
+  bot.action(/^arrival_time_.+$/, async (ctx) => {
+    try {
+      const UserOrderHandlers = require('../handlers/user/order/index');
+      await UserOrderHandlers.handleArrivalTime(ctx);
+    } catch (e) {
+      console.error('arrival_time error:', e);
+      await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // Order step back handler
+  bot.action('order_step_back', async (ctx) => {
+    try {
+      const UserOrderHandlers = require('../handlers/user/order/index');
+      await UserOrderHandlers.startOrder(ctx);
+    } catch (e) {
+      console.error('order_step_back error:', e);
+      await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // ========================================
+  // 💳 PAYMENT HANDLERS
+  // ========================================
+
+  // Payment method handlers
+  bot.action(/^payment_(cash|card|click|payme)$/, async (ctx) => {
+    try {
+      const paymentMethod = ctx.callbackQuery.data.replace('payment_', '');
+      const PaymentFlow = require('../handlers/user/order/paymentFlow');
+      await PaymentFlow.handlePaymentMethod(ctx, paymentMethod);
+    } catch (e) {
+      console.error('payment method error:', e);
+      await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // Order confirmation handler
+  bot.action('confirm_order', async (ctx) => {
+    try {
+      const UserOrderHandlers = require('../handlers/user/order/index');
+      await UserOrderHandlers.confirmOrder(ctx);
+    } catch (e) {
+      console.error('confirm_order error:', e);
+      await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // Order edit handler (go back to cart)
+  bot.action('edit_order', async (ctx) => {
+    try {
+      const { showCart } = require('../handlers/user/cart');
+      await showCart(ctx);
+    } catch (e) {
+      console.error('edit_order error:', e);
+      await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // Dine-in arrival handler
+  bot.action('dinein_arrived_preview', async (ctx) => {
+    try {
+      await ctx.editMessageText(
+        '🏁 **Restoranga keldingizmi?**\n\nStol raqamingizni kiriting yoki quyidagi tugmani bosing:',
+        {
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '📝 Stol raqamini kiritish', callback_data: 'enter_table_number' }],
+              [{ text: '🔙 Orqaga', callback_data: 'back_to_main' }]
+            ]
+          }
+        }
+      );
+      ctx.session.waitingFor = 'table_number';
+    } catch (e) {
+      console.error('dinein_arrived_preview error:', e);
+      await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // Enter table number handler
+  bot.action('enter_table_number', async (ctx) => {
+    try {
+      await ctx.editMessageText(
+        '📝 **Stol raqamini kiriting:**\n\nMasalan: 12, A5, yoki 3B',
+        {
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '🔙 Orqaga', callback_data: 'dinein_arrived_preview' }]
+            ]
+          }
+        }
+      );
+      ctx.session.waitingFor = 'table_number';
+      await ctx.answerCbQuery('Stol raqamini yozing');
+    } catch (e) {
+      console.error('enter_table_number error:', e);
+      await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // Skip address notes handler
+  bot.action('skip_address_notes', async (ctx) => {
+    try {
+      ctx.session.waitingFor = null;
+      await ctx.editMessageText('✅ **Manzil tasdiqlandi!**\n\nTo\'lov usulini tanlang:', {
+        parse_mode: 'Markdown'
+      });
+      const PaymentFlow = require('../handlers/user/order/paymentFlow');
+      await PaymentFlow.askForPaymentMethod(ctx);
+    } catch (e) {
+      console.error('skip_address_notes error:', e);
       await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
     }
   });
@@ -426,29 +590,6 @@ function registerUserCallbacks(bot) {
       await trackingHandlers.confirmReorder(ctx);
     } catch (error) {
       console.error('❌ confirm_reorder error:', error);
-      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
-    }
-  });
-
-  // Manual address entry
-  bot.action('enter_address_text', async (ctx) => {
-    try {
-      await ctx.editMessageText(
-        '✍️ **Manzilni yozing**\n\nMisol: Toshkent, Chilonzor tumani, Bunyodkor 1-tor...',
-        {
-          parse_mode: 'Markdown',
-          reply_markup: {
-            inline_keyboard: [
-              [{ text: '🔙 Orqaga', callback_data: 'start_order' }]
-            ]
-          }
-        }
-      );
-      
-      ctx.session.waitingFor = 'delivery_address_text';
-      ctx.session.step = 'awaiting_address_text';
-    } catch (error) {
-      console.error('❌ enter_address_text error:', error);
       if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
     }
   });

@@ -8,6 +8,8 @@ const UserOrderHandlers = require('./user/order/index');
  * @param {Telegraf} bot - Telegraf bot instance
  */
 function registerMessageHandlers(bot) {
+  console.log('🔗 Registering message handlers...');
+  
   // ========================================
   // 📞 CONTACT HANDLING
   // ========================================
@@ -300,10 +302,119 @@ function registerMessageHandlers(bot) {
   bot.on('text', async (ctx) => {
     try {
       const text = ctx.message.text;
+      console.log(`📝 Text message received: "${text}" from ${ctx.from.id}`);
+      console.log(`🔍 Session waitingFor: ${ctx.session?.waitingFor}`);
+      
       const user = await User.findOne({ telegramId: ctx.from.id });
       
-      if (!user) return;
+      if (!user) {
+        console.log('❌ User not found for text message');
+        return;
+      }
       
+      // Address notes for delivery
+      if (ctx.session?.waitingFor === 'address_notes') {
+        try {
+          const notes = text.trim();
+          ctx.session.orderData = ctx.session.orderData || {};
+          ctx.session.orderData.addressNotes = notes;
+          ctx.session.waitingFor = null;
+          
+          await ctx.reply(
+            `✅ **Manzil izohlar qo'shildi!**\n\n📝 Izohlar: ${notes}\n\nTo'lov usulini tanlang:`,
+            {
+              parse_mode: 'Markdown',
+              reply_markup: { remove_keyboard: true }
+            }
+          );
+          
+          const PaymentFlow = require('../user/order/paymentFlow');
+          await PaymentFlow.askForPaymentMethod(ctx);
+          
+          console.log(`✅ Address notes added: ${notes}`);
+          return;
+        } catch (error) {
+          console.error('❌ Address notes processing error:', error);
+          await ctx.reply('❌ Izohni qayta ishlashda xatolik');
+          return;
+        }
+      }
+
+      // Table number input for dine-in arrival
+      if (ctx.session?.waitingFor === 'table_number') {
+        try {
+          console.log('🎯 Processing table number:', text);
+          const tableNumber = text.trim();
+          if (!tableNumber) {
+            await ctx.reply('❌ Stol raqamini kiriting');
+            return;
+          }
+          
+          ctx.session.waitingFor = null;
+          
+          // Find the user's latest dine-in order and update table number
+          const { Order } = require('../../models');
+          try {
+            const latestOrder = await Order.findOne({ 
+              user: user._id, 
+              orderType: 'dine_in',
+              status: { $in: ['pending', 'confirmed', 'preparing', 'ready'] }
+            }).sort({ createdAt: -1 });
+            
+            if (latestOrder) {
+              latestOrder.dineInInfo = latestOrder.dineInInfo || {};
+              latestOrder.dineInInfo.tableNumber = tableNumber;
+              await latestOrder.save();
+              console.log(`✅ Table number ${tableNumber} saved to order ${latestOrder.orderId}`);
+            }
+          } catch (orderError) {
+            console.error('❌ Order update error:', orderError);
+          }
+          
+          // Notify admins about customer arrival
+          const message = `🏁 **Mijoz keldi!**\n\n👤 ${user.firstName || 'Mijoz'}\n📱 ${user.phone || 'Telefon yo\'q'}\n🪑 Stol: ${tableNumber}\n⏰ ${new Date().toLocaleTimeString('uz-UZ')}`;
+          
+          // Send to admin panel via socket
+          try {
+            const SocketManager = require('../../services/socketManager');
+            if (SocketManager.io) {
+              SocketManager.io.emit('customer_arrived', {
+                customer: {
+                  name: user.firstName || 'Mijoz',
+                  phone: user.phone,
+                  telegramId: user.telegramId
+                },
+                tableNumber,
+                timestamp: new Date(),
+                orderId: latestOrder?.orderId
+              });
+            }
+          } catch (socketError) {
+            console.error('❌ Socket notification error:', socketError);
+          }
+          
+          await ctx.reply(
+            `✅ **Kelganingiz tasdiqlandi!**\n\n🪑 Stol raqami: ${tableNumber}\n⏰ Vaqt: ${new Date().toLocaleTimeString('uz-UZ')}\n\n🎉 Administratorga xabar berildi!\nTez orada sizga xizmat ko'rsatiladi.`,
+            {
+              parse_mode: 'Markdown',
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: '🏠 Bosh sahifa', callback_data: 'back_to_main' }],
+                  [{ text: '📋 Mening buyurtmalarim', callback_data: 'my_orders' }]
+                ]
+              }
+            }
+          );
+          
+          console.log(`✅ Customer arrived: ${user.firstName} at table ${tableNumber}`);
+          return;
+        } catch (error) {
+          console.error('❌ Table number processing error:', error);
+          await ctx.reply('❌ Stol raqamini qayta ishlashda xatolik');
+          return;
+        }
+      }
+
       // Delivery address text input
       if (ctx.session?.waitingFor === 'delivery_address_text') {
         try {
@@ -320,7 +431,28 @@ function registerMessageHandlers(bot) {
           ctx.session.orderData.address = text;
           ctx.session.waitingFor = null;
           
-          // Proceed to product selection
+          // Check if user has items in cart
+          const { User, Cart } = require('../../models');
+          const telegramId = ctx.from.id;
+          const userWithCart = await User.findOne({ telegramId });
+          let cart = null;
+          
+          if (userWithCart) {
+            cart = await Cart.findOne({ user: userWithCart._id, isActive: true });
+          }
+
+          // If cart has items, proceed to payment
+          if (cart && cart.items && cart.items.length > 0) {
+            console.log('✅ Cart has items, proceeding to payment flow');
+            await ctx.reply('✅ Manzil qabul qilindi!\n\nTo\'lov usulini tanlang:', {
+              reply_markup: { remove_keyboard: true }
+            });
+            const PaymentFlow = require('../user/order/paymentFlow');
+            await PaymentFlow.askForPaymentMethod(ctx);
+            return;
+          }
+
+          // If no items in cart, show product selection
           await ctx.reply('✅ Manzil qabul qilindi!\n\nEndi mahsulotlarni tanlang:', {
             reply_markup: {
               remove_keyboard: true,
@@ -491,6 +623,8 @@ function registerMessageHandlers(bot) {
       await ctx.reply('❌ Xatolik yuz berdi! Iltimos, qaytadan urinib ko\'ring.');
     }
   });
+  
+  console.log('✅ All message handlers registered successfully');
 }
 
 module.exports = { registerMessageHandlers };

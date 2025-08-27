@@ -106,20 +106,19 @@ class OrderFlow extends BaseHandler {
       console.log('=== Starting delivery flow ===');
       
       // Location so'rash
-      const message = `📍 **Yetkazib berish**\n\nYetkazib berish manzilini yuboring yoki pastdagi tugmani bosib joylashuvingizni ulashing:`;
+      const message = `📍 **Yetkazib berish**\n\nJoylashuvingizni yuboring:`;
       
       await ctx.editMessageText(message, {
         parse_mode: 'Markdown',
         reply_markup: {
           inline_keyboard: [
-            [{ text: '✍️ Manzilni yozish', callback_data: 'enter_address_text' }],
             [{ text: '🔙 Orqaga', callback_data: 'start_order' }]
           ]
         }
       });
       
       // Reply keyboard orqali real location so'rash
-      await ctx.reply('📍 Joylashuvingizni yuboring yoki manzilni yozing:', {
+      await ctx.reply('📍 Joylashuvni pastdagi tugma orqali yuboring:', {
         reply_markup: {
           keyboard: [
             [{ text: '📍 Joylashuvni yuborish', request_location: true }],

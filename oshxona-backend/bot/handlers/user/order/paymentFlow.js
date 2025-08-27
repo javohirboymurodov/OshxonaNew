@@ -272,7 +272,14 @@ class PaymentFlow extends BaseHandler {
           orderType: ctx.session.orderType,
           paymentMethod: orderData.paymentMethod,
           status: 'pending',
-          deliveryInfo: orderData.location ? { address: orderData.address, location: orderData.location } : undefined,
+          deliveryInfo: orderData.location ? { 
+            address: orderData.address, 
+            location: orderData.location,
+            instructions: orderData.addressNotes 
+          } : undefined,
+          dineInInfo: ctx.session.orderType === 'dine_in' ? {
+            arrivalTime: orderData.arrivalTime
+          } : undefined,
           branch: orderData.branch || null,
           customerInfo: { name: [user.firstName, user.lastName].filter(Boolean).join(' '), phone: user.phone }
         });
@@ -286,13 +293,18 @@ class PaymentFlow extends BaseHandler {
       // Start order tracking
       orderTracker.trackOrder(order._id.toString(), user._id.toString());
       
-      // Update order status to confirmed and notify
-      setTimeout(async () => {
-        await orderTracker.updateOrderStatus(order._id.toString(), 'confirmed', {
-          prepTime: 20,
-          message: 'Buyurtmangiz qabul qilindi va tayyorlash boshlandi'
-        });
-      }, 2000);
+      // For delivery orders, send tracking notification after delay
+      // For dine-in orders, skip the automatic notification to avoid duplicates
+      const shouldSendTrackingNotification = ctx.session.orderType === 'delivery';
+      
+      if (shouldSendTrackingNotification) {
+        setTimeout(async () => {
+          await orderTracker.updateOrderStatus(order._id.toString(), 'confirmed', {
+            prepTime: 20,
+            message: 'Buyurtmangiz qabul qilindi va tayyorlash boshlandi'
+          });
+        }, 2000);
+      }
 
       // Process loyalty points for completed order
       let loyaltyUpdate = null;

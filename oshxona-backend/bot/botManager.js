@@ -6,9 +6,6 @@
 function initializeBot(bot) {
   console.log('🤖 Bot handlerlarini ulash...');
 
-  // ========================================
-  // 📱 CORE MODULES
-  // ========================================
 
   // ========================================
   // 👤 USER MODULE
@@ -59,9 +56,11 @@ function initializeBot(bot) {
   // 🔧 SHARED MODULES
   // ========================================
 
-  // 5. Message handlers (text, contact, location) - keep disabled for now
+  // 5. Message handlers (text, contact, location)
   try {
-    console.log('⚠️ Message handlers temporarily disabled');
+    const { registerMessageHandlers } = require('./handlers/messageHandlers');
+    registerMessageHandlers(bot);
+    console.log('✅ Message handlers loaded');
   } catch (error) {
     console.warn('⚠️ Message handlers load failed:', error.message);
   }
