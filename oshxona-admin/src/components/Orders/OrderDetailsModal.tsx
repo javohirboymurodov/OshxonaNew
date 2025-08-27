@@ -194,7 +194,7 @@ const OrderDetailsModal: React.FC<Props> = ({ open, order, onClose, getOrderType
               {(order.orderType === 'dine_in' || order.orderType === 'table') && (
                 <>
                   {order.dineInInfo?.arrivalTime != null && (
-                    <Descriptions.Item label="Kutilayotgan kelish">{String(order.dineInInfo.arrivalTime)} daqiqa</Descriptions.Item>
+                    <Descriptions.Item label="Kutilayotgan kelish">{String(order.dineInInfo.arrivalTime)}</Descriptions.Item>
                   )}
                   {order.dineInInfo?.tableNumber && (
                     <Descriptions.Item label="Stol">🪑 {String(order.dineInInfo.tableNumber)}</Descriptions.Item>

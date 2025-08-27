@@ -241,6 +241,7 @@ function registerMessageHandlers(bot) {
           });
         }
       } catch {}
+      } // Missing closing brace for try block starting at line 219
       
       // 🎉 Foydalanuvchiga muvaffaqiyat xabari
       try {
