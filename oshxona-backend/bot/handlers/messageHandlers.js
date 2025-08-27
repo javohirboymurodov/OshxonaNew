@@ -63,11 +63,12 @@ function registerMessageHandlers(bot) {
           try {
             const Orders = require('./user/order/index');
             await Orders.processLocation(ctx, latitude, longitude);
-            ctx.session.waitingFor = null;
+            // Don't reset waitingFor here - processLocation sets it to 'address_notes' if needed
             return;
           } catch (error) {
             console.error('❌ Location processing error:', error);
             await ctx.reply('❌ Joylashuvni qayta ishlashda xatolik!');
+            ctx.session.waitingFor = null;
             return;
           }
         }
@@ -320,34 +321,6 @@ function registerMessageHandlers(bot) {
         return;
       }
       
-      // Address notes for delivery
-      if (ctx.session?.waitingFor === 'address_notes') {
-        try {
-          const notes = text.trim();
-          ctx.session.orderData = ctx.session.orderData || {};
-          ctx.session.orderData.addressNotes = notes;
-          ctx.session.waitingFor = null;
-          
-          await ctx.reply(
-            `✅ **Manzil izohlar qo'shildi!**\n\n📝 Izohlar: ${notes}\n\nTo'lov usulini tanlang:`,
-            {
-              parse_mode: 'Markdown',
-              reply_markup: { remove_keyboard: true }
-            }
-          );
-          
-          const PaymentFlow = require('../user/order/paymentFlow');
-          await PaymentFlow.askForPaymentMethod(ctx);
-          
-          console.log(`✅ Address notes added: ${notes}`);
-          return;
-        } catch (error) {
-          console.error('❌ Address notes processing error:', error);
-          await ctx.reply('❌ Izohni qayta ishlashda xatolik');
-          return;
-        }
-      }
-
       // Table number input for dine-in arrival
       if (ctx.session?.waitingFor === 'table_number') {
         try {

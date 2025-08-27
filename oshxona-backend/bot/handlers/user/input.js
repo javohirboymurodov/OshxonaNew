@@ -21,6 +21,25 @@ async function handleTextMessage(ctx, text) {
       if (handled) return;
     }
 
+    // Handle address notes input for delivery
+    if (waitingFor === 'address_notes') {
+      ctx.session.orderData = ctx.session.orderData || {};
+      ctx.session.orderData.addressNotes = messageText.trim();
+      ctx.session.waitingFor = null;
+      
+      await ctx.reply(
+        `✅ **Manzil izohlar qo'shildi!**\n\n📝 Izohlar: ${messageText.trim()}\n\nTo'lov usulini tanlang:`,
+        {
+          parse_mode: 'Markdown',
+          reply_markup: { remove_keyboard: true }
+        }
+      );
+      
+      const PaymentFlow = require('./order/paymentFlow');
+      await PaymentFlow.askForPaymentMethod(ctx);
+      return;
+    }
+
     // 🔧 FIX: Feedback yozish jarayoni
     if (waitingFor === 'feedback' && ctx.session?.feedbackOrderId) {
       try {
