@@ -366,14 +366,20 @@ Buyurtma №: ${order.orderId}`;
           cart = await Cart.findOne({ user: user._id, isActive: true });
         }
 
-        // If cart has items, proceed to payment
+        // If cart has items, ask for address notes then proceed to payment
         if (cart && cart.items && cart.items.length > 0) {
-          console.log('✅ Cart has items, proceeding to payment flow');
-          await ctx.reply('🎯 **Joylashuv qabul qilindi!**\n\nTo\'lov usulini tanlang:', {
-            parse_mode: 'Markdown'
+          console.log('✅ Cart has items, asking for address notes');
+          await ctx.reply('🎯 **Joylashuv qabul qilindi!**\n\n📝 Qo\'shimcha ma\'lumot kiriting (Nechanchi qavat, xonadon raqami va h.k.):', {
+            parse_mode: 'Markdown',
+            reply_markup: {
+              remove_keyboard: true,
+              inline_keyboard: [
+                [{ text: '⏭️ O\'tkazib yuborish', callback_data: 'skip_address_notes' }],
+                [{ text: '🔙 Orqaga', callback_data: 'start_order' }]
+              ]
+            }
           });
-          const PaymentFlow = require('./paymentFlow');
-          await PaymentFlow.askForPaymentMethod(ctx);
+          ctx.session.waitingFor = 'address_notes';
           return;
         }
 
@@ -408,14 +414,20 @@ Buyurtma №: ${order.orderId}`;
           cart = await Cart.findOne({ user: user._id, isActive: true });
         }
 
-        // If cart has items, proceed to payment
+        // If cart has items, ask for address notes then proceed to payment
         if (cart && cart.items && cart.items.length > 0) {
-          console.log('✅ Cart has items (fallback), proceeding to payment flow');
-          await ctx.reply('✅ **Joylashuv qabul qilindi!**\n\nTo\'lov usulini tanlang:', {
-            parse_mode: 'Markdown'
+          console.log('✅ Cart has items (fallback), asking for address notes');
+          await ctx.reply('✅ **Joylashuv qabul qilindi!**\n\n📝 Qo\'shimcha ma\'lumot kiriting (Nechanchi qavat, xonadon raqami va h.k.):', {
+            parse_mode: 'Markdown',
+            reply_markup: {
+              remove_keyboard: true,
+              inline_keyboard: [
+                [{ text: '⏭️ O\'tkazib yuborish', callback_data: 'skip_address_notes' }],
+                [{ text: '🔙 Orqaga', callback_data: 'start_order' }]
+              ]
+            }
           });
-          const PaymentFlow = require('./paymentFlow');
-          await PaymentFlow.askForPaymentMethod(ctx);
+          ctx.session.waitingFor = 'address_notes';
           return;
         }
 

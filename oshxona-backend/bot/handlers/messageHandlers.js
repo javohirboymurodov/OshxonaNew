@@ -304,6 +304,34 @@ function registerMessageHandlers(bot) {
       
       if (!user) return;
       
+      // Address notes for delivery
+      if (ctx.session?.waitingFor === 'address_notes') {
+        try {
+          const notes = text.trim();
+          ctx.session.orderData = ctx.session.orderData || {};
+          ctx.session.orderData.addressNotes = notes;
+          ctx.session.waitingFor = null;
+          
+          await ctx.reply(
+            `✅ **Manzil izohlar qo'shildi!**\n\n📝 Izohlar: ${notes}\n\nTo'lov usulini tanlang:`,
+            {
+              parse_mode: 'Markdown',
+              reply_markup: { remove_keyboard: true }
+            }
+          );
+          
+          const PaymentFlow = require('../user/order/paymentFlow');
+          await PaymentFlow.askForPaymentMethod(ctx);
+          
+          console.log(`✅ Address notes added: ${notes}`);
+          return;
+        } catch (error) {
+          console.error('❌ Address notes processing error:', error);
+          await ctx.reply('❌ Izohni qayta ishlashda xatolik');
+          return;
+        }
+      }
+
       // Table number input for dine-in arrival
       if (ctx.session?.waitingFor === 'table_number') {
         try {
@@ -374,7 +402,28 @@ function registerMessageHandlers(bot) {
           ctx.session.orderData.address = text;
           ctx.session.waitingFor = null;
           
-          // Proceed to product selection
+          // Check if user has items in cart
+          const { User, Cart } = require('../../models');
+          const telegramId = ctx.from.id;
+          const userWithCart = await User.findOne({ telegramId });
+          let cart = null;
+          
+          if (userWithCart) {
+            cart = await Cart.findOne({ user: userWithCart._id, isActive: true });
+          }
+
+          // If cart has items, proceed to payment
+          if (cart && cart.items && cart.items.length > 0) {
+            console.log('✅ Cart has items, proceeding to payment flow');
+            await ctx.reply('✅ Manzil qabul qilindi!\n\nTo\'lov usulini tanlang:', {
+              reply_markup: { remove_keyboard: true }
+            });
+            const PaymentFlow = require('../user/order/paymentFlow');
+            await PaymentFlow.askForPaymentMethod(ctx);
+            return;
+          }
+
+          // If no items in cart, show product selection
           await ctx.reply('✅ Manzil qabul qilindi!\n\nEndi mahsulotlarni tanlang:', {
             reply_markup: {
               remove_keyboard: true,

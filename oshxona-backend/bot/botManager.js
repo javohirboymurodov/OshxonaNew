@@ -61,7 +61,8 @@ function initializeBot(bot) {
 
   // 5. Message handlers (text, contact, location)
   try {
-    require('./handlers/messageHandlers')(bot);
+    const { registerMessageHandlers } = require('./handlers/messageHandlers');
+    registerMessageHandlers(bot);
     console.log('✅ Message handlers loaded');
   } catch (error) {
     console.warn('⚠️ Message handlers load failed:', error.message);

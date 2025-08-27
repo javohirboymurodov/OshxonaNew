@@ -412,6 +412,21 @@ function registerUserCallbacks(bot) {
     }
   });
 
+  // Skip address notes handler
+  bot.action('skip_address_notes', async (ctx) => {
+    try {
+      ctx.session.waitingFor = null;
+      await ctx.editMessageText('✅ **Manzil tasdiqlandi!**\n\nTo\'lov usulini tanlang:', {
+        parse_mode: 'Markdown'
+      });
+      const PaymentFlow = require('../handlers/user/order/paymentFlow');
+      await PaymentFlow.askForPaymentMethod(ctx);
+    } catch (e) {
+      console.error('skip_address_notes error:', e);
+      await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
   // ========================================
   // 📋 MY ORDERS
   // ========================================
@@ -575,29 +590,6 @@ function registerUserCallbacks(bot) {
       await trackingHandlers.confirmReorder(ctx);
     } catch (error) {
       console.error('❌ confirm_reorder error:', error);
-      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
-    }
-  });
-
-  // Manual address entry
-  bot.action('enter_address_text', async (ctx) => {
-    try {
-      await ctx.editMessageText(
-        '✍️ **Manzilni yozing**\n\nMisol: Toshkent, Chilonzor tumani, Bunyodkor 1-tor...',
-        {
-          parse_mode: 'Markdown',
-          reply_markup: {
-            inline_keyboard: [
-              [{ text: '🔙 Orqaga', callback_data: 'start_order' }]
-            ]
-          }
-        }
-      );
-      
-      ctx.session.waitingFor = 'delivery_address_text';
-      ctx.session.step = 'awaiting_address_text';
-    } catch (error) {
-      console.error('❌ enter_address_text error:', error);
       if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
     }
   });
