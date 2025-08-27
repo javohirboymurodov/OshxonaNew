@@ -324,12 +324,19 @@ async function assignCourier(req, res) {
             locationLines = `\n📍 Manzil (Yandex): ${yandex}`;
           }
         } catch {}
-        await bot.telegram.sendMessage(
+        console.log(`🎯 Sending message with buttons:`, {
+          telegramId: courier.telegramId,
+          acceptData,
+          onwayData,
+          deliveredData: `courier_delivered_${order._id}`
+        });
+        
+        const message = await bot.telegram.sendMessage(
           courier.telegramId,
           `🚚 Yangi buyurtma tayinlandi\n\n#${order.orderId} – ${order.total?.toLocaleString?.() || 0} so'm${locationLines}`,
           { reply_markup: { inline_keyboard: [[{ text: '✅ Qabul qilaman', callback_data: acceptData }],[{ text: "🚗 Yo'ldaman", callback_data: onwayData }],[{ text: '📦 Yetkazdim', callback_data: `courier_delivered_${order._id}` }]] } }
         );
-        console.log(`✅ Courier notification sent successfully to: ${courier.telegramId}`);
+        console.log(`✅ Courier notification sent successfully to: ${courier.telegramId}`, message.message_id);
       } else {
         console.log(`❌ Courier has no telegramId: ${courier._id}`);
       }

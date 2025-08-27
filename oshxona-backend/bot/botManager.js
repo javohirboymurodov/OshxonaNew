@@ -51,6 +51,21 @@ function initializeBot(bot) {
     const { registerCourierCallbacks } = require('./courier/callbacks');
     registerCourierCallbacks(bot);
     console.log('✅ Courier callbacks loaded');
+    
+    // Debug: Log all courier-related callback queries
+    bot.use((ctx, next) => {
+      if (ctx.updateType === 'callback_query') {
+        const data = ctx.callbackQuery?.data;
+        if (data && (data.startsWith('courier_') || data.includes('courier'))) {
+          console.log(`🔥 COURIER CALLBACK DETECTED:`, {
+            from: ctx.from?.id,
+            data: data,
+            timestamp: new Date().toISOString()
+          });
+        }
+      }
+      return next();
+    });
   } catch (error) {
     console.warn('⚠️ Courier callbacks load failed:', error.message);
   }
