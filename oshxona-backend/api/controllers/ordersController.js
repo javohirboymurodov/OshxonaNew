@@ -308,7 +308,11 @@ async function assignCourier(req, res) {
     try {
       if (courier.telegramId) {
         console.log(`📨 Sending notification to courier: ${courier.telegramId} for order: ${order.orderId}`);
-        const { bot } = require('../../index');
+        const bot = global.botInstance;
+        if (!bot) {
+          console.log('❌ Bot instance not found in global');
+          return;
+        }
         const geoService = require('../../services/geoService');
         const acceptData = `courier_accept_${order._id}`;
         const onwayData = `courier_on_way_${order._id}`;
