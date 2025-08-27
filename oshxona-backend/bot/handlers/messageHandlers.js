@@ -304,6 +304,60 @@ function registerMessageHandlers(bot) {
       
       if (!user) return;
       
+      // Table number input for dine-in arrival
+      if (ctx.session?.waitingFor === 'table_number') {
+        try {
+          const tableNumber = text.trim();
+          if (!tableNumber) {
+            await ctx.reply('❌ Stol raqamini kiriting');
+            return;
+          }
+          
+          ctx.session.waitingFor = null;
+          
+          // Notify admins about customer arrival
+          const message = `🏁 **Mijoz keldi!**\n\n👤 ${user.firstName || 'Mijoz'}\n📱 ${user.phone || 'Telefon yo\'q'}\n🪑 Stol: ${tableNumber}\n⏰ ${new Date().toLocaleTimeString('uz-UZ')}`;
+          
+          // Send to admin panel via socket
+          try {
+            const SocketManager = require('../../services/socketManager');
+            if (SocketManager.io) {
+              SocketManager.io.emit('customer_arrived', {
+                customer: {
+                  name: user.firstName || 'Mijoz',
+                  phone: user.phone,
+                  telegramId: user.telegramId
+                },
+                tableNumber,
+                timestamp: new Date()
+              });
+            }
+          } catch (socketError) {
+            console.error('❌ Socket notification error:', socketError);
+          }
+          
+          await ctx.reply(
+            `✅ **Kelganingiz tasdiqlandi!**\n\n🪑 Stol raqami: ${tableNumber}\n⏰ Vaqt: ${new Date().toLocaleTimeString('uz-UZ')}\n\n🎉 Administratorga xabar berildi!\nTez orada sizga xizmat ko'rsatiladi.`,
+            {
+              parse_mode: 'Markdown',
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: '🏠 Bosh sahifa', callback_data: 'back_to_main' }],
+                  [{ text: '📋 Mening buyurtmalarim', callback_data: 'my_orders' }]
+                ]
+              }
+            }
+          );
+          
+          console.log(`✅ Customer arrived: ${user.firstName} at table ${tableNumber}`);
+          return;
+        } catch (error) {
+          console.error('❌ Table number processing error:', error);
+          await ctx.reply('❌ Stol raqamini qayta ishlashda xatolik');
+          return;
+        }
+      }
+
       // Delivery address text input
       if (ctx.session?.waitingFor === 'delivery_address_text') {
         try {

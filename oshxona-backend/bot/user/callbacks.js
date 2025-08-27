@@ -368,6 +368,50 @@ function registerUserCallbacks(bot) {
     }
   });
 
+  // Dine-in arrival handler
+  bot.action('dinein_arrived_preview', async (ctx) => {
+    try {
+      await ctx.editMessageText(
+        '🏁 **Restoranga keldingizmi?**\n\nStol raqamingizni kiriting yoki quyidagi tugmani bosing:',
+        {
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '📝 Stol raqamini kiritish', callback_data: 'enter_table_number' }],
+              [{ text: '🔙 Orqaga', callback_data: 'back_to_main' }]
+            ]
+          }
+        }
+      );
+      ctx.session.waitingFor = 'table_number';
+    } catch (e) {
+      console.error('dinein_arrived_preview error:', e);
+      await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // Enter table number handler
+  bot.action('enter_table_number', async (ctx) => {
+    try {
+      await ctx.editMessageText(
+        '📝 **Stol raqamini kiriting:**\n\nMasalan: 12, A5, yoki 3B',
+        {
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '🔙 Orqaga', callback_data: 'dinein_arrived_preview' }]
+            ]
+          }
+        }
+      );
+      ctx.session.waitingFor = 'table_number';
+      await ctx.answerCbQuery('Stol raqamini yozing');
+    } catch (e) {
+      console.error('enter_table_number error:', e);
+      await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
   // ========================================
   // 📋 MY ORDERS
   // ========================================
