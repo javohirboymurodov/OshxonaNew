@@ -32,7 +32,7 @@ import { Line, Pie, Column, Bar } from '@ant-design/plots';
 import apiService from '@/services/api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
-import { useRealTimeOrders } from '@/hooks/useSocket';
+import { useSocket } from '@/hooks/useSocket';
 import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
@@ -126,7 +126,9 @@ const DashboardPage: React.FC = () => {
   });
   const token = localStorage.getItem('token') || '';
   const branchId = ((user as { branch?: { _id?: string } } | null | undefined)?.branch?._id) || 'default';
-  const { newOrders, connected } = useRealTimeOrders(token, branchId);
+  const { connected } = useSocket();
+  // TODO: Implement newOrders logic with Redux
+  const newOrders: any[] = [];
 
   const [messageApi, contextHolder] = antdMessage.useMessage();
 

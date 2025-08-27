@@ -9,7 +9,7 @@ import OrdersTable, { type Order as TableOrder } from '@/components/Orders/Order
 import OrderDetailsModal, { type Order as DetailsOrder } from '@/components/Orders/OrderDetailsModal';
 import AssignCourierModal from '@/components/Orders/AssignCourierModal';
 import { useAuth } from '@/hooks/useAuth';
-import { useRealTimeOrders } from '@/hooks/useSocket';
+import { useSocket } from '@/hooks/useSocket';
 import apiService from '@/services/api';
 import { useLocation } from 'react-router-dom';
 import '@/pages/Orders/orders-highlight.css';
@@ -94,7 +94,10 @@ const OrdersPage: React.FC = () => {
     return maybe?.branch?._id || 'default';
   })();
   const token = localStorage.getItem('token') || '';
-  const { newOrders, orderUpdates, connected } = useRealTimeOrders(token, branchId);
+  const { connected } = useSocket();
+  // TODO: Implement newOrders and orderUpdates logic with Redux
+  const newOrders: any[] = [];
+  const orderUpdates: any[] = [];
   const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
   // 🔧 Guard: filtr o'zgarganda avtomatik modal ochilmasin
   const suppressAutoOpenRef = useRef(false);

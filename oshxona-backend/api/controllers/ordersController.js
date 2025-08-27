@@ -280,6 +280,7 @@ async function assignCourier(req, res) {
       .populate('deliveryInfo.courier', 'firstName lastName phone courierInfo')
       .populate('user', 'firstName lastName phone telegramId')
       .populate('branch', 'address coordinates');
+
     
     // 🔧 FIX: Use centralized status service
     const OrderStatusService = require('../../services/orderStatusService');
@@ -290,45 +291,8 @@ async function assignCourier(req, res) {
     if (!order) return res.status(404).json({ success: false, message: 'Buyurtma topilmadi!' });
     
     // Real-time notification handled by OrderStatusService
-
-    try {
-      if (courier.telegramId) {
-        console.log(`📨 Sending notification to courier: ${courier.telegramId} for order: ${order.orderId}`);
-        const bot = global.botInstance;
-        if (!bot) {
-          console.log('❌ Bot instance not found in global');
-          return;
-        }
-        const geoService = require('../../services/geoService');
-        const acceptData = `courier_accept_${order._id}`;
-        const onwayData = `courier_on_way_${order._id}`;
-        let locationLines = '';
-        try {
-          const loc = order?.deliveryInfo?.location;
-          if (loc?.latitude && loc?.longitude) {
-            const yandex = geoService.generateMapLink(loc.latitude, loc.longitude);
-            locationLines = `\n📍 Manzil (Yandex): ${yandex}`;
-          }
-        } catch {}
-        console.log(`🎯 Sending message with buttons:`, {
-          telegramId: courier.telegramId,
-          acceptData,
-          onwayData,
-          deliveredData: `courier_delivered_${order._id}`
-        });
-        
-        const message = await bot.telegram.sendMessage(
-          courier.telegramId,
-          `🚚 Yangi buyurtma tayinlandi\n\n#${order.orderId} – ${order.total?.toLocaleString?.() || 0} so'm${locationLines}`,
-          { reply_markup: { inline_keyboard: [[{ text: '✅ Qabul qilaman', callback_data: acceptData }],[{ text: "🚗 Yo'ldaman", callback_data: onwayData }],[{ text: '📦 Yetkazdim', callback_data: `courier_delivered_${order._id}` }]] } }
-        );
-        console.log(`✅ Courier notification sent successfully to: ${courier.telegramId}`, message.message_id);
-      } else {
-        console.log(`❌ Courier has no telegramId: ${courier._id}`);
-      }
-    } catch (courierNotifyError) {
-      console.error('❌ Courier notification error:', courierNotifyError);
-    }
+    
+    // Courier notification handled by OrderStatusService
     
     // Notify customer that order is on delivery with ETA
     try {
