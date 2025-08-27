@@ -307,6 +307,7 @@ async function assignCourier(req, res) {
     
     try {
       if (courier.telegramId) {
+        console.log(`📨 Sending notification to courier: ${courier.telegramId} for order: ${order.orderId}`);
         const { bot } = require('../../index');
         const geoService = require('../../services/geoService');
         const acceptData = `courier_accept_${order._id}`;
@@ -324,8 +325,13 @@ async function assignCourier(req, res) {
           `🚚 Yangi buyurtma tayinlandi\n\n#${order.orderId} – ${order.total?.toLocaleString?.() || 0} so'm${locationLines}`,
           { reply_markup: { inline_keyboard: [[{ text: '✅ Qabul qilaman', callback_data: acceptData }],[{ text: "🚗 Yo'ldaman", callback_data: onwayData }],[{ text: '📦 Yetkazdim', callback_data: `courier_delivered_${order._id}` }]] } }
         );
+        console.log(`✅ Courier notification sent successfully to: ${courier.telegramId}`);
+      } else {
+        console.log(`❌ Courier has no telegramId: ${courier._id}`);
       }
-    } catch {}
+    } catch (courierNotifyError) {
+      console.error('❌ Courier notification error:', courierNotifyError);
+    }
     
     // Notify customer that order is on delivery with ETA
     try {

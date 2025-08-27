@@ -93,7 +93,15 @@ class OrderTrackingService extends EventEmitter {
   // Mijozga push notification
   async notifyCustomer(order, status, details) {
     const bot = global.botInstance;
-    if (!bot || !order.user || !order.user.telegramId) return;
+    console.log(`📨 notifyCustomer called: order=${order._id}, status=${status}, telegramId=${order.user?.telegramId}`);
+    if (!bot) {
+      console.log('❌ Bot instance not found');
+      return;
+    }
+    if (!order.user || !order.user.telegramId) {
+      console.log('❌ User or telegramId not found');
+      return;
+    }
 
     const messages = {
       confirmed: {
