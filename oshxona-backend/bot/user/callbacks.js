@@ -231,9 +231,7 @@ function registerUserCallbacks(bot) {
     await removeFromCart(ctx);
   });
 
-  bot.action('show_cart', async (ctx) => {
-    await showCart(ctx);
-  });
+
 
   bot.action('clear_cart', async (ctx) => {
     await clearCart(ctx);
@@ -253,10 +251,11 @@ function registerUserCallbacks(bot) {
     }
   });
 
-  // Fallback: checkout -> open cart view
+  // Fallback: checkout -> start order process
   bot.action('checkout', async (ctx) => {
     try {
-      await showCart(ctx);
+      const UserOrderHandlers = require('../handlers/user/order/index');
+      await UserOrderHandlers.startOrder(ctx);
     } catch (e) {
       console.error('checkout fallback error:', e);
       await ctx.answerCbQuery('❌ Xatolik yuz berdi!');

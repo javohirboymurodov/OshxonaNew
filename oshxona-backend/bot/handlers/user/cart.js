@@ -184,10 +184,19 @@ async function showCart(ctx) {
       };
 
       if (ctx.callbackQuery) {
-        return await ctx.editMessageText(message, {
-          parse_mode: 'Markdown',
-          reply_markup: keyboard
-        });
+        // Check if message content has changed to avoid Telegram error
+        const currentMessage = ctx.callbackQuery.message.text;
+        
+        // Only edit if content has changed
+        if (currentMessage !== message) {
+          return await ctx.editMessageText(message, {
+            parse_mode: 'Markdown',
+            reply_markup: keyboard
+          });
+        } else {
+          // Content is same, just answer the callback query
+          return await ctx.answerCbQuery('🛒 Savat bo\'sh');
+        }
       } else {
         return await ctx.reply(message, {
           parse_mode: 'Markdown',
@@ -217,10 +226,21 @@ async function showCart(ctx) {
           reply_markup: cartKeyboard(cart).reply_markup
         });
       } else {
-        await ctx.editMessageText(message, {
-          parse_mode: 'Markdown',
-          reply_markup: cartKeyboard(cart).reply_markup
-        });
+        // Check if message content has changed to avoid Telegram error
+        const currentMessage = ctx.callbackQuery.message.text;
+        const newKeyboard = cartKeyboard(cart).reply_markup;
+        const currentKeyboard = ctx.callbackQuery.message.reply_markup;
+        
+        // Only edit if content or keyboard has changed
+        if (currentMessage !== message || JSON.stringify(currentKeyboard) !== JSON.stringify(newKeyboard)) {
+          await ctx.editMessageText(message, {
+            parse_mode: 'Markdown',
+            reply_markup: newKeyboard
+          });
+        } else {
+          // Content is same, just answer the callback query
+          await ctx.answerCbQuery('🛒 Savat ko\'rsatilmoqda');
+        }
       }
     } else {
       await ctx.reply(message, {
