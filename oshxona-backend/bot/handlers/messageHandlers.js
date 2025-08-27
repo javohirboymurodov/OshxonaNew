@@ -428,7 +428,7 @@ function registerMessageHandlers(bot) {
             await ctx.reply('✅ Manzil qabul qilindi!\n\nTo\'lov usulini tanlang:', {
               reply_markup: { remove_keyboard: true }
             });
-            const PaymentFlow = require('../user/order/paymentFlow');
+            const PaymentFlow = require(require.resolve('./user/order/paymentFlow'));
             await PaymentFlow.askForPaymentMethod(ctx);
             return;
           }

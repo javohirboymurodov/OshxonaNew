@@ -35,7 +35,7 @@ async function handleTextMessage(ctx, text) {
         }
       );
       
-      const PaymentFlow = require('./order/paymentFlow');
+      const PaymentFlow = require(require.resolve('./order/paymentFlow'));
       await PaymentFlow.askForPaymentMethod(ctx);
       return;
     }
