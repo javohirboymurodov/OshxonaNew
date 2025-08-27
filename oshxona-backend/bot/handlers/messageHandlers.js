@@ -8,6 +8,8 @@ const UserOrderHandlers = require('./user/order/index');
  * @param {Telegraf} bot - Telegraf bot instance
  */
 function registerMessageHandlers(bot) {
+  console.log('🔗 Registering message handlers...');
+  
   // ========================================
   // 📞 CONTACT HANDLING
   // ========================================
@@ -300,9 +302,15 @@ function registerMessageHandlers(bot) {
   bot.on('text', async (ctx) => {
     try {
       const text = ctx.message.text;
+      console.log(`📝 Text message received: "${text}" from ${ctx.from.id}`);
+      console.log(`🔍 Session waitingFor: ${ctx.session?.waitingFor}`);
+      
       const user = await User.findOne({ telegramId: ctx.from.id });
       
-      if (!user) return;
+      if (!user) {
+        console.log('❌ User not found for text message');
+        return;
+      }
       
       // Address notes for delivery
       if (ctx.session?.waitingFor === 'address_notes') {
@@ -335,6 +343,7 @@ function registerMessageHandlers(bot) {
       // Table number input for dine-in arrival
       if (ctx.session?.waitingFor === 'table_number') {
         try {
+          console.log('🎯 Processing table number:', text);
           const tableNumber = text.trim();
           if (!tableNumber) {
             await ctx.reply('❌ Stol raqamini kiriting');
@@ -342,6 +351,25 @@ function registerMessageHandlers(bot) {
           }
           
           ctx.session.waitingFor = null;
+          
+          // Find the user's latest dine-in order and update table number
+          const { Order } = require('../../models');
+          try {
+            const latestOrder = await Order.findOne({ 
+              user: user._id, 
+              orderType: 'dine_in',
+              status: { $in: ['pending', 'confirmed', 'preparing', 'ready'] }
+            }).sort({ createdAt: -1 });
+            
+            if (latestOrder) {
+              latestOrder.dineInInfo = latestOrder.dineInInfo || {};
+              latestOrder.dineInInfo.tableNumber = tableNumber;
+              await latestOrder.save();
+              console.log(`✅ Table number ${tableNumber} saved to order ${latestOrder.orderId}`);
+            }
+          } catch (orderError) {
+            console.error('❌ Order update error:', orderError);
+          }
           
           // Notify admins about customer arrival
           const message = `🏁 **Mijoz keldi!**\n\n👤 ${user.firstName || 'Mijoz'}\n📱 ${user.phone || 'Telefon yo\'q'}\n🪑 Stol: ${tableNumber}\n⏰ ${new Date().toLocaleTimeString('uz-UZ')}`;
@@ -357,7 +385,8 @@ function registerMessageHandlers(bot) {
                   telegramId: user.telegramId
                 },
                 tableNumber,
-                timestamp: new Date()
+                timestamp: new Date(),
+                orderId: latestOrder?.orderId
               });
             }
           } catch (socketError) {
@@ -594,6 +623,8 @@ function registerMessageHandlers(bot) {
       await ctx.reply('❌ Xatolik yuz berdi! Iltimos, qaytadan urinib ko\'ring.');
     }
   });
+  
+  console.log('✅ All message handlers registered successfully');
 }
 
 module.exports = { registerMessageHandlers };

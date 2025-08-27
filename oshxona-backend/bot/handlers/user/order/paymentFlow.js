@@ -272,7 +272,14 @@ class PaymentFlow extends BaseHandler {
           orderType: ctx.session.orderType,
           paymentMethod: orderData.paymentMethod,
           status: 'pending',
-          deliveryInfo: orderData.location ? { address: orderData.address, location: orderData.location } : undefined,
+          deliveryInfo: orderData.location ? { 
+            address: orderData.address, 
+            location: orderData.location,
+            instructions: orderData.addressNotes 
+          } : undefined,
+          dineInInfo: ctx.session.orderType === 'dine_in' ? {
+            arrivalTime: orderData.arrivalTime
+          } : undefined,
           branch: orderData.branch || null,
           customerInfo: { name: [user.firstName, user.lastName].filter(Boolean).join(' '), phone: user.phone }
         });
