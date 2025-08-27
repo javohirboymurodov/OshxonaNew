@@ -27,7 +27,7 @@ import {
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useAuth } from '@/hooks/useAuth';
-import { useRealTimeOrders } from '@/hooks/useSocket';
+import { useSocket } from '@/hooks/useSocket';
 import { useNavigate as useNav } from 'react-router-dom';
 
 const { Header, Sider, Content } = Layout;
@@ -44,7 +44,9 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const castUser = (user as unknown) as UserShape;
   const isSuper = String(castUser?.role || '').toLowerCase() === 'superadmin';
   const branchId = isSuper ? '' : (castUser?.branch?._id || '');
-  const { newOrders } = useRealTimeOrders(token, branchId);
+  const { connected } = useSocket();
+  // TODO: Implement newOrders logic with Redux
+  const newOrders: any[] = [];
   const go = useNav();
   const [notifOpen, setNotifOpen] = useState(false);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());

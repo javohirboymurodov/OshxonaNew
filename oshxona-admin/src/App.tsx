@@ -8,7 +8,7 @@ import 'dayjs/locale/uz-latn';
 
 import { AuthProvider } from '@/hooks/useAuth';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { store } from '@/store';
+import { store } from './store';
 import AppRouter from '@/router/AppRouter';
 import './App.css';
 

@@ -3,8 +3,8 @@ import { Table, Tag, Badge, Space, Button, Typography, Dropdown } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { EyeOutlined, ClockCircleOutlined, CheckCircleOutlined, TruckOutlined, ShopOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { useAppSelector, useAppDispatch } from '../../hooks/redux';
-import { getStatusConfig, getNextStatusOptions, OrderStatus } from '../../utils/orderStatus';
-import { updateOrderStatus, assignCourier } from '../../store/slices/ordersSlice';
+import { getStatusConfig, OrderStatus } from '../../utils/orderStatus';
+import { updateOrderStatus } from '../../store/slices/ordersSlice';
 
 const { Text } = Typography;
 

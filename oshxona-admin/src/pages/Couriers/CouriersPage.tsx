@@ -4,7 +4,7 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useAuth } from '@/hooks/useAuth';
-import useSocket from '@/hooks/useSocket';
+import { useSocket } from '@/hooks/useSocket';
 import { apiService } from '@/services/api';
 
 const { Text } = Typography;
