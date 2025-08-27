@@ -55,7 +55,7 @@ class SecurityService {
   static getOrderRateLimit() {
     return this.createRateLimit({
       windowMs: 60 * 1000, // 1 minute
-      max: 5, // 5 orders per minute
+      max: 50, // 50 orders per minute (increased for admin operations)
       message: {
         success: false,
         error: 'Buyurtmalar soni chekloviga yetdingiz. Bir daqiqadan keyin qaytadan urining.'

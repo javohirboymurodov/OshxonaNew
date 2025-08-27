@@ -76,9 +76,10 @@ OshxonaNew/
 - **CORS**: Dynamic origin support
 
 ### Frontend
-- **Admin**: React 18 + TypeScript + Ant Design
+- **Admin**: React 18 + TypeScript + Ant Design + Redux Toolkit
 - **User WebApp**: React + TypeScript + Vite
-- **State**: React Query + Context
+- **State**: Redux Toolkit + React Query + Socket.io
+- **Real-time**: Socket.io client with Redux integration
 - **Styling**: CSS Modules + Ant Design
 - **Build**: Vite
 
@@ -108,15 +109,26 @@ OshxonaNew/
 ```javascript
 {
   orderType: 'delivery' | 'pickup' | 'dine_in' | 'table',
-  status: 'pending' | 'confirmed' | 'ready' | 'on_delivery' | 'delivered' | 'picked_up' | 'completed',
+  status: 'pending' | 'confirmed' | 'assigned' | 'preparing' | 'ready' | 'on_delivery' | 'delivered' | 'cancelled',
   branch: ObjectId,
   user: ObjectId,
   items: [OrderItem],
   totalAmount: Number,
+  statusHistory: [{              // ✅ NEW: Complete audit trail
+    status: String,
+    message: String,
+    timestamp: Date,
+    updatedBy: ObjectId
+  }],
   deliveryInfo: {
     address: String,
     location: { latitude, longitude },
+    instructions: String,       // ✅ NEW: Address notes
     courier: ObjectId
+  },
+  dineInInfo: {                 // ✅ ENHANCED
+    tableNumber: String,
+    arrivalTime: String
   }
 }
 ```
@@ -158,8 +170,8 @@ OshxonaNew/
 
 ### Admin
 - `GET /api/admin/orders` - Buyurtmalar ro'yxati
-- `PATCH /api/admin/orders/:id/status` - Status yangilash
-- `PATCH /api/admin/orders/:id/assign-courier` - Kuryer tayinlash
+- `PATCH /api/admin/orders/:id/status` - Status yangilash (OrderStatusService orqali)
+- `PATCH /api/admin/orders/:id/assign-courier` - Kuryer tayinlash (centralized)
 - `GET /api/admin/products` - Mahsulotlar
 - `PATCH /api/admin/branches/:branchId/products/:productId/promo` - Promo qo'shish
 
@@ -171,13 +183,19 @@ OshxonaNew/
 ## 🔄 Real-time Events (Socket.IO)
 
 ### Buyurtmalar
-- `new-order` → `branch:<branchId>` xonasiga
+- `new-order` → `branch:<branchId>` xonasiga (OrderStatusService orqali)
 - `order-updated` → Buyurtma yangilanishi
-- `order-status-updated` → Status o'zgarishi
+- `order-status-update` → Status o'zgarishi (centralized via OrderStatusService)
+- `courier-assigned` → Kuryer tayinlanishi
 
 ### Kuryer Lokatsiya
 - `courier:location` → `branch:<branchId>` xonasiga
 - Payload: `{ courierId, firstName, lastName, location, isOnline, isAvailable }`
+
+### Admin Panel Integration
+- `join-admin` → Admin real-time room'ga qo'shilish
+- Redux store integration → Socket events → State updates
+- Real-time order list updates → UI yangilanishi
 
 ## 🎨 UI Komponentlar
 
@@ -224,6 +242,7 @@ COURIER_CHECK_INTERVAL_MS=60000
 # Admin Panel (.env)
 VITE_API_BASE_URL=http://localhost:5000/api
 VITE_SOCKET_URL=http://localhost:5000
+REACT_APP_API_URL=http://localhost:5000
 
 # User WebApp (.env)
 VITE_API_BASE_URL=http://localhost:5000/api
@@ -253,6 +272,157 @@ VITE_APP_NAME=Oshxona
 2. **Status Logic**: Avtomatik status o'tishlari (picked_up → completed)
 3. **User Session**: Telegram ID bilan user ma'lumotlari saqlanadi
 4. **Location Handling**: Yandex va Nominatim fallback
+
+## 🚀 Major Architectural Improvements (August 2025)
+
+### 1. **Centralized Order Status Management** ✅
+**Problem**: Status conflicts, duplicate entries, admin-courier synchronization issues
+**Solution**: `OrderStatusService` - Single source of truth for all status operations
+
+**Implementation**:
+```javascript
+// services/orderStatusService.js
+class OrderStatusService {
+  static statusFlow = {
+    'pending': ['confirmed', 'cancelled'],
+    'confirmed': ['assigned', 'preparing', 'cancelled'],
+    'assigned': ['on_delivery', 'cancelled'],
+    'preparing': ['ready', 'cancelled'],
+    'ready': ['assigned', 'delivered'],
+    'on_delivery': ['delivered', 'cancelled']
+  }
+  
+  static async updateStatus(orderId, newStatus, details) {
+    // Validates transitions, updates DB, sends notifications
+  }
+}
+```
+
+**Benefits**:
+- ✅ **Status Flow Validation**: Invalid transitions blocked
+- ✅ **Unified Notifications**: Admin/Customer/Courier notifications synchronized
+- ✅ **Real-time Sync**: All interfaces show consistent status
+- ✅ **Audit Trail**: Complete status change history
+
+### 2. **Frontend State Management with Redux Toolkit** ✅
+**Problem**: Frontend state conflicts, inconsistent UI updates, prop drilling
+**Solution**: Redux Toolkit with type-safe state management
+
+**Implementation**:
+```typescript
+// store/slices/ordersSlice.ts
+export const ordersSlice = createSlice({
+  name: 'orders',
+  reducers: {
+    handleOrderUpdate: (state, action) => {
+      // Real-time status updates from Socket.io
+    },
+    handleNewOrder: (state, action) => {
+      // New order notifications
+    }
+  },
+  extraReducers: {
+    updateOrderStatus: // API integration
+    assignCourier: // Courier assignment
+  }
+})
+```
+
+**Features**:
+- ✅ **Type Safety**: Full TypeScript integration
+- ✅ **Real-time Updates**: Socket.io → Redux → UI
+- ✅ **Optimistic Updates**: Immediate UI feedback
+- ✅ **DevTools**: Redux DevTools for debugging
+
+### 3. **Unified Status Display System** ✅
+**Problem**: Status names inconsistency between backend, frontend, and bot
+**Solution**: Centralized status configuration shared across all platforms
+
+**Implementation**:
+```typescript
+// utils/orderStatus.ts
+export const STATUS_CONFIGS = {
+  pending: { text: 'Kutilmoqda', color: 'orange', icon: '⏳' },
+  confirmed: { text: 'Tasdiqlandi', color: 'blue', icon: '✅' },
+  assigned: { text: 'Kuryer tayinlandi', color: 'cyan', icon: '🚚' },
+  on_delivery: { text: 'Yetkazilmoqda', color: 'geekblue', icon: '🚗' },
+  delivered: { text: 'Yetkazildi', color: 'green', icon: '✅' }
+}
+```
+
+**Synchronization**:
+- ✅ Backend: `OrderStatusService.statusNames`
+- ✅ Frontend: `STATUS_CONFIGS`
+- ✅ Bot: Same display names
+- ✅ Admin Panel: Redux + centralized config
+
+### 4. **Enhanced Bot Flow Management** ✅
+**Problem**: Broken order flows, duplicate handlers, session conflicts
+**Solution**: Clean separation of responsibilities and proper session management
+
+**Fixed Issues**:
+- ❌ **Duplicate Handlers**: Removed conflicting `user/courierCallbacks.js`
+- ✅ **Centralized Handlers**: Single source in `courier/callbacks.js`
+- ✅ **Session Management**: Proper `waitingFor` state handling
+- ✅ **Message Processing**: Centralized text input in `input.js`
+
+**Flow Improvements**:
+```
+Delivery: Location → Address Notes → Payment → Confirmation ✅
+Courier: Admin Assigns → Accept → On Delivery → Delivered ✅
+Status: No duplicate prompts, proper button states ✅
+```
+
+### 5. **Real-time Communication Enhancement** ✅
+**Problem**: Missing admin notifications, delayed status updates
+**Solution**: Enhanced Socket.io integration with proper event handling
+
+**Events**:
+```javascript
+'new-order' → Admin panel real-time notifications
+'order-status-update' → Synchronized status across all clients  
+'courier-assigned' → Instant courier notifications
+'customer-arrived' → Dine-in table management
+```
+
+**Integration Points**:
+- ✅ OrderStatusService → Socket emission
+- ✅ Admin Panel → Redux state updates
+- ✅ Courier Bot → Status change handling
+- ✅ Customer Bot → Order tracking updates
+
+### 6. **Database Schema Enhancements** ✅
+
+**Enhanced Order Model**:
+```javascript
+{
+  status: OrderStatus,           // Enum validation
+  statusHistory: [{              // Complete audit trail
+    status: String,
+    message: String,
+    timestamp: Date,
+    updatedBy: ObjectId
+  }],
+  deliveryInfo: {
+    courier: ObjectId,           // Fixed population issues
+    instructions: String         // Address notes support
+  },
+  dineInInfo: {
+    tableNumber: String,         // Table management
+    arrivalTime: String
+  }
+}
+```
+
+### 7. **Error Handling & Debugging Improvements** ✅
+**Problem**: Silent failures, unclear error messages
+**Solution**: Comprehensive logging and error handling
+
+**Features**:
+- ✅ **Debug Logs**: Detailed execution tracing
+- ✅ **Error Boundaries**: Graceful failure handling
+- ✅ **Status Validation**: Clear error messages for invalid operations
+- ✅ **Socket.io Monitoring**: Connection status and event logging
 
 ## 📋 Keyingi Ishlar
 

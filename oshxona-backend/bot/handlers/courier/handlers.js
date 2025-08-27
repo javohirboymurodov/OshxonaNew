@@ -9,7 +9,20 @@ async function ensureCourierByTelegram(ctx) {
 }
 
 async function start(ctx) {
+  console.log(`🎯 COURIER START COMMAND:`, {
+    from: ctx.from?.id,
+    username: ctx.from?.username,
+    timestamp: new Date().toISOString()
+  });
+  
   const { user, allowed } = await ensureCourierByTelegram(ctx);
+  console.log(`🔍 Courier start auth:`, { 
+    userId: user?._id, 
+    role: user?.role,
+    allowed,
+    telegramId: user?.telegramId 
+  });
+  
   if (!allowed) {
     // Ask to bind by phone
     ctx.session = ctx.session || {};
@@ -185,12 +198,24 @@ async function profile(ctx) {
 
 // Buyurtma qabul qilish
 async function acceptOrder(ctx) {
+  console.log(`🎯 COURIER ACCEPT CALLBACK TRIGGERED:`, {
+    from: ctx.from?.id,
+    callbackData: ctx.callbackQuery?.data,
+    timestamp: new Date().toISOString()
+  });
+  
   const { user, allowed } = await ensureCourierByTelegram(ctx);
-  if (!allowed) return ctx.answerCbQuery('❌ Ruxsat yo\'q');
+  console.log(`🔍 Courier auth check:`, { userId: user?._id, allowed });
+  
+  if (!allowed) {
+    console.log(`❌ Courier not allowed:`, ctx.from?.id);
+    return ctx.answerCbQuery('❌ Ruxsat yo\'q');
+  }
   
   // Callback data dan order ID ni olish
   const callbackData = ctx.callbackQuery?.data;
   const orderId = callbackData?.replace('courier_accept_', '');
+  console.log(`📦 Processing order:`, { callbackData, orderId });
   
   if (!orderId) {
     await ctx.answerCbQuery('❌ Buyurtma ID topilmadi');
@@ -217,20 +242,12 @@ async function acceptOrder(ctx) {
       return;
     }
     
-    // 🔧 FIX: Buyurtma statusini yangilash - on_delivery (yetkazilmoqda)
-    order.status = 'on_delivery';
-    order.actualDeliveryTime = new Date();
-    
-    // 🔧 FIX: Status history ga qo'shish
-    order.statusHistory = order.statusHistory || [];
-    order.statusHistory.push({
-      status: 'on_delivery',
+    // 🔧 FIX: Use centralized status service
+    const OrderStatusService = require('../../../services/orderStatusService');
+    await OrderStatusService.updateStatus(orderId, 'on_delivery', {
       message: `Kuryer buyurtmani qabul qildi: ${user.firstName} ${user.lastName}`,
-      timestamp: new Date(),
       updatedBy: user._id
     });
-    
-    await order.save();
     
     // Kuryer statusini yangilash
     user.courierInfo.isAvailable = false;
@@ -363,20 +380,12 @@ async function delivered(ctx) {
       return;
     }
     
-    // Buyurtma statusini yangilash
-    order.status = 'delivered';
-    order.actualDeliveryTime = new Date();
-    
-    // 🔧 FIX: Status history ga qo'shish
-    order.statusHistory = order.statusHistory || [];
-    order.statusHistory.push({
-      status: 'delivered',
+    // 🔧 FIX: Use centralized status service
+    const OrderStatusService = require('../../../services/orderStatusService');
+    await OrderStatusService.updateStatus(orderId, 'delivered', {
       message: `Kuryer buyurtmani yetkazdi: ${user.firstName} ${user.lastName}`,
-      timestamp: new Date(),
       updatedBy: user._id
     });
-    
-    await order.save();
     
     // Kuryer statusini yangilash
     user.courierInfo.isAvailable = true;

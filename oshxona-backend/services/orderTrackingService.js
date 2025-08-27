@@ -93,7 +93,15 @@ class OrderTrackingService extends EventEmitter {
   // Mijozga push notification
   async notifyCustomer(order, status, details) {
     const bot = global.botInstance;
-    if (!bot || !order.user || !order.user.telegramId) return;
+    console.log(`📨 notifyCustomer called: order=${order._id}, status=${status}, telegramId=${order.user?.telegramId}`);
+    if (!bot) {
+      console.log('❌ Bot instance not found');
+      return;
+    }
+    if (!order.user || !order.user.telegramId) {
+      console.log('❌ User or telegramId not found');
+      return;
+    }
 
     const messages = {
       confirmed: {
@@ -246,7 +254,7 @@ class OrderTrackingService extends EventEmitter {
     try {
       const order = await Order.findById(orderId)
         .populate('user', 'firstName lastName phone')
-        .populate('courier', 'firstName lastName phone courierInfo')
+        .populate('deliveryInfo.courier', 'firstName lastName phone courierInfo')
         .populate('branch', 'name address phone');
 
       if (!order) return null;
@@ -264,10 +272,10 @@ class OrderTrackingService extends EventEmitter {
           name: `${order.user.firstName} ${order.user.lastName || ''}`.trim(),
           phone: order.user.phone
         },
-        courier: order.courier ? {
-          name: `${order.courier.firstName} ${order.courier.lastName || ''}`.trim(),
-          phone: order.courier.phone,
-          location: order.courier.courierInfo?.currentLocation
+        courier: order.deliveryInfo?.courier ? {
+          name: `${order.deliveryInfo.courier.firstName} ${order.deliveryInfo.courier.lastName || ''}`.trim(),
+          phone: order.deliveryInfo.courier.phone,
+          location: order.deliveryInfo.courier.courierInfo?.currentLocation
         } : null,
         branch: order.branch ? {
           name: order.branch.name,

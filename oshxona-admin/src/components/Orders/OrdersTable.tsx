@@ -2,6 +2,9 @@ import React from 'react';
 import { Table, Tag, Badge, Space, Button, Typography, Dropdown } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { EyeOutlined, ClockCircleOutlined, CheckCircleOutlined, TruckOutlined, ShopOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import { useAppSelector, useAppDispatch } from '../../hooks/redux';
+import { getStatusConfig, getNextStatusOptions, OrderStatus } from '../../utils/orderStatus';
+import { updateOrderStatus, assignCourier } from '../../store/slices/ordersSlice';
 
 const { Text } = Typography;
 
@@ -42,21 +45,7 @@ interface OrdersTableProps {
   highlightId?: string;
 }
 
-const getStatusConfig = (status: string) => {
-  const configs = {
-    pending: { color: 'orange', text: 'Kutilmoqda', icon: <ClockCircleOutlined /> },
-    confirmed: { color: 'blue', text: 'Tasdiqlangan', icon: <CheckCircleOutlined /> },
-    preparing: { color: 'purple', text: 'Tayyorlanmoqda', icon: <ClockCircleOutlined /> },
-    ready: { color: 'cyan', text: 'Tayyor', icon: <CheckCircleOutlined /> },
-    assigned: { color: 'green', text: 'Kuryer tayinlandi', icon: <CheckCircleOutlined /> },
-    picked_up: { color: 'blue', text: 'Olib ketildi', icon: <TruckOutlined /> },
-    on_delivery: { color: 'purple', text: 'Yo\'lda', icon: <TruckOutlined /> },
-    delivered: { color: 'green', text: 'Yetkazildi', icon: <TruckOutlined /> },
-    completed: { color: 'green', text: 'Yakunlandi', icon: <CheckCircleOutlined /> },
-    cancelled: { color: 'red', text: 'Bekor qilingan', icon: <CloseCircleOutlined /> },
-  } as const;
-  return (configs as Record<string, { color: string; text: string; icon: React.ReactNode }>)[status] || configs.pending;
-};
+// Status config moved to utils/orderStatus.ts - using centralized config
 
 const getOrderTypeConfig = (type: string) => {
   const configs = {
@@ -74,6 +63,15 @@ const getPaymentMethodText = (method: string) => {
 };
 
 const OrdersTable: React.FC<OrdersTableProps> = ({ data, loading, pagination, onChangePage, onShowDetails, onAssignCourier, onQuickStatusChange, highlightId }) => {
+  const dispatch = useAppDispatch();
+  
+  const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
+    try {
+      await dispatch(updateOrderStatus({ orderId, status: newStatus })).unwrap();
+    } catch (error) {
+      console.error('Failed to update status:', error);
+    }
+  };
   const getNextStatuses = (currentStatus: string, orderType?: string): string[] => {
     const common: Record<string, string[]> = {
       pending: ['confirmed', 'cancelled'],
@@ -152,11 +150,13 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ data, loading, pagination, on
       title: 'Holat',
       dataIndex: 'status',
       key: 'status',
-      render: (status: string) => {
+      render: (status: OrderStatus) => {
         const config = getStatusConfig(status);
         return (
           <Badge dot color={config.color}>
-            <Tag color={config.color} icon={config.icon}>{config.text}</Tag>
+            <Tag color={config.color}>
+              {config.icon} {config.text}
+            </Tag>
           </Badge>
         );
       },

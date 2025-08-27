@@ -182,16 +182,12 @@ class CourierCallbacks {
    * Register courier callbacks
    */
   static registerCallbacks(bot) {
-    // Courier accept order
-    bot.action(/^courier_accept_(.+)$/, CourierCallbacks.handleCourierAccept);
-    
-    // Courier pickup order
-    bot.action(/^courier_pickup_(.+)$/, CourierCallbacks.handleCourierPickup);
-    
-    // Courier delivered order
-    bot.action(/^courier_delivered_(.+)$/, CourierCallbacks.handleCourierDelivered);
+    // 🔧 DISABLED: Duplicate courier callbacks - using dedicated courier/callbacks.js instead
+    // bot.action(/^courier_accept_(.+)$/, CourierCallbacks.handleCourierAccept);
+    // bot.action(/^courier_pickup_(.+)$/, CourierCallbacks.handleCourierPickup);
+    // bot.action(/^courier_delivered_(.+)$/, CourierCallbacks.handleCourierDelivered);
 
-    console.log('✅ Courier callbacks registered');
+    console.log('✅ Courier callbacks registration skipped (using courier/callbacks.js)');
   }
 }
 

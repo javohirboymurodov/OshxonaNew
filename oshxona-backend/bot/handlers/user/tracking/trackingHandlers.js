@@ -40,6 +40,7 @@ const trackingHandlers = {
       const statusEmojis = {
         pending: '⏳ Kutilmoqda',
         confirmed: '✅ Tasdiqlandi',
+        assigned: '🚚 Kuryer tayinlandi',
         preparing: '👨‍🍳 Tayyorlanmoqda',
         ready: '🎯 Tayyor',
         on_delivery: '🚚 Yo\'lda',

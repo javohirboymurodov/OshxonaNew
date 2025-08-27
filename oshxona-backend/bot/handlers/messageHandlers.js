@@ -63,11 +63,12 @@ function registerMessageHandlers(bot) {
           try {
             const Orders = require('./user/order/index');
             await Orders.processLocation(ctx, latitude, longitude);
-            ctx.session.waitingFor = null;
+            // Don't reset waitingFor here - processLocation sets it to 'address_notes' if needed
             return;
           } catch (error) {
             console.error('❌ Location processing error:', error);
             await ctx.reply('❌ Joylashuvni qayta ishlashda xatolik!');
+            ctx.session.waitingFor = null;
             return;
           }
         }
@@ -119,18 +120,19 @@ function registerMessageHandlers(bot) {
             let endpoint = '';
             let action = '';
             
-            if (waitingFor === 'courier_accept_location') {
-              endpoint = `/api/admin/orders/${orderId}/courier/accept`;
-              action = 'qabul qilish';
-            } else if (waitingFor === 'courier_pickup_location') {
-              endpoint = `/api/admin/orders/${orderId}/courier/pickup`;
-              action = 'olib ketish';
-            } else if (waitingFor === 'courier_delivered_location') {
-              endpoint = `/api/admin/orders/${orderId}/courier/delivered`;
-              action = 'yetkazish';
-            }
+            // 🔧 DISABLED: Old courier location system - using new courier/handlers.js
+            // if (waitingFor === 'courier_accept_location') {
+            //   endpoint = `/api/admin/orders/${orderId}/courier/accept`;
+            //   action = 'qabul qilish';
+            // } else if (waitingFor === 'courier_pickup_location') {
+            //   endpoint = `/api/admin/orders/${orderId}/courier/pickup`;
+            //   action = 'olib ketish';
+            // } else if (waitingFor === 'courier_delivered_location') {
+            //   endpoint = `/api/admin/orders/${orderId}/courier/delivered`;
+            //   action = 'yetkazish';
+            // }
 
-            if (endpoint) {
+            if (endpoint && false) { // 🔧 DISABLED: Old courier location system
               const response = await axios.post(`${baseUrl}${endpoint}`, {
                 latitude,
                 longitude
@@ -241,6 +243,7 @@ function registerMessageHandlers(bot) {
           });
         }
       } catch {}
+      } // Missing closing brace for try block starting at line 219
       
       // 🎉 Foydalanuvchiga muvaffaqiyat xabari
       try {
@@ -304,6 +307,13 @@ function registerMessageHandlers(bot) {
       const text = ctx.message.text;
       console.log(`📝 Text message received: "${text}" from ${ctx.from.id}`);
       console.log(`🔍 Session waitingFor: ${ctx.session?.waitingFor}`);
+      console.log(`🔍 Session object:`, JSON.stringify(ctx.session, null, 2));
+      
+      // Test message - always respond to "test"
+      if (text.toLowerCase() === 'test') {
+        await ctx.reply('✅ Message handlers are working! Session working too.');
+        return;
+      }
       
       const user = await User.findOne({ telegramId: ctx.from.id });
       
@@ -312,34 +322,6 @@ function registerMessageHandlers(bot) {
         return;
       }
       
-      // Address notes for delivery
-      if (ctx.session?.waitingFor === 'address_notes') {
-        try {
-          const notes = text.trim();
-          ctx.session.orderData = ctx.session.orderData || {};
-          ctx.session.orderData.addressNotes = notes;
-          ctx.session.waitingFor = null;
-          
-          await ctx.reply(
-            `✅ **Manzil izohlar qo'shildi!**\n\n📝 Izohlar: ${notes}\n\nTo'lov usulini tanlang:`,
-            {
-              parse_mode: 'Markdown',
-              reply_markup: { remove_keyboard: true }
-            }
-          );
-          
-          const PaymentFlow = require('../user/order/paymentFlow');
-          await PaymentFlow.askForPaymentMethod(ctx);
-          
-          console.log(`✅ Address notes added: ${notes}`);
-          return;
-        } catch (error) {
-          console.error('❌ Address notes processing error:', error);
-          await ctx.reply('❌ Izohni qayta ishlashda xatolik');
-          return;
-        }
-      }
-
       // Table number input for dine-in arrival
       if (ctx.session?.waitingFor === 'table_number') {
         try {
@@ -447,7 +429,7 @@ function registerMessageHandlers(bot) {
             await ctx.reply('✅ Manzil qabul qilindi!\n\nTo\'lov usulini tanlang:', {
               reply_markup: { remove_keyboard: true }
             });
-            const PaymentFlow = require('../user/order/paymentFlow');
+            const PaymentFlow = require(require.resolve('./user/order/paymentFlow'));
             await PaymentFlow.askForPaymentMethod(ctx);
             return;
           }
