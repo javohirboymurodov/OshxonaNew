@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import path from 'path'
 
 // https://vite.dev/config/
+
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -10,15 +11,17 @@ export default defineConfig({
       '@': path.resolve(__dirname, 'src'),
     },
   },
-  server: {
-    hmr:{
-      overlay:false
-    },
-    port: 3000,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
+  build: {
+    target: 'es2015',
+    sourcemap: false,
+    minify: 'esbuild',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          antd: ['antd'],
+          redux: ['@reduxjs/toolkit', 'react-redux'],
+        },
       },
     },
   },

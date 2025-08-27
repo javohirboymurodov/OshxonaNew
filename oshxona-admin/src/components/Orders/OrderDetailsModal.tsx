@@ -55,8 +55,8 @@ const OrderDetailsModal: React.FC<Props> = ({ open, order, onClose, getOrderType
       const fetchAddress = async () => {
         try {
           let text: string | null = null;
-          if (process.env.REACT_APP_YANDEX_MAPS_API_KEY) {
-            const yx = await fetch(`https://geocode-maps.yandex.ru/1.x/?format=json&geocode=${order.deliveryInfo!.location!.longitude},${order.deliveryInfo!.location!.latitude}&apikey=${process.env.REACT_APP_YANDEX_MAPS_API_KEY}`);
+          if (import.meta.env.VITE_YANDEX_MAPS_API_KEY) {
+            const yx = await fetch(`https://geocode-maps.yandex.ru/1.x/?format=json&geocode=${order.deliveryInfo!.location!.longitude},${order.deliveryInfo!.location!.latitude}&apikey=${import.meta.env.VITE_YANDEX_MAPS_API_KEY}`);
             const yxData = await yx.json();
             text = yxData?.response?.GeoObjectCollection?.featureMember?.[0]?.GeoObject?.metaDataProperty?.GeocoderMetaData?.text || null;
           }

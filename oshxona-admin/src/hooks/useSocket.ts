@@ -14,7 +14,7 @@ export const useSocket = () => {
     if (!realTimeUpdates) return;
 
     // Initialize socket connection
-    socket = io(process.env.REACT_APP_API_URL || 'http://localhost:5000', {
+    socket = io(import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000', {
       transports: ['websocket', 'polling'],
     });
 

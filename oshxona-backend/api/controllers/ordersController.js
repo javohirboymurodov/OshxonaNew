@@ -280,7 +280,6 @@ async function assignCourier(req, res) {
       .populate('deliveryInfo.courier', 'firstName lastName phone courierInfo')
       .populate('user', 'firstName lastName phone telegramId')
       .populate('branch', 'address coordinates');
-
     
     // 🔧 FIX: Use centralized status service
     const OrderStatusService = require('../../services/orderStatusService');
