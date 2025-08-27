@@ -59,9 +59,10 @@ function initializeBot(bot) {
   // 🔧 SHARED MODULES
   // ========================================
 
-  // 5. Message handlers (text, contact, location) - keep disabled for now
+  // 5. Message handlers (text, contact, location)
   try {
-    console.log('⚠️ Message handlers temporarily disabled');
+    require('./handlers/messageHandlers')(bot);
+    console.log('✅ Message handlers loaded');
   } catch (error) {
     console.warn('⚠️ Message handlers load failed:', error.message);
   }

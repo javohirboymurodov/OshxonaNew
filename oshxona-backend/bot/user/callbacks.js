@@ -346,6 +346,28 @@ function registerUserCallbacks(bot) {
     }
   });
 
+  // Order confirmation handler
+  bot.action('confirm_order', async (ctx) => {
+    try {
+      const UserOrderHandlers = require('../handlers/user/order/index');
+      await UserOrderHandlers.confirmOrder(ctx);
+    } catch (e) {
+      console.error('confirm_order error:', e);
+      await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // Order edit handler (go back to cart)
+  bot.action('edit_order', async (ctx) => {
+    try {
+      const { showCart } = require('../handlers/user/cart');
+      await showCart(ctx);
+    } catch (e) {
+      console.error('edit_order error:', e);
+      await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
   // ========================================
   // 📋 MY ORDERS
   // ========================================
