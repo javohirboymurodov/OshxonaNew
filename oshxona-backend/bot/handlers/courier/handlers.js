@@ -242,20 +242,12 @@ async function acceptOrder(ctx) {
       return;
     }
     
-    // 🔧 FIX: Buyurtma statusini yangilash - on_delivery (yetkazilmoqda)
-    order.status = 'on_delivery';
-    order.actualDeliveryTime = new Date();
-    
-    // 🔧 FIX: Status history ga qo'shish
-    order.statusHistory = order.statusHistory || [];
-    order.statusHistory.push({
-      status: 'on_delivery',
+    // 🔧 FIX: Use centralized status service
+    const OrderStatusService = require('../../../services/orderStatusService');
+    await OrderStatusService.updateStatus(orderId, 'on_delivery', {
       message: `Kuryer buyurtmani qabul qildi: ${user.firstName} ${user.lastName}`,
-      timestamp: new Date(),
       updatedBy: user._id
     });
-    
-    await order.save();
     
     // Kuryer statusini yangilash
     user.courierInfo.isAvailable = false;
@@ -388,20 +380,12 @@ async function delivered(ctx) {
       return;
     }
     
-    // Buyurtma statusini yangilash
-    order.status = 'delivered';
-    order.actualDeliveryTime = new Date();
-    
-    // 🔧 FIX: Status history ga qo'shish
-    order.statusHistory = order.statusHistory || [];
-    order.statusHistory.push({
-      status: 'delivered',
+    // 🔧 FIX: Use centralized status service
+    const OrderStatusService = require('../../../services/orderStatusService');
+    await OrderStatusService.updateStatus(orderId, 'delivered', {
       message: `Kuryer buyurtmani yetkazdi: ${user.firstName} ${user.lastName}`,
-      timestamp: new Date(),
       updatedBy: user._id
     });
-    
-    await order.save();
     
     // Kuryer statusini yangilash
     user.courierInfo.isAvailable = true;
