@@ -112,7 +112,26 @@ class UserOrderHandlers extends BaseHandler {
       console.log('=== Arrival time selected ===');
       console.log('Time:', arrivalTime);
 
-      // Keyingi bosqich: mahsulot tanlash uchun menyu
+      // Check if user has items in cart
+      const { User, Cart } = require('../../../../models');
+      const telegramId = ctx.from.id;
+      const user = await User.findOne({ telegramId });
+      let cart = null;
+      
+      if (user) {
+        cart = await Cart.findOne({ user: user._id, isActive: true });
+      }
+
+      // If cart has items, proceed to payment
+      if (cart && cart.items && cart.items.length > 0) {
+        console.log('✅ Cart has items, proceeding to payment flow');
+        const PaymentFlow = require('./paymentFlow');
+        await PaymentFlow.askForPaymentMethod(ctx);
+        if (ctx.answerCbQuery) await ctx.answerCbQuery('✅ Vaqt tanlandi');
+        return;
+      }
+
+      // If no items in cart, show product selection menu
       const nextMenuText = '✅ Vaqt tanlandi! Endi mahsulot tanlang:';
       if (ctx.updateType === 'callback_query') {
         await ctx.editMessageText(nextMenuText, {
@@ -337,7 +356,28 @@ Buyurtma №: ${order.orderId}`;
 
         console.log('=== Location processed successfully ===');
         
-        // Show product selection options with location confirmation
+        // Check if user has items in cart
+        const { User, Cart } = require('../../../../models');
+        const telegramId = ctx.from.id;
+        const user = await User.findOne({ telegramId });
+        let cart = null;
+        
+        if (user) {
+          cart = await Cart.findOne({ user: user._id, isActive: true });
+        }
+
+        // If cart has items, proceed to payment
+        if (cart && cart.items && cart.items.length > 0) {
+          console.log('✅ Cart has items, proceeding to payment flow');
+          await ctx.reply('🎯 **Joylashuv qabul qilindi!**\n\nTo\'lov usulini tanlang:', {
+            parse_mode: 'Markdown'
+          });
+          const PaymentFlow = require('./paymentFlow');
+          await PaymentFlow.askForPaymentMethod(ctx);
+          return;
+        }
+
+        // If no items in cart, show product selection options
         await ctx.reply('🎯 **Joylashuv qabul qilindi!**\n\nEndi mahsulotlarni tanlang:', {
           parse_mode: 'Markdown',
           reply_markup: {
@@ -358,6 +398,28 @@ Buyurtma №: ${order.orderId}`;
         ctx.session.orderData.location = { latitude, longitude };
         ctx.session.orderData.address = 'GPS joylashuv';
         
+        // Check if user has items in cart for fallback case too
+        const { User, Cart } = require('../../../../models');
+        const telegramId = ctx.from.id;
+        const user = await User.findOne({ telegramId });
+        let cart = null;
+        
+        if (user) {
+          cart = await Cart.findOne({ user: user._id, isActive: true });
+        }
+
+        // If cart has items, proceed to payment
+        if (cart && cart.items && cart.items.length > 0) {
+          console.log('✅ Cart has items (fallback), proceeding to payment flow');
+          await ctx.reply('✅ **Joylashuv qabul qilindi!**\n\nTo\'lov usulini tanlang:', {
+            parse_mode: 'Markdown'
+          });
+          const PaymentFlow = require('./paymentFlow');
+          await PaymentFlow.askForPaymentMethod(ctx);
+          return;
+        }
+
+        // If no items, show product selection
         await ctx.reply('✅ **Joylashuv qabul qilindi!**\n\nEndi mahsulotlarni tanlang:', {
           parse_mode: 'Markdown',
           reply_markup: {

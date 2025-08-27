@@ -331,6 +331,22 @@ function registerUserCallbacks(bot) {
   });
 
   // ========================================
+  // 💳 PAYMENT HANDLERS
+  // ========================================
+
+  // Payment method handlers
+  bot.action(/^payment_(cash|card|click|payme)$/, async (ctx) => {
+    try {
+      const paymentMethod = ctx.callbackQuery.data.replace('payment_', '');
+      const PaymentFlow = require('../handlers/user/order/paymentFlow');
+      await PaymentFlow.handlePaymentMethod(ctx, paymentMethod);
+    } catch (e) {
+      console.error('payment method error:', e);
+      await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // ========================================
   // 📋 MY ORDERS
   // ========================================
 
