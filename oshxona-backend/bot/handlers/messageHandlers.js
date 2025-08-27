@@ -304,6 +304,13 @@ function registerMessageHandlers(bot) {
       const text = ctx.message.text;
       console.log(`📝 Text message received: "${text}" from ${ctx.from.id}`);
       console.log(`🔍 Session waitingFor: ${ctx.session?.waitingFor}`);
+      console.log(`🔍 Session object:`, JSON.stringify(ctx.session, null, 2));
+      
+      // Test message - always respond to "test"
+      if (text.toLowerCase() === 'test') {
+        await ctx.reply('✅ Message handlers are working! Session working too.');
+        return;
+      }
       
       const user = await User.findOne({ telegramId: ctx.from.id });
       
