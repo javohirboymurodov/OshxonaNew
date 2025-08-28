@@ -11,29 +11,35 @@ async function notifyAdmins(order) {
     const OrderModel = require('../../../../models/Order');
     const populatedOrder = await OrderModel.findById(order._id).populate('user');
 
-    // Emit to web admin panel (Socket.IO) – superadminlar ham ko'rsin
+    // Emit to web admin panel (Socket.IO)
     try {
       const SocketManager = require('../../../../config/socketConfig');
-      const bId = (order.branch && order.branch.toString) ? order.branch.toString() : 'default';
-      SocketManager.emitNewOrder(bId, {
-        id: order._id,
+      const branchId = (order.branch && order.branch.toString) ? order.branch.toString() : 'default';
+      
+      const orderPayload = {
+        _id: order._id,
         orderId: order.orderId,
         status: order.status,
         total: order.total,
-        customer: { name: (populatedOrder.user && populatedOrder.user.firstName) ? populatedOrder.user.firstName : 'Mijoz' },
         orderType: populatedOrder.orderType,
-        tableNumber: populatedOrder?.dineInInfo?.tableNumber
-      });
-      // Superadmin overview xonasi
-      SocketManager.emitNewOrder('default', {
-        id: order._id,
-        orderId: order.orderId,
-        status: order.status,
-        total: order.total,
-        customer: { name: (populatedOrder.user && populatedOrder.user.firstName) ? populatedOrder.user.firstName : 'Mijoz' },
-        orderType: populatedOrder.orderType,
-        tableNumber: populatedOrder?.dineInInfo?.tableNumber
-      });
+        customerInfo: { 
+          name: (populatedOrder.user && populatedOrder.user.firstName) ? populatedOrder.user.firstName : 'Mijoz' 
+        },
+        tableNumber: populatedOrder?.dineInInfo?.tableNumber,
+        createdAt: order.createdAt || new Date(),
+        items: populatedOrder.items || [],
+        paymentMethod: order.paymentMethod || 'cash'
+      };
+      
+      // Send to specific branch
+      SocketManager.emitNewOrder(branchId, orderPayload);
+      
+      // Only send to 'default' if it's not already the target branch (for superadmin overview)
+      if (branchId !== 'default') {
+        SocketManager.emitNewOrder('default', orderPayload);
+      }
+      
+      console.log(`📢 New order notification sent to branch:${branchId} and superadmin`);
     } catch (emitErr) {
       console.error('Emit new order error:', emitErr?.message || emitErr);
     }

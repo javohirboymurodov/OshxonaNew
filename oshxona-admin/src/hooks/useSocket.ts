@@ -5,6 +5,7 @@ import { useAppDispatch, useAppSelector } from './redux';
 import { handleOrderUpdate, handleNewOrder } from '../store/slices/ordersSlice';
 import { OrderStatus } from '../utils/orderStatus';
 import { useAuth } from './useAuth';
+import { SoundPlayer } from '@/utils/sound';
 
 let socket: Socket | null = null;
 
@@ -60,6 +61,9 @@ export const useSocket = () => {
         dispatch(handleNewOrder(normalizedOrder));
         console.log('✅ NEW ORDER ADDED TO REDUX STORE:', normalizedOrder);
         
+        // Play notification sound
+        SoundPlayer.playNotification('/notification.wav', 0.8);
+        
         // Show notification
         message.success({
           content: `🔔 Yangi buyurtma keldi - №${normalizedOrder.orderId}`,
@@ -67,6 +71,10 @@ export const useSocket = () => {
         });
       } else {
         console.log('New order notification (insufficient data):', data);
+        
+        // Play notification sound even with insufficient data
+        SoundPlayer.playNotification('/notification.wav', 0.8);
+        
         // Still show notification even if we can't add to store
         message.success({
           content: `🔔 Yangi buyurtma keldi`,
