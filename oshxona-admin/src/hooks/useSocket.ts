@@ -4,12 +4,14 @@ import { message } from 'antd';
 import { useAppDispatch, useAppSelector } from './redux';
 import { handleOrderUpdate, handleNewOrder } from '../store/slices/ordersSlice';
 import { OrderStatus } from '../utils/orderStatus';
+import { useAuth } from './useAuth';
 
 let socket: Socket | null = null;
 
 export const useSocket = () => {
   const dispatch = useAppDispatch();
   const realTimeUpdates = useAppSelector(state => state.orders.realTimeUpdates);
+  const { user } = useAuth();
 
   useEffect(() => {
     if (!realTimeUpdates) return;
@@ -21,9 +23,10 @@ export const useSocket = () => {
 
     // Join admin room for real-time updates with token
     const token = localStorage.getItem('token');
+    const branchId = user?.branch && typeof user.branch === 'object' ? user.branch._id : user?.branch || 'default';
     socket.emit('join-admin', { 
       token: token,
-      branchId: 'default' // or get from user context
+      branchId: branchId
     });
 
     // Listen for new orders
@@ -129,7 +132,7 @@ export const useSocket = () => {
         socket = null;
       }
     };
-  }, [dispatch, realTimeUpdates]);
+  }, [dispatch, realTimeUpdates, user]);
 
   return {
     socket,
