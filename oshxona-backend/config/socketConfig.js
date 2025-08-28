@@ -126,12 +126,23 @@ class SocketManager {
   // Yangi buyurtma eventini adminlarga yuborish
   static emitNewOrder(branchId, orderData) {
     if (this.io) {
-      this.io.to(`branch:${branchId}`).emit('new-order', {
+      const payload = {
         ...orderData,
         timestamp: new Date(),
         sound: true // Admin panelda ovoz signali uchun
-      });
-      console.log(`📢 New order emitted to branch:${branchId}`);
+      };
+      
+      console.log(`🔔 EMITTING NEW ORDER TO BRANCH:${branchId}`);
+      console.log(`📋 ORDER DATA:`, JSON.stringify(payload, null, 2));
+      
+      // Get connected clients in this room
+      const room = this.io.sockets.adapter.rooms.get(`branch:${branchId}`);
+      console.log(`👥 CLIENTS IN ROOM branch:${branchId}:`, room ? room.size : 0);
+      
+      this.io.to(`branch:${branchId}`).emit('new-order', payload);
+      console.log(`📢 New order emitted to branch:${branchId} - ${room ? room.size : 0} clients`);
+    } else {
+      console.log('❌ Socket.IO instance not available for emitNewOrder');
     }
   }
   

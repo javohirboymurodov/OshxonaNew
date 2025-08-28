@@ -26,6 +26,7 @@ export const useSocket = () => {
 
     // Join admin room for real-time updates with token
     const token = localStorage.getItem('token');
+    console.log('🚀 JOINING ADMIN ROOM WITH:', { token: token ? 'EXISTS' : 'MISSING', branchId });
     socket.emit('join-admin', { 
       token: token,
       branchId: branchId
@@ -33,7 +34,7 @@ export const useSocket = () => {
 
     // Listen for new orders
     socket.on('new-order', (data: any) => {
-      console.log('🔔 New order received:', data);
+      console.log('🔔 NEW ORDER RECEIVED - FULL DATA:', JSON.stringify(data, null, 2));
       
       // Convert data to order format if needed
       let orderData = data.order || data;
@@ -57,7 +58,7 @@ export const useSocket = () => {
         };
         
         dispatch(handleNewOrder(normalizedOrder));
-        console.log('New order added to store:', normalizedOrder);
+        console.log('✅ NEW ORDER ADDED TO REDUX STORE:', normalizedOrder);
         
         // Show notification
         message.success({
