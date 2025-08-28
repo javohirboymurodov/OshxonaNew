@@ -33,6 +33,7 @@ import apiService from '@/services/api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { useSocket } from '@/hooks/useSocket';
+import { Order } from '@/types';
 import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
@@ -124,11 +125,11 @@ const DashboardPage: React.FC = () => {
     },
     enabled: isSuper,
   });
-  const token = localStorage.getItem('token') || '';
-  const branchId = ((user as { branch?: { _id?: string } } | null | undefined)?.branch?._id) || 'default';
+  // const token = localStorage.getItem('token') || '';
+  // const branchId = ((user as { branch?: { _id?: string } } | null | undefined)?.branch?._id) || 'default';
   const { connected } = useSocket();
   // TODO: Implement newOrders logic with Redux
-  const newOrders: any[] = [];
+  const newOrders: Order[] = [];
 
   const [messageApi, contextHolder] = antdMessage.useMessage();
 

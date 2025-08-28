@@ -1,6 +1,7 @@
 const express = require('express');
 const { authenticateToken, requireAdmin, requireRole } = require('../middleware/auth');
 const AdminController = require('../controllers/adminController');
+const OrdersController = require('../controllers/ordersController');
 const { uploadSingle, handleUploadError } = require('../../config/localUploadConfig');
 const Branch = require('../../models/Branch');
 const Product = require('../../models/Product');
@@ -62,6 +63,12 @@ router.get('/orders', AdminController.getOrders);
 
 // Orders stats
 router.get('/orders/stats', AdminController.getOrdersStats);
+
+// Update order status
+router.patch('/orders/:id/status', OrdersController.updateStatus);
+
+// Assign courier to order
+router.patch('/orders/:id/assign-courier', OrdersController.assignCourier);
 
 // Settings routes
 router.get('/settings', AdminController.getSettings);

@@ -224,7 +224,7 @@ class ApiService {
       branch?: string;
     }
   ) {
-    let url = `/orders?page=${page}&limit=${limit}`;
+    let url = `/admin/orders?page=${page}&limit=${limit}`;
     if (filters?.status && filters.status !== 'all') url += `&status=${filters.status}`;
     if (filters?.orderType && filters.orderType !== 'all') url += `&orderType=${filters.orderType}`;
     if (filters?.dateFrom) url += `&dateFrom=${encodeURIComponent(filters.dateFrom)}`;
@@ -237,22 +237,22 @@ class ApiService {
   }
 
   async getOrderStats() {
-    const response = await this.api.get('/orders/stats');
+    const response = await this.api.get('/admin/orders/stats');
     return response.data.data;
   }
 
   async getOrderById(id: string) {
-    const response = await this.api.get(`/orders/${id}`);
+    const response = await this.api.get(`/admin/orders/${id}`);
     return response.data.data;
   }
 
   async updateOrderStatus(id: string, status: string) {
-    const response = await this.api.patch(`/orders/${id}/status`, { status });
+    const response = await this.api.patch(`/admin/orders/${id}/status`, { status });
     return response.data;
   }
 
   async assignCourier(orderId: string, courierId: string) {
-    const response = await this.api.patch(`/orders/${orderId}/assign-courier`, { courierId });
+    const response = await this.api.patch(`/admin/orders/${orderId}/assign-courier`, { courierId });
     return response.data;
   }
 
@@ -282,9 +282,14 @@ class ApiService {
       return response.data.data;
     } catch (e: any) {
       if (e?.response?.status === 403) {
-        // Adminlar uchun fallback
-        const alt = await this.api.get('/admin/branches');
-        return alt.data.data;
+        // Adminlar uchun fallback - 403 xatosi kutilmoqda, shuning uchun console'ga chiqarmaymiz
+        try {
+          const alt = await this.api.get('/admin/branches');
+          return alt.data.data;
+        } catch (fallbackError) {
+          console.error('Failed to get branches from admin endpoint:', fallbackError);
+          throw fallbackError;
+        }
       }
       throw e;
     }

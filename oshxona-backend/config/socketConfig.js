@@ -37,12 +37,12 @@ class SocketManager {
   
   static setupEventHandlers() {
     this.io.on('connection', (socket) => {
-      console.log(`🔗 Client connected: ${socket.id}`);
+
       
       // Admin panelga qo'shilish
       socket.on('join-admin', (data) => {
         try {
-          console.log('🔑 Admin join attempt:', { data: data ? 'provided' : 'missing' });
+
           
           if (!data || !data.token) {
             console.log('❌ No token provided for admin join');
@@ -53,7 +53,7 @@ class SocketManager {
           const { token, branchId } = data;
           const decoded = jwt.verify(token, process.env.JWT_SECRET);
           
-          console.log('✅ Token decoded:', { role: decoded.role, userId: decoded.userId || decoded.id });
+
           
           if (decoded.role === 'admin' || decoded.role === 'superadmin') {
             const roomName = `branch:${branchId || 'global'}`;
@@ -64,7 +64,12 @@ class SocketManager {
               role: decoded.role
             });
             
-            console.log(`👨‍💼 Admin joined ${roomName} - Socket: ${socket.id}`);
+            // Log room size after joining
+            const room = this.io.sockets.adapter.rooms.get(roomName);
+
+            
+
+            
             socket.emit('joined-admin', { branchId: branchId || 'global', success: true });
           } else {
             console.log('❌ Invalid role for admin access:', decoded.role);
@@ -83,12 +88,12 @@ class SocketManager {
         if (userId) {
           socket.join(`user:${userId}`);
           this.connectedUsers.set(socket.id, { userId });
-          console.log(`👤 User ${userId} joined for tracking`);
+
         }
         
         if (orderId) {
           socket.join(`order:${orderId}`);
-          console.log(`📦 User joined order tracking: ${orderId}`);
+
         }
         
         socket.emit('joined-user', { userId, orderId });
@@ -97,7 +102,7 @@ class SocketManager {
       // Buyurtma holati real-time kuzatuvi
       socket.on('track-order', (orderId) => {
         socket.join(`order:${orderId}`);
-        console.log(`📍 Order tracking started: ${orderId}`);
+
       });
       
       // Admin buyurtma holatini o'zgartirishi
@@ -118,20 +123,45 @@ class SocketManager {
       socket.on('disconnect', () => {
         this.connectedUsers.delete(socket.id);
         this.connectedAdmins.delete(socket.id);
-        console.log(`❌ Client disconnected: ${socket.id}`);
+
       });
     });
   }
   
+  // Test notification uchun
+  static emitTestNotification(branchId = 'default') {
+    if (this.io) {
+      console.log(`🧪 SENDING TEST NOTIFICATION TO branch:${branchId}`);
+      const room = this.io.sockets.adapter.rooms.get(`branch:${branchId}`);
+      console.log(`👥 CLIENTS IN ROOM branch:${branchId}:`, room ? room.size : 0);
+      
+      this.io.to(`branch:${branchId}`).emit('new-order', {
+        orderId: 'TEST123',
+        orderNumber: 'TEST123',
+        customerName: 'Test Customer',
+        total: 50000,
+        orderType: 'delivery',
+        status: 'pending',
+        timestamp: new Date(),
+        sound: true
+      });
+      console.log(`📢 Test notification sent to branch:${branchId}`);
+    }
+  }
+
   // Yangi buyurtma eventini adminlarga yuborish
   static emitNewOrder(branchId, orderData) {
     if (this.io) {
-      this.io.to(`branch:${branchId}`).emit('new-order', {
+      const payload = {
         ...orderData,
         timestamp: new Date(),
         sound: true // Admin panelda ovoz signali uchun
-      });
-      console.log(`📢 New order emitted to branch:${branchId}`);
+      };
+      
+
+      this.io.to(`branch:${branchId}`).emit('new-order', payload);
+    } else {
+
     }
   }
   
@@ -252,13 +282,14 @@ class SocketManager {
     // Branch adminlarga yuborish
     if (branchId && branchId !== 'global') {
       this.io.to(`branch:${branchId}`).emit('order-status-updated', data);
-      console.log(`🔄 Order status update sent to branch:${branchId} - Order:${payload.orderId} - Status:${payload.status}`);
+
     }
     
     // Superadmin overview xonasiga ham yuborish
     this.io.to('branch:default').emit('order-status-updated', data);
-    console.log(`🔄 Order status update sent to superadmin - Order:${payload.orderId} - Status:${payload.status}`);
+
   }
+
   
   // Real-time statistika (admin dashboard uchun)
   static emitStatistics(branchId, stats) {

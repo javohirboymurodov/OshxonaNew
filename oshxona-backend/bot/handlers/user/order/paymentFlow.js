@@ -290,22 +290,8 @@ class PaymentFlow extends BaseHandler {
       cart.isActive = false;
       await cart.save();
 
-      // 🔧 FIX: Send notification to admin panel about new order
-      try {
-        const SocketManager = require('../../../../config/socketConfig');
-        SocketManager.emitNewOrder(order.branch || 'global', {
-          orderId: order._id,
-          orderNumber: order.orderId,
-          customerName: order.customerInfo?.name || user.firstName,
-          total: order.total,
-          orderType: order.orderType,
-          status: order.status,
-          createdAt: order.createdAt || new Date()
-        });
-        console.log('✅ Admin notification sent for new order:', order.orderId);
-      } catch (notificationError) {
-        console.error('❌ Admin notification error:', notificationError);
-      }
+      // Notification will be sent via notifyAdmins() function below
+
 
       // Start order tracking
       orderTracker.trackOrder(order._id.toString(), user._id.toString());
@@ -386,8 +372,10 @@ class PaymentFlow extends BaseHandler {
 
       // Notify admins (Socket + Telegram)
       try {
+
         const { notifyAdmins } = require('./notify');
         await notifyAdmins(order);
+
       } catch (notifyError) {
         console.error('Admin notification error:', notifyError);
       }

@@ -2,6 +2,8 @@ import React from 'react';
 import { Modal, Row, Col, Card, Descriptions, Typography, Table, Space, Button, Tag, message as antdMessage, List, Avatar, Tooltip } from 'antd';
 import dayjs from 'dayjs';
 import { PhoneOutlined, EnvironmentOutlined } from '@ant-design/icons';
+import { useAppDispatch } from '../../hooks/redux';
+import { updateOrderStatus } from '../../store/slices/ordersSlice';
 
 const { Text } = Typography;
 
@@ -42,6 +44,7 @@ interface Props {
 
 const OrderDetailsModal: React.FC<Props> = ({ open, order, onClose, getOrderTypeText, getPaymentText, onStatusUpdated }) => {
   // hooks must be top-level
+  const dispatch = useAppDispatch(); // Move to top level
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const [isUpdating, setIsUpdating] = React.useState(false);
   const [hasAssigned, setHasAssigned] = React.useState(Boolean(order?.deliveryInfo?.courier));
@@ -122,12 +125,14 @@ const OrderDetailsModal: React.FC<Props> = ({ open, order, onClose, getOrderType
     return flow[currentStatus] || [];
   };
 
+
+  
   const updateStatus = async (s: string) => {
     if (isUpdating) return;
     setIsUpdating(true);
     try {
-      const { default: apiService } = await import('@/services/api');
-      await apiService.updateOrderStatus(order._id, s);
+      // Use Redux action for better state management
+      await dispatch(updateOrderStatus({ orderId: order._id, status: s as any })).unwrap();
       messageApi.success('Holat yangilandi');
       onStatusUpdated?.(s);
       onClose();

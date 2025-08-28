@@ -9,6 +9,7 @@ import 'dayjs/locale/uz-latn';
 import { AuthProvider } from '@/hooks/useAuth';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { store } from './store';
+import { SoundPlayer } from '@/utils/sound';
 
 import AppRouter from '@/router/AppRouter';
 import './App.css';
@@ -39,6 +40,12 @@ const theme = {
 
 function App() {
   const queryClient = React.useMemo(() => new QueryClient(), []);
+  
+  // Preload notification sounds
+  React.useEffect(() => {
+    SoundPlayer.preloadSounds();
+  }, []);
+  
   return (
     <Provider store={store}>
       <ConfigProvider 

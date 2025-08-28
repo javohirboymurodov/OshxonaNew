@@ -132,7 +132,7 @@ const trackingHandlers = {
 
       if (tracking.status === 'ready' && tracking.orderType === 'pickup') {
         keyboard.inline_keyboard.push([
-          { text: '📱 Filialga qo\'ng\'iroq', url: `tel:${tracking.branch?.phone || process.env.RESTAURANT_PHONE}` }
+          { text: '📱 Filialga qo\'ng\'iroq', url: `tel:${(tracking.branch?.phone || process.env.RESTAURANT_PHONE)?.replace(/\+/g, '')}` }
         ]);
       }
 
@@ -190,7 +190,7 @@ const trackingHandlers = {
       const keyboard = {
         inline_keyboard: [
           [
-            { text: '📱 Kuryer bilan aloqa', url: `tel:${tracking.courier.phone}` }
+            { text: '📱 Kuryer bilan aloqa', url: `tel:${tracking.courier.phone?.replace(/\+/g, '')}` }
           ],
           [
             { text: '🔄 Lokatsiyani yangilash', callback_data: `courier_location_${orderId}` },
