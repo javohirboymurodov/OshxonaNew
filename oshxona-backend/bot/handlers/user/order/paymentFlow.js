@@ -291,7 +291,7 @@ class PaymentFlow extends BaseHandler {
       await cart.save();
 
       // Notification will be sent via notifyAdmins() function below
-      console.log('🔔 New order sent to branch:' + (order.branch || 'default') + ' - Order:' + order.orderId);
+      console.log('🔔 PAYMENT FLOW: Order created - Order:' + order.orderId + ' Branch:' + (order.branch || 'default'));
 
       // Start order tracking
       orderTracker.trackOrder(order._id.toString(), user._id.toString());
@@ -372,8 +372,10 @@ class PaymentFlow extends BaseHandler {
 
       // Notify admins (Socket + Telegram)
       try {
+        console.log('🔔 PAYMENT FLOW: Calling notifyAdmins - Order:' + order.orderId);
         const { notifyAdmins } = require('./notify');
         await notifyAdmins(order);
+        console.log('✅ PAYMENT FLOW: notifyAdmins completed - Order:' + order.orderId);
       } catch (notifyError) {
         console.error('Admin notification error:', notifyError);
       }

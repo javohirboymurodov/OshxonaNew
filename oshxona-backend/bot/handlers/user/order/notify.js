@@ -32,10 +32,12 @@ async function notifyAdmins(order) {
       };
       
       // Send to specific branch
+      console.log(`📢 NOTIFY.JS: Sending to branch:${branchId} - Order:${order.orderId}`);
       SocketManager.emitNewOrder(branchId, orderPayload);
       
       // Only send to 'default' if it's not already the target branch (for superadmin overview)
       if (branchId !== 'default') {
+        console.log(`📢 NOTIFY.JS: Sending to default (superadmin) - Order:${order.orderId}`);
         SocketManager.emitNewOrder('default', orderPayload);
       }
       
