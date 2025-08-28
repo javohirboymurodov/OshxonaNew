@@ -339,6 +339,8 @@ const OrdersPage: React.FC = () => {
             try {
               await dispatch(updateOrderStatus({ orderId: order._id, status: newStatus })).unwrap();
               messageApi.success('Holat yangilandi');
+              // Stats yangilash
+              dispatch(fetchOrderStats());
             } catch (error) {
               console.error('Status update failed:', error);
               messageApi.error('Holatni yangilashda xatolik');

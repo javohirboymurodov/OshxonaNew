@@ -244,7 +244,8 @@ const ordersSlice = createSlice({
         state.error = null;
       })
       .addCase(updateOrderStatus.fulfilled, (state, action) => {
-        const updatedOrder = action.payload.order;
+        const data = action.payload.data || action.payload;
+        const updatedOrder = data.order || action.payload.order;
         if (updatedOrder) {
           const orderIndex = state.orders.findIndex(order => order._id === updatedOrder._id);
           if (orderIndex !== -1) {
@@ -264,7 +265,8 @@ const ordersSlice = createSlice({
         state.error = null;
       })
       .addCase(assignCourier.fulfilled, (state, action) => {
-        const updatedOrder = action.payload.order;
+        const data = action.payload.data || action.payload;
+        const updatedOrder = data.order || action.payload.order;
         if (updatedOrder) {
           const orderIndex = state.orders.findIndex(order => order._id === updatedOrder._id);
           if (orderIndex !== -1) {
@@ -287,13 +289,14 @@ const ordersSlice = createSlice({
       .addCase(fetchOrderStats.fulfilled, (state, action) => {
         state.statsLoading = false;
         const data = action.payload.data || action.payload;
+        const stats = data.stats || data;
         state.stats = {
-          pending: Number(data?.pending) || 0,
-          confirmed: Number(data?.confirmed) || 0,
-          preparing: Number(data?.preparing) || 0,
-          ready: Number(data?.ready) || 0,
-          delivered: Number(data?.delivered) || 0,
-          cancelled: Number(data?.cancelled) || 0,
+          pending: Number(stats?.pending) || 0,
+          confirmed: Number(stats?.confirmed) || 0,
+          preparing: Number(stats?.preparing) || 0,
+          ready: Number(stats?.ready) || 0,
+          delivered: Number(stats?.delivered) || 0,
+          cancelled: Number(stats?.cancelled) || 0,
         };
       })
       .addCase(fetchOrderStats.rejected, (state, action) => {
