@@ -74,6 +74,18 @@ class OrderStatusService {
       // Send real-time notifications
       await this.sendNotifications(order, newStatus, details);
 
+      // Real-time tracking lifecycle management
+      try {
+        const RealTimeTrackingManager = require('./realTimeTrackingManager');
+        await RealTimeTrackingManager.onOrderStatusChange(orderId, currentStatus, newStatus, {
+          order: order.toObject(),
+          total: order.total,
+          orderType: order.orderType
+        });
+      } catch (trackingError) {
+        console.error('❌ Real-time tracking update error:', trackingError);
+      }
+
       console.log(`✅ Status updated successfully: ${orderId} -> ${newStatus}`);
       return order;
 

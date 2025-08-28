@@ -74,6 +74,27 @@ function registerUserCallbacks(bot) {
   // Branches
   bot.action('show_branches', async (ctx) => { await CatalogHandlers.showBranches(ctx, 1); });
   
+  // Nearest branch - request location
+  bot.action('nearest_branch', async (ctx) => {
+    try {
+      await ctx.editMessageText(
+        '📍 **Eng yaqin filialni topish**\n\nJoylashuvingizni ulashing:',
+        {
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '📍 Joylashuvni ulashish', callback_data: 'request_location' }],
+              [{ text: '🔙 Orqaga', callback_data: 'show_branches' }]
+            ]
+          }
+        }
+      );
+    } catch (error) {
+      console.error('❌ nearest_branch error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+  
   // Branch selection and details (nearest/branch_<id>)
   bot.action(/^branch_.+$/, async (ctx) => { 
     try {
@@ -92,6 +113,31 @@ function registerUserCallbacks(bot) {
       }
     } catch (e) {
       console.error('branch selection error:', e);
+    }
+  });
+
+  // Request location for nearest branch
+  bot.action('request_location', async (ctx) => {
+    try {
+      // Set waiting state for nearest branch
+      ctx.session = ctx.session || {};
+      ctx.session.waitingFor = 'branch_location';
+      
+      await ctx.editMessageText('📍 Joylashuvingizni ulashing:', {
+        reply_markup: {
+          inline_keyboard: [[{ text: '🔙 Orqaga', callback_data: 'show_branches' }]]
+        }
+      });
+      await ctx.reply('📍 Pastdagi tugma orqali joylashuvingizni yuboring:', {
+        reply_markup: {
+          keyboard: [[{ text: '📍 Joylashuvni yuborish', request_location: true }]],
+          resize_keyboard: true,
+          one_time_keyboard: true
+        }
+      });
+    } catch (error) {
+      console.error('❌ request_location error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
     }
   });
 
@@ -554,12 +600,76 @@ function registerUserCallbacks(bot) {
   // 📍 ORDER TRACKING
   // ========================================
 
-  // Track order
+  // Track order (Smart Interface)
   bot.action(/^track_(.+)$/, async (ctx) => {
     try {
-      await trackingHandlers.trackOrder(ctx);
+      await trackingHandlers.trackOrderSmart(ctx);
     } catch (error) {
       console.error('❌ track_order error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // ========================================
+  // 🚀 SMART ORDER INTERFACE (Professional)
+  // ========================================
+  
+  // Smart order refresh
+  bot.action(/^smart_refresh_(.+)$/, async (ctx) => {
+    try {
+      const orderId = ctx.match[1];
+      const SmartOrderInterface = require('../../services/smartOrderInterface');
+      await SmartOrderInterface.refreshOrder(ctx, orderId);
+    } catch (error) {
+      console.error('❌ smart_refresh error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // Smart order display from tracking
+  bot.action(/^smart_order_(.+)$/, async (ctx) => {
+    try {
+      const orderId = ctx.match[1];
+      const SmartOrderInterface = require('../../services/smartOrderInterface');
+      await SmartOrderInterface.showOrder(ctx, orderId, { source: 'tracking' });
+    } catch (error) {
+      console.error('❌ smart_order error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // ========================================
+  // ⭐ RATING SYSTEM
+  // ========================================
+  
+  // Order rating (show stars)
+  bot.action(/^rate_order_(.+)$/, async (ctx) => {
+    try {
+      const orderId = ctx.match[1];
+      await RatingHandlers.showRatingOptions(ctx, orderId);
+    } catch (error) {
+      console.error('❌ rate_order error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // Star rating selection
+  bot.action(/^rate_(.+)_(\d+)$/, async (ctx) => {
+    try {
+      await RatingHandlers.handleRating(ctx);
+    } catch (error) {
+      console.error('❌ rate star error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // Feedback after rating
+  bot.action(/^feedback_(.+)$/, async (ctx) => {
+    try {
+      const orderId = ctx.match[1];
+      await RatingHandlers.requestFeedback(ctx, orderId);
+    } catch (error) {
+      console.error('❌ feedback error:', error);
       if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
     }
   });

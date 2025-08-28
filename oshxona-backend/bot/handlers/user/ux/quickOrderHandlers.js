@@ -145,6 +145,8 @@ const quickOrderHandlers = {
   async quickAddProduct(ctx) {
     try {
       const callbackData = ctx.callbackQuery?.data || '';
+      console.log('🔍 Quick add product callback:', callbackData);
+      
       const productIdMatch = callbackData.match(/^quick_add_(.+)$/);
       
       if (!productIdMatch) {
@@ -154,18 +156,39 @@ const quickOrderHandlers = {
       const productId = productIdMatch[1];
       const telegramId = ctx.from.id;
       
+      console.log('🔍 Quick add - ProductID:', productId, 'User:', telegramId);
+      
       const user = await User.findOne({ telegramId });
       if (!user) {
         return ctx.answerCbQuery('❌ Foydalanuvchi topilmadi');
       }
 
       const product = await Product.findById(productId);
-      if (!product || !product.isActive || !product.isAvailable) {
+      console.log('🔍 Product found:', product ? {
+        id: product._id,
+        name: product.name,
+        isActive: product.isActive,
+        isAvailable: product.isAvailable,
+        price: product.price
+      } : 'null');
+      
+      // Check availability - if isAvailable is undefined, treat as true
+      const isAvailable = product.isAvailable !== false;
+      
+      if (!product || !product.isActive || !isAvailable) {
+        console.log('❌ Product not available:', {
+          exists: !!product,
+          isActive: product?.isActive,
+          isAvailable: product?.isAvailable,
+          computed_isAvailable: isAvailable
+        });
         return ctx.answerCbQuery('❌ Mahsulot mavjud emas', { show_alert: true });
       }
 
       // Add to cart
       let cart = await Cart.findOne({ user: user._id, isActive: true });
+      console.log('🔍 Cart before:', cart ? `${cart.items.length} items` : 'new cart');
+      
       if (!cart) {
         cart = new Cart({ user: user._id, items: [], isActive: true });
       }
@@ -176,16 +199,21 @@ const quickOrderHandlers = {
 
       if (existingItem) {
         existingItem.quantity += 1;
+        existingItem.totalPrice = existingItem.price * existingItem.quantity;
+        console.log('🔍 Updated existing item quantity:', existingItem.quantity);
       } else {
         cart.items.push({
           product: productId,
           productName: product.name,
           quantity: 1,
-          price: product.price
+          price: product.price,
+          totalPrice: product.price * 1
         });
+        console.log('🔍 Added new item to cart:', product.name);
       }
 
       await cart.save();
+      console.log('🔍 Cart saved. Total items:', cart.items.length);
 
       await ctx.answerCbQuery(`✅ ${product.name} savatga qo'shildi!`);
 
@@ -308,7 +336,9 @@ const quickOrderHandlers = {
 
       favorites.forEach((favorite, index) => {
         const product = favorite.product;
-        if (product && product.isActive && product.isAvailable) {
+        // Check availability - if isAvailable is undefined, treat as true
+        const isAvailable = product.isAvailable !== false;
+        if (product && product.isActive && isAvailable) {
           message += `${index + 1}. <b>${product.name}</b>\n`;
           message += `   💰 ${product.price.toLocaleString()} so'm\n\n`;
 

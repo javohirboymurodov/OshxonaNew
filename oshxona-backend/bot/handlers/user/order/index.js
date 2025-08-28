@@ -352,7 +352,9 @@ Buyurtma №: ${order.orderId}`;
           console.log('⚠️ No specific branch found, using default');
         }
         
-        ctx.session.orderData.address = result?.address || 'GPS joylashuv';
+        // Generate Google Maps link from coordinates
+        const googleMapsLink = `https://maps.google.com/?q=${latitude},${longitude}`;
+        ctx.session.orderData.address = result?.address || googleMapsLink;
 
         console.log('=== Location processed successfully ===');
         
@@ -402,7 +404,9 @@ Buyurtma №: ${order.orderId}`;
         // Fallback: Save location without service
         ctx.session.orderData = ctx.session.orderData || {};
         ctx.session.orderData.location = { latitude, longitude };
-        ctx.session.orderData.address = 'GPS joylashuv';
+        // Generate Google Maps link from coordinates  
+        const googleMapsLink = `https://maps.google.com/?q=${latitude},${longitude}`;
+        ctx.session.orderData.address = googleMapsLink;
         
         // Check if user has items in cart for fallback case too
         const { User, Cart } = require('../../../../models');

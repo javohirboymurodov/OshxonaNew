@@ -18,10 +18,11 @@ export const useSocket = () => {
       transports: ['websocket', 'polling'],
     });
 
-    // Join admin room for real-time updates
+    // Join admin room for real-time updates with token
+    const token = localStorage.getItem('token');
     socket.emit('join-admin', { 
-      branchId: 'default', // or get from user context
-      adminId: 'admin-user' // or get from auth context
+      token: token,
+      branchId: 'default' // or get from user context
     });
 
     // Listen for new orders
@@ -34,7 +35,7 @@ export const useSocket = () => {
     });
 
     // Listen for order status updates  
-    socket.on('order-status-update', (data: {
+    socket.on('order-status-updated', (data: {
       orderId: string;
       status: OrderStatus;
       statusName?: string;
@@ -54,6 +55,12 @@ export const useSocket = () => {
     // Connection status
     socket.on('connect', () => {
       console.log('✅ Socket connected');
+      // Re-join admin room after reconnection
+      const token = localStorage.getItem('token');
+      socket.emit('join-admin', { 
+        token: token,
+        branchId: 'default'
+      });
     });
 
     socket.on('disconnect', () => {
@@ -62,6 +69,16 @@ export const useSocket = () => {
 
     socket.on('error', (error: any) => {
       console.error('❌ Socket error:', error);
+    });
+
+    // Listen for authentication errors
+    socket.on('auth-error', (error: any) => {
+      console.error('❌ Socket auth error:', error);
+    });
+
+    // Listen for successful admin join
+    socket.on('joined-admin', (data: any) => {
+      console.log('✅ Successfully joined admin room:', data);
     });
 
     // Cleanup on unmount

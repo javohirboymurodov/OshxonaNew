@@ -4,6 +4,63 @@
 class RatingHandlers {
   
   /**
+   * Show rating options (stars)
+   */
+  static async showRatingOptions(ctx, orderId) {
+    try {
+      // Find and verify order
+      const { Order } = require('../../../models');
+      const order = await Order.findById(orderId);
+      
+      if (!order) {
+        await ctx.answerCbQuery('❌ Buyurtma topilmadi');
+        return;
+      }
+      
+      // Check if already rated
+      if (order.rating && order.rating > 0) {
+        await ctx.answerCbQuery(`✅ Siz bu buyurtmani ${order.rating} yulduz bilan baholagansiz`);
+        return;
+      }
+      
+      const message = `⭐ <b>Buyurtmani baholang</b>\n\n📦 Buyurtma: #${order.orderId}\n💰 Jami: ${order.total?.toLocaleString() || 0} so'm\n\n⭐ Qancha yulduz berasiz?`;
+      
+      const keyboard = {
+        inline_keyboard: [
+          [
+            { text: '1⭐', callback_data: `rate_${orderId}_1` },
+            { text: '2⭐⭐', callback_data: `rate_${orderId}_2` },
+            { text: '3⭐⭐⭐', callback_data: `rate_${orderId}_3` }
+          ],
+          [
+            { text: '4⭐⭐⭐⭐', callback_data: `rate_${orderId}_4` },
+            { text: '5⭐⭐⭐⭐⭐', callback_data: `rate_${orderId}_5` }
+          ],
+          [
+            { text: '🔙 Orqaga', callback_data: 'my_orders' }
+          ]
+        ]
+      };
+      
+      if (ctx.callbackQuery) {
+        await ctx.editMessageText(message, {
+          parse_mode: 'HTML',
+          reply_markup: keyboard
+        });
+      } else {
+        await ctx.reply(message, {
+          parse_mode: 'HTML',
+          reply_markup: keyboard
+        });
+      }
+      
+    } catch (error) {
+      console.error('❌ Show rating options error:', error);
+      await ctx.answerCbQuery('❌ Xatolik yuz berdi');
+    }
+  }
+
+  /**
    * Handle order rating
    */
   static async handleRating(ctx) {
@@ -40,21 +97,48 @@ class RatingHandlers {
       
       await ctx.answerCbQuery(`✅ Baholash saqlandi: ${rating} yulduz`);
       
-      // Ask for optional feedback
-      await ctx.reply('💬 Izoh qoldirmoqchimisiz? (ixtiyoriy)', {
-        reply_markup: {
-          inline_keyboard: [
-            [
-              { text: '💬 Ha, izoh yozaman', callback_data: `feedback_${orderId}` },
-              { text: '❌ Yo\'q, rahmat', callback_data: 'back_to_main' }
-            ]
-          ]
-        }
-      });
+      // Ask for optional feedback using proper method
+      await this.requestFeedback(ctx, orderId);
       
     } catch (error) {
       console.error('Rating error:', error);
       await ctx.answerCbQuery('❌ Baholashda xatolik yuz berdi');
+    }
+  }
+
+  /**
+   * Request feedback after rating
+   */
+  static async requestFeedback(ctx, orderId) {
+    try {
+      const message = `💬 <b>Izoh qoldiring</b>\n\n📝 Xizmatimiz haqida fikringizni yozing (ixtiyoriy):`;
+      
+      const keyboard = {
+        inline_keyboard: [
+          [
+            { text: '💬 Izoh yozish', callback_data: `feedback_${orderId}` }
+          ],
+          [
+            { text: '❌ Yo\'q, rahmat', callback_data: 'my_orders' }
+          ]
+        ]
+      };
+      
+      if (ctx.callbackQuery) {
+        await ctx.editMessageText(message, {
+          parse_mode: 'HTML',
+          reply_markup: keyboard
+        });
+      } else {
+        await ctx.reply(message, {
+          parse_mode: 'HTML',
+          reply_markup: keyboard
+        });
+      }
+      
+    } catch (error) {
+      console.error('❌ Request feedback error:', error);
+      await ctx.answerCbQuery('❌ Xatolik yuz berdi');
     }
   }
 

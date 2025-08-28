@@ -212,10 +212,30 @@ class ProductHandlers extends BaseHandler {
       );
 
       if (ctx.callbackQuery) {
-        await ctx.editMessageText(message, {
-          parse_mode: 'Markdown',
-          reply_markup: keyboard
-        });
+        try {
+          await ctx.editMessageText(message, {
+            parse_mode: 'Markdown',
+            reply_markup: keyboard
+          });
+        } catch (error) {
+          if (error.description && error.description.includes('message is not modified')) {
+            console.log('⚠️ Category message content unchanged, skipping edit');
+            await ctx.answerCbQuery();
+          } else if (error.description && error.description.includes('no text in the message to edit')) {
+            console.log('⚠️ No text to edit, sending new message');
+            await ctx.reply(message, {
+              parse_mode: 'Markdown',
+              reply_markup: keyboard
+            });
+          } else {
+            console.error('❌ Category EditMessageText error:', error);
+            // Try sending new message instead
+            await ctx.reply(message, {
+              parse_mode: 'Markdown',
+              reply_markup: keyboard
+            });
+          }
+        }
       } else {
         await ctx.reply(message, {
           parse_mode: 'Markdown',
@@ -286,6 +306,7 @@ class ProductHandlers extends BaseHandler {
       const keyboard = {
         inline_keyboard: [
           [{ text: '➕ Savatga qo\'shish', callback_data: `add_to_cart_${productId}` }],
+          [{ text: '❤️ Sevimlilarga qo\'shish', callback_data: `add_favorite_${productId}` }],
           // Back to category list for this category
           [{ text: '🔙 Orqaga', callback_data: `category_${product.categoryId._id || product.categoryId}` }],
           [{ text: '🏠 Bosh sahifa', callback_data: 'back_to_main' }]
@@ -329,10 +350,30 @@ class ProductHandlers extends BaseHandler {
       }
 
       if (ctx.callbackQuery) {
-        await ctx.editMessageText(message, {
-          parse_mode: 'Markdown',
-          reply_markup: keyboard
-        });
+        try {
+          await ctx.editMessageText(message, {
+            parse_mode: 'Markdown',
+            reply_markup: keyboard
+          });
+        } catch (error) {
+          if (error.description && error.description.includes('message is not modified')) {
+            console.log('⚠️ Product details message unchanged, skipping edit');
+            await ctx.answerCbQuery();
+          } else if (error.description && error.description.includes('no text in the message to edit')) {
+            console.log('⚠️ No text to edit for product details, sending new message');
+            await ctx.reply(message, {
+              parse_mode: 'Markdown',
+              reply_markup: keyboard
+            });
+          } else {
+            console.error('❌ Product details EditMessageText error:', error);
+            // Try sending new message instead
+            await ctx.reply(message, {
+              parse_mode: 'Markdown',
+              reply_markup: keyboard
+            });
+          }
+        }
       } else {
         await ctx.reply(message, {
           parse_mode: 'Markdown',
@@ -364,10 +405,28 @@ class ProductHandlers extends BaseHandler {
 
       const message = `🛒 **Savatga qo'shish**\n\n🍽️ **${product.name}**\n💰 ${product.price.toLocaleString()} so'm\n\nNechtasini qo'shmoqchisiz?`;
 
-      await ctx.editMessageText(message, {
-        parse_mode: 'Markdown',
-        reply_markup: quantityKeyboard(productId).reply_markup
-      });
+      try {
+        await ctx.editMessageText(message, {
+          parse_mode: 'Markdown',
+          reply_markup: quantityKeyboard(productId).reply_markup
+        });
+      } catch (error) {
+        if (error.description && error.description.includes('message is not modified')) {
+          console.log('⚠️ AddToCart message unchanged, skipping edit');
+        } else if (error.description && error.description.includes('no text in the message to edit')) {
+          console.log('⚠️ No text to edit for addToCart, sending new message');
+          await ctx.reply(message, {
+            parse_mode: 'Markdown',
+            reply_markup: quantityKeyboard(productId).reply_markup
+          });
+        } else {
+          console.error('❌ AddToCart EditMessageText error:', error);
+          await ctx.reply(message, {
+            parse_mode: 'Markdown',
+            reply_markup: quantityKeyboard(productId).reply_markup
+          });
+        }
+      }
 
       if (ctx.answerCbQuery) await ctx.answerCbQuery();
     }, ctx, '❌ Savatga qo\'shishda xatolik!');

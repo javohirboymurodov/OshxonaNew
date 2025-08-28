@@ -34,6 +34,7 @@ const productSchema = new mongoose.Schema({
   
   // Status flags
   isActive: { type: Boolean, default: true },
+  isAvailable: { type: Boolean, default: true },
   isPopular: { type: Boolean, default: false },
   isFeatured: { type: Boolean, default: false },
   isNewProduct: { type: Boolean, default: false },

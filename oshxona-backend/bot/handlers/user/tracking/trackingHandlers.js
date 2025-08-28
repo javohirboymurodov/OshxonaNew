@@ -3,7 +3,44 @@ const orderTracker = require('../../../../services/orderTrackingService');
 
 // Order tracking handlers
 const trackingHandlers = {
-  // Buyurtmani kuzatish
+  // Smart Buyurtmani Kuzatish (Professional)
+  async trackOrderSmart(ctx) {
+    try {
+      const callbackData = ctx.callbackQuery?.data || '';
+      const orderIdMatch = callbackData.match(/^track_(.+)$/);
+      
+      if (!orderIdMatch) {
+        return ctx.answerCbQuery('❌ Buyurtma ID topilmadi');
+      }
+
+      const orderId = orderIdMatch[1];
+      
+      // Use Smart Order Interface for modern tracking
+      const SmartOrderInterface = require('../../../services/smartOrderInterface');
+      const RealTimeTrackingManager = require('../../../services/realTimeTrackingManager');
+      
+      // Start real-time tracking
+      await RealTimeTrackingManager.startTracking(orderId, ctx.from.id, {
+        source: 'tracking',
+        features: ['status', 'courier', 'time']
+      });
+      
+      // Show order with smart interface
+      await SmartOrderInterface.showOrder(ctx, orderId, { 
+        source: 'tracking',
+        preserveNavigation: true 
+      });
+
+      console.log('✅ Smart tracking started for order:', orderId);
+      
+    } catch (error) {
+      console.error('❌ Smart track order error:', error);
+      // Fallback to legacy tracking
+      await this.trackOrder(ctx);
+    }
+  },
+
+  // Legacy Buyurtmani kuzatish (Fallback)
   async trackOrder(ctx) {
     try {
       const callbackData = ctx.callbackQuery?.data || '';
@@ -233,11 +270,10 @@ const trackingHandlers = {
             { text: '✅ Ha, qayta beraman', callback_data: `confirm_reorder_${orderId}` }
           ],
           [
-            { text: '✏️ Tahrirlash', callback_data: 'start_order' },
             { text: '🛒 Yangi buyurtma', callback_data: 'show_categories' }
           ],
           [
-            { text: '🔙 Orqaga', callback_data: `track_${orderId}` }
+            { text: '🔙 Orqaga', callback_data: 'quick_order' }
           ]
         ]
       };
@@ -287,23 +323,40 @@ const trackingHandlers = {
       }
 
       // Add items from the original order
+      console.log('🔍 Original order items:', originalOrder.items.length);
+      
       for (const item of originalOrder.items) {
-        if (item.product && item.product.isActive && item.product.isAvailable) {
+        console.log('🔍 Processing item:', {
+          productName: item.productName,
+          productExists: !!item.product,
+          isActive: item.product?.isActive,
+          isAvailable: item.product?.isAvailable
+        });
+        
+        // Check availability - if isAvailable is undefined, treat as true
+        const isAvailable = item.product.isAvailable !== false;
+        
+        if (item.product && item.product.isActive && isAvailable) {
           cart.items.push({
             product: item.product._id,
             productName: item.productName,
             quantity: item.quantity,
-            price: item.price
+            price: item.price,
+            totalPrice: item.price * item.quantity
           });
+          console.log('✅ Added to cart:', item.productName);
+        } else {
+          console.log('❌ Skipped unavailable item:', item.productName);
         }
       }
 
       await cart.save();
+      console.log('🔍 Reorder cart saved. Total items:', cart.items.length);
 
       await ctx.answerCbQuery('✅ Mahsulotlar savatga qo\'shildi!');
       
       // Show cart
-      const { showCart } = require('../../cart');
+      const { showCart } = require('../cart');
       await showCart(ctx);
 
     } catch (error) {

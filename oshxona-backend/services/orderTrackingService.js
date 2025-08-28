@@ -298,20 +298,16 @@ class OrderTrackingService extends EventEmitter {
       return null;
     }
 
-    const baseTime = {
-      pickup: 20, // 20 minutes
-      delivery: 35, // 35 minutes
-      dine_in: 25, // 25 minutes
-      dine_in_qr: 20 // 20 minutes
-    };
-
-    const prepTime = baseTime[order.orderType] || 30;
-    const estimatedTime = new Date(order.createdAt.getTime() + prepTime * 60 * 1000);
+    // Use Smart Order Interface calculator for real-time estimation
+    const SmartOrderInterface = require('./smartOrderInterface');
+    const smartEstimate = SmartOrderInterface.calculateEstimatedTime(order);
+    
+    const estimatedTime = new Date(Date.now() + smartEstimate * 60 * 1000);
     
     return {
-      estimatedMinutes: prepTime,
+      estimatedMinutes: smartEstimate,
       estimatedTime,
-      remainingMinutes: Math.max(0, Math.ceil((estimatedTime - new Date()) / (60 * 1000)))
+      remainingMinutes: smartEstimate
     };
   }
 

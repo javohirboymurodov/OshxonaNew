@@ -557,9 +557,10 @@ function registerMessageHandlers(bot) {
         
         cartItems.push({
           product: product._id,
+          productName: product.name,
           quantity: item.quantity,
           price: price,
-          total: itemTotal
+          totalPrice: itemTotal
         });
       }
       

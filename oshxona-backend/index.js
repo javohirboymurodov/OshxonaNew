@@ -301,6 +301,11 @@ setInterval(async () => {
 // Database connection ready bo'lgandan keyin appni ishga tushirish
 initializeApp();
 
+// Initialize Real-Time Tracking Manager
+const RealTimeTrackingManager = require('./services/realTimeTrackingManager');
+RealTimeTrackingManager.startPeriodicCleanup();
+console.log('✅ Real-Time Tracking Manager initialized');
+
 // Disable deprecated warnings
 process.env.NTBA_FIX_319 = 1;
 process.env.NTBA_FIX_350 = 1;

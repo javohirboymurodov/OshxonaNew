@@ -28,7 +28,7 @@ app.use(helmet({
 
 // CORS configuration - kengaytirilgan (dinamik allowlist)
 const allowedOrigins = [
-  'http://localhost:3000',
+  'http://localhost:5173',
   'http://localhost:3001',
   'http://localhost:3003', // Vite default port
   process.env.ADMIN_PANEL_URL,

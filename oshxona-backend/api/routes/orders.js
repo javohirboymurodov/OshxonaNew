@@ -1,11 +1,15 @@
 const express = require('express');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const OrdersController = require('../controllers/ordersController');
+const SecurityService = require('../../middleware/security');
 
 const router = express.Router();
 
 // Apply authentication
 router.use(authenticateToken);
+
+// Apply admin-specific rate limiting for orders
+router.use(SecurityService.getAdminRateLimit());
 
 
 // 📋 ORDER MANAGEMENT

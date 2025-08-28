@@ -116,7 +116,10 @@ class MobileUXService {
       
       return favorites
         .map(fav => fav.product)
-        .filter(product => product && product.isActive && product.isAvailable);
+        .filter(product => {
+          const isAvailable = product?.isAvailable !== false;
+          return product && product.isActive && isAvailable;
+        });
     } catch (error) {
       console.error('Get favorite products error:', error);
       return [];
@@ -313,7 +316,15 @@ class MobileUXService {
           }
         },
         { $unwind: '$product' },
-        { $match: { 'product.isActive': true, 'product.isAvailable': true } }
+        { 
+          $match: { 
+            'product.isActive': true,
+            $or: [
+              { 'product.isAvailable': true },
+              { 'product.isAvailable': { $exists: false } }
+            ]
+          } 
+        }
       ]);
 
       return popularProducts.map(item => ({
@@ -334,10 +345,17 @@ class MobileUXService {
       // Get products marked as fast or from fast categories
       const fastProducts = await Product.find({
         isActive: true,
-        isAvailable: true,
         $or: [
-          { preparationTime: { $lte: 15 } }, // 15 minutes or less
-          { tags: { $in: ['fast', 'quick', 'tez'] } }
+          { isAvailable: true },
+          { isAvailable: { $exists: false } }
+        ],
+        $and: [
+          {
+            $or: [
+              { preparationTime: { $lte: 15 } }, // 15 minutes or less
+              { tags: { $in: ['fast', 'quick', 'tez'] } }
+            ]
+          }
         ]
       })
         .limit(limit)

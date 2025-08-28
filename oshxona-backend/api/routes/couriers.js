@@ -9,6 +9,9 @@ const router = express.Router();
 // Apply authentication
 router.use(authenticateToken);
 
+// Apply admin-specific rate limiting for couriers
+router.use(SecurityService.getAdminRateLimit());
+
 // ==============================================
 // 🚚 COURIER MANAGEMENT (Admin only)
 // ==============================================

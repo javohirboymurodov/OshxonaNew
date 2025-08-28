@@ -42,23 +42,37 @@ class SocketManager {
       // Admin panelga qo'shilish
       socket.on('join-admin', (data) => {
         try {
+          console.log('🔑 Admin join attempt:', { data: data ? 'provided' : 'missing' });
+          
+          if (!data || !data.token) {
+            console.log('❌ No token provided for admin join');
+            socket.emit('auth-error', { message: 'Token required for admin access' });
+            return;
+          }
+
           const { token, branchId } = data;
           const decoded = jwt.verify(token, process.env.JWT_SECRET);
           
+          console.log('✅ Token decoded:', { role: decoded.role, userId: decoded.userId || decoded.id });
+          
           if (decoded.role === 'admin' || decoded.role === 'superadmin') {
-            socket.join(`branch:${branchId}`);
+            const roomName = `branch:${branchId || 'global'}`;
+            socket.join(roomName);
             this.connectedAdmins.set(socket.id, {
               userId: decoded.userId || decoded.id,
-              branchId: branchId,
+              branchId: branchId || 'global',
               role: decoded.role
             });
             
-            console.log(`👨‍💼 Admin joined branch:${branchId}`);
-            socket.emit('joined-admin', { branchId });
+            console.log(`👨‍💼 Admin joined ${roomName} - Socket: ${socket.id}`);
+            socket.emit('joined-admin', { branchId: branchId || 'global', success: true });
+          } else {
+            console.log('❌ Invalid role for admin access:', decoded.role);
+            socket.emit('auth-error', { message: 'Admin role required' });
           }
         } catch (error) {
-          console.error('Admin join error:', error);
-          socket.emit('auth-error', 'Invalid token');
+          console.error('❌ Admin join error:', error.message);
+          socket.emit('auth-error', { message: 'Authentication failed: ' + error.message });
         }
       });
       

@@ -55,10 +55,22 @@ class SecurityService {
   static getOrderRateLimit() {
     return this.createRateLimit({
       windowMs: 60 * 1000, // 1 minute
-      max: 50, // 50 orders per minute (increased for admin operations)
+      max: 200, // 200 requests per minute (much higher for admin operations)
       message: {
         success: false,
         error: 'Buyurtmalar soni chekloviga yetdingiz. Bir daqiqadan keyin qaytadan urining.'
+      }
+    });
+  }
+
+  // Admin-specific rate limit (more generous)
+  static getAdminRateLimit() {
+    return this.createRateLimit({
+      windowMs: 60 * 1000, // 1 minute
+      max: 500, // 500 requests per minute for admin
+      message: {
+        success: false,
+        error: 'Admin panel chekloviga yetdingiz. Bir daqiqadan keyin qaytadan urining.'
       }
     });
   }

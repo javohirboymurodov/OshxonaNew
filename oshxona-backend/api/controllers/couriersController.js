@@ -24,13 +24,35 @@ async function getOne(req, res) {
 
 async function availableForOrder(req, res) {
   try {
-    const availableCouriers = await User.find({ role: 'courier', 'courierInfo.isOnline': true, 'courierInfo.isAvailable': true, isActive: true }).select('firstName lastName phone courierInfo.vehicleType courierInfo.rating courierInfo.currentLocation').sort({ 'courierInfo.rating': -1 });
+    console.log('🔍 Fetching available couriers for order assignment...');
+    
+    // Primary: Online and available couriers
+    const availableCouriers = await User.find({ 
+      role: 'courier', 
+      'courierInfo.isOnline': true, 
+      'courierInfo.isAvailable': { $ne: false }, // Available OR undefined (default true)
+      isActive: true 
+    }).select('firstName lastName phone courierInfo.vehicleType courierInfo.rating courierInfo.currentLocation courierInfo.isOnline courierInfo.isAvailable').sort({ 'courierInfo.rating': -1 });
+    
+    console.log(`✅ Found ${availableCouriers.length} available couriers`);
+    
     if (!availableCouriers || availableCouriers.length === 0) {
-      const allCouriers = await User.find({ role: 'courier', isActive: true }).select('firstName lastName phone courierInfo').sort({ 'courierInfo.isOnline': -1, 'courierInfo.rating': -1, createdAt: -1 });
-      return res.json({ success: true, data: { couriers: allCouriers, fallback: true } });
+      console.log('⚠️ No available couriers, fallback to all online couriers');
+      // Fallback: All online couriers (even if busy)
+      const onlineCouriers = await User.find({ 
+        role: 'courier', 
+        'courierInfo.isOnline': true, 
+        isActive: true 
+      }).select('firstName lastName phone courierInfo').sort({ 'courierInfo.rating': -1, createdAt: -1 });
+      
+      return res.json({ success: true, data: { couriers: onlineCouriers, fallback: true, message: 'Showing all online couriers' } });
     }
+    
     res.json({ success: true, data: { couriers: availableCouriers, fallback: false } });
-  } catch (e) { res.status(500).json({ success: false, message: 'Mavjud haydovchilarni olishda xatolik!' }); }
+  } catch (e) { 
+    console.error('❌ Available couriers error:', e);
+    res.status(500).json({ success: false, message: 'Mavjud haydovchilarni olishda xatolik!' }); 
+  }
 }
 
 async function updateStatus(req, res) {
