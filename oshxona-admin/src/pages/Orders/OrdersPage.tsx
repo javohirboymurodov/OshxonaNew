@@ -155,10 +155,12 @@ const OrdersPage: React.FC = () => {
 
   // Watch for selectedOrder changes from Redux (e.g. from notification clicks)
   useEffect(() => {
-    if (selectedOrder && !detailsVisible) {
+    if (selectedOrder) {
       setDetailsVisible(true);
+    } else {
+      setDetailsVisible(false);
     }
-  }, [selectedOrder, detailsVisible]);
+  }, [selectedOrder]);
 
   // Fokus ID bo'lsa va ro'yxat yangilangan bo'lsa, moddalni ochamiz
   useEffect(() => {
@@ -361,7 +363,10 @@ const OrdersPage: React.FC = () => {
       <OrderDetailsModal
         open={detailsVisible}
         order={selectedOrder as unknown as DetailsOrder | null}
-        onClose={() => setDetailsVisible(false)}
+        onClose={() => {
+          setDetailsVisible(false);
+          dispatch(setSelectedOrder(null)); // Clear selectedOrder to prevent auto-reopening
+        }}
         getOrderTypeText={getOrderTypeText}
         getPaymentText={getPaymentMethodText}
         onStatusUpdated={() => {
