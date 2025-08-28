@@ -12,9 +12,12 @@ export const useSocket = () => {
   const dispatch = useAppDispatch();
   const realTimeUpdates = useAppSelector(state => state.orders.realTimeUpdates);
   const { user } = useAuth();
+  
+  // Extract branchId to avoid reconnecting when other user properties change
+  const branchId = user?.branch && typeof user.branch === 'object' ? user.branch._id : user?.branch || 'default';
 
   useEffect(() => {
-    if (!realTimeUpdates) return;
+    if (!realTimeUpdates || !user) return;
 
     // Initialize socket connection
     socket = io(import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000', {
@@ -23,7 +26,6 @@ export const useSocket = () => {
 
     // Join admin room for real-time updates with token
     const token = localStorage.getItem('token');
-    const branchId = user?.branch && typeof user.branch === 'object' ? user.branch._id : user?.branch || 'default';
     socket.emit('join-admin', { 
       token: token,
       branchId: branchId
@@ -132,7 +134,7 @@ export const useSocket = () => {
         socket = null;
       }
     };
-  }, [dispatch, realTimeUpdates, user]);
+  }, [dispatch, realTimeUpdates, branchId]);
 
   return {
     socket,

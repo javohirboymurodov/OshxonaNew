@@ -141,7 +141,7 @@ const OrdersPage: React.FC = () => {
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const data = (await apiService.get(`/orders/stats${isSuper && branch ? `?branch=${encodeURIComponent(branch)}` : ''}`)) as Record<string, unknown>;
+        const data = (await apiService.getOrderStats()) as Record<string, unknown>;
         const hasStats = data && typeof data === 'object' && Object.prototype.hasOwnProperty.call(data, 'stats');
         const s = (hasStats ? (data as { stats: Partial<OrderStatsShape> }).stats : (data as Partial<OrderStatsShape>)) || {} as Partial<OrderStatsShape>;
         setStats({

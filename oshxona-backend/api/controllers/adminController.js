@@ -307,6 +307,7 @@ async function getOrders(req, res) {
     console.log('🔍 Orders query with branch filter:', JSON.stringify(query));
     const orders = await Order.find(query).populate('user', 'firstName lastName phone').populate('items.product', 'name price').sort({ createdAt: -1 }).limit(limit * 1).skip((page - 1) * limit);
     const total = await Order.countDocuments(query);
+    console.log(`📊 Found ${orders.length} orders out of ${total} total for this branch`);
     res.json({ success: true, data: { orders, pagination: { current: parseInt(page), pageSize: parseInt(limit), total, pages: Math.ceil(total / limit) } } });
   } catch (error) {
     console.error('Get orders error:', error);
