@@ -14,37 +14,62 @@ export class SoundPlayer {
     try {
       console.log('🔊 SOUND: Attempting to play notification sound:', soundFile);
       
-      // Check if audio is allowed (user has interacted with page)
-      if (!this.canPlayAudio()) {
-        console.log('🔇 SOUND: Audio playback not allowed yet - user needs to interact with page first');
-        return;
-      }
+      // Try multiple audio play methods for better compatibility
       
+      // Method 1: Cached audio
       let audio = this.audioCache.get(soundFile);
-      
       if (!audio) {
         console.log('🔊 SOUND: Creating new audio instance for:', soundFile);
         audio = new Audio(soundFile);
-        audio.preload = 'auto';
+        audio.volume = Math.max(0, Math.min(1, volume));
         this.audioCache.set(soundFile, audio);
-        
-        // Add event listeners for debugging
-        audio.addEventListener('loadstart', () => console.log('🔊 SOUND: Loading started'));
-        audio.addEventListener('canplay', () => console.log('🔊 SOUND: Can play'));
-        audio.addEventListener('error', (e) => console.error('🔇 SOUND: Error loading audio:', e));
       }
       
-      // Reset audio to beginning and set volume
+      // Reset and play
       audio.currentTime = 0;
       audio.volume = Math.max(0, Math.min(1, volume));
       
-      console.log('🔊 SOUND: Playing audio with volume:', volume);
+      console.log('🔊 SOUND: Method 1 - Trying cached audio');
       
-      // Play the audio
-      await audio.play();
-      console.log('✅ SOUND: Audio played successfully');
+      try {
+        await audio.play();
+        console.log('✅ SOUND: Method 1 successful');
+        return;
+      } catch (cacheError) {
+        console.log('🔇 SOUND: Method 1 failed:', cacheError);
+      }
+      
+      // Method 2: Fresh audio instance
+      console.log('🔊 SOUND: Method 2 - Trying fresh audio instance');
+      try {
+        const freshAudio = new Audio(soundFile);
+        freshAudio.volume = volume;
+        await freshAudio.play();
+        console.log('✅ SOUND: Method 2 successful');
+        return;
+      } catch (freshError) {
+        console.log('🔇 SOUND: Method 2 failed:', freshError);
+      }
+      
+      // Method 3: HTML5 Audio with promise handling
+      console.log('🔊 SOUND: Method 3 - Promise-based play');
+      try {
+        const promiseAudio = new Audio(soundFile);
+        promiseAudio.volume = volume;
+        const playPromise = promiseAudio.play();
+        if (playPromise !== undefined) {
+          await playPromise;
+          console.log('✅ SOUND: Method 3 successful');
+          return;
+        }
+      } catch (promiseError) {
+        console.log('🔇 SOUND: Method 3 failed:', promiseError);
+      }
+      
+      console.error('❌ SOUND: All methods failed');
+      
     } catch (error) {
-      console.error('❌ SOUND: Failed to play notification sound:', error);
+      console.error('❌ SOUND: Critical error:', error);
     }
   }
   
