@@ -185,16 +185,7 @@ const OrdersPage: React.FC = () => {
     window.history.replaceState({}, document.title);
   }, [location.state, orders]);
 
-  // Real-time dine_in_arrived kelganda avtomatik ochish uchun fokus ID ni tayyorlab qo'yamiz
-  useEffect(() => {
-    if (!orderUpdates || orderUpdates.length === 0) return;
-    const last = orderUpdates[0] as unknown as { event?: string; orderId?: string };
-    if (last && last.event === 'dine_in_arrived' && last.orderId) {
-      const id = String(last.orderId);
-      setPendingFocusId(id);
-      try { localStorage.setItem('ackOrderId', id); } catch { /* ignore */ }
-    }
-  }, [orderUpdates]);
+  // Customer arrival handling is now done through Socket.io events in useSocket hook
 
   // Fokus ID bo'lsa va ro'yxat yangilangan bo'lsa, moddalni ochamiz
   useEffect(() => {

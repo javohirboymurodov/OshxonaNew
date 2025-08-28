@@ -327,6 +327,18 @@ const startAPIServer = (port = 5000) => {
   });
 };
 
+// Auto-start server when this file is run directly
+if (require.main === module) {
+  const port = process.env.PORT || 5000;
+  console.log('🚀 Starting API server...');
+  startAPIServer(port).then(() => {
+    console.log('✅ API server started successfully');
+  }).catch((error) => {
+    console.error('❌ Failed to start API server:', error);
+    process.exit(1);
+  });
+}
+
 module.exports = {
   app,
   createServer,

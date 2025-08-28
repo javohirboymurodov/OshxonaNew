@@ -282,9 +282,14 @@ class ApiService {
       return response.data.data;
     } catch (e: any) {
       if (e?.response?.status === 403) {
-        // Adminlar uchun fallback
-        const alt = await this.api.get('/admin/branches');
-        return alt.data.data;
+        // Adminlar uchun fallback - 403 xatosi kutilmoqda, shuning uchun console'ga chiqarmaymiz
+        try {
+          const alt = await this.api.get('/admin/branches');
+          return alt.data.data;
+        } catch (fallbackError) {
+          console.error('Failed to get branches from admin endpoint:', fallbackError);
+          throw fallbackError;
+        }
       }
       throw e;
     }
