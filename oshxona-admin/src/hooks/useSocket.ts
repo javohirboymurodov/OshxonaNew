@@ -62,7 +62,7 @@ export const useSocket = () => {
         dispatch(handleNewOrder(normalizedOrder));
         
         // Play notification sound
-        console.log('🔊 SOCKET: Calling SoundPlayer.playNotification');
+
         SoundPlayer.playNotification('/notification.wav', 0.8);
         
         // Show notification
@@ -74,7 +74,7 @@ export const useSocket = () => {
 
         
         // Play notification sound even with insufficient data
-        console.log('🔊 SOCKET: Calling SoundPlayer.playNotification (insufficient data)');
+
         SoundPlayer.playNotification('/notification.wav', 0.8);
         
         // Still show notification even if we can't add to store
