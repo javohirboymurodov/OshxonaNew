@@ -64,7 +64,13 @@ class SocketManager {
               role: decoded.role
             });
             
-            console.log(`👨‍💼 Admin joined ${roomName} - Socket: ${socket.id}`);
+            // Log room size after joining
+            const room = this.io.sockets.adapter.rooms.get(roomName);
+            console.log(`👨‍💼 ADMIN JOINED ${roomName} - Socket: ${socket.id} - Total clients: ${room ? room.size : 0}`);
+            
+            // Log all current rooms for debugging
+            console.log('🏠 ALL ACTIVE ROOMS:', Array.from(this.io.sockets.adapter.rooms.keys()));
+            
             socket.emit('joined-admin', { branchId: branchId || 'global', success: true });
           } else {
             console.log('❌ Invalid role for admin access:', decoded.role);
@@ -123,6 +129,27 @@ class SocketManager {
     });
   }
   
+  // Test notification uchun
+  static emitTestNotification(branchId = 'default') {
+    if (this.io) {
+      console.log(`🧪 SENDING TEST NOTIFICATION TO branch:${branchId}`);
+      const room = this.io.sockets.adapter.rooms.get(`branch:${branchId}`);
+      console.log(`👥 CLIENTS IN ROOM branch:${branchId}:`, room ? room.size : 0);
+      
+      this.io.to(`branch:${branchId}`).emit('new-order', {
+        orderId: 'TEST123',
+        orderNumber: 'TEST123',
+        customerName: 'Test Customer',
+        total: 50000,
+        orderType: 'delivery',
+        status: 'pending',
+        timestamp: new Date(),
+        sound: true
+      });
+      console.log(`📢 Test notification sent to branch:${branchId}`);
+    }
+  }
+
   // Yangi buyurtma eventini adminlarga yuborish
   static emitNewOrder(branchId, orderData) {
     if (this.io) {
