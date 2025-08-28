@@ -307,12 +307,23 @@ Buyurtma №: ${order.orderId}`;
 
       await ctx.answerCbQuery('✅ Kelganingiz qayd qilindi!');
       
-      // Notify restaurant
+      // Notify restaurant via Socket.io
       try {
-        const AdminNotification = require('./adminNotification');
-        await AdminNotification.notifyCustomerArrived(order);
+        const SocketManager = require('../../../../config/socketConfig');
+        SocketManager.emitOrderUpdate(order._id, {
+          event: 'dine_in_arrived',
+          orderId: order._id,
+          orderNumber: order.orderId,
+          customer: order.customerInfo,
+          tableNumber: order.dineInInfo?.tableNumber,
+          total: order.total,
+          items: order.items,
+          branchId: order.branch,
+          timestamp: new Date()
+        });
+        console.log('✅ Customer arrival notification sent to admin panel');
       } catch (error) {
-        console.error('Admin notification error:', error);
+        console.error('❌ Socket notification error:', error);
       }
 
       // Update the message

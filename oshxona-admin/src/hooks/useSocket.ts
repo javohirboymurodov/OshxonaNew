@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { message } from 'antd';
 import { useAppDispatch, useAppSelector } from './redux';
 import { handleOrderUpdate, handleNewOrder } from '../store/slices/ordersSlice';
 import { OrderStatus } from '../utils/orderStatus';
@@ -28,9 +29,18 @@ export const useSocket = () => {
     // Listen for new orders
     socket.on('new-order', (data: any) => {
       console.log('🔔 New order received:', data);
-      if (data.orderId && data.orderNumber) {
-        // Optionally fetch full order details or handle with provided data
-        console.log('New order notification:', data);
+      if (data.order) {
+        // Add new order to Redux store
+        dispatch(handleNewOrder(data.order));
+        
+        // Show notification
+        console.log('New order added to store:', data.order);
+        message.success({
+          content: `🔔 Yangi buyurtma keldi - №${data.order.orderNumber || data.order._id}`,
+          duration: 5,
+        });
+      } else if (data.orderId && data.orderNumber) {
+        console.log('New order notification (minimal data):', data);
       }
     });
 
@@ -44,12 +54,43 @@ export const useSocket = () => {
     }) => {
       console.log('🔄 Order status update:', data);
       dispatch(handleOrderUpdate(data));
+      
+      // Show status update notification
+      const statusMessages = {
+        'confirmed': '✅ Buyurtma tasdiqlandi',
+        'preparing': '👨‍🍳 Buyurtma tayyorlanmoqda',
+        'ready': '🍽️ Buyurtma tayyor',
+        'assigned': '🚚 Kuryer tayinlandi', 
+        'on_delivery': '🚗 Yetkazilmoqda',
+        'delivered': '✅ Yetkazildi',
+        'picked_up': '📦 Olib ketildi',
+        'completed': '🎉 Buyurtma yakunlandi',
+        'cancelled': '❌ Buyurtma bekor qilindi'
+      };
+      
+      const statusMessage = statusMessages[data.status] || 'Holat o\'zgartirildi';
+      message.info({
+        content: `${statusMessage} - №${data.orderId}`,
+        duration: 3,
+      });
     });
 
     // Listen for courier assignments
     socket.on('courier-assigned', (data: any) => {
       console.log('🚚 Courier assigned:', data);
-      // Refresh orders or update specific order
+      message.success({
+        content: `🚚 Kuryer tayinlandi - ${data.courierName || 'Kuryer'} buyurtma №${data.orderId}ga`,
+        duration: 4,
+      });
+    });
+
+    // Listen for customer arrival (dine-in)
+    socket.on('customer-arrived', (data: any) => {
+      console.log('👋 Customer arrived:', data);
+      message.info({
+        content: `👋 Mijoz keldi - ${data.customer?.name || 'Mijoz'} (Buyurtma №${data.orderNumber || data.orderId})`,
+        duration: 6,
+      });
     });
 
     // Connection status

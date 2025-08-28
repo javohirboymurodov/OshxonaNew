@@ -260,6 +260,33 @@ class SocketManager {
     console.log(`🔄 Order status update sent to superadmin - Order:${payload.orderId} - Status:${payload.status}`);
   }
   
+  // Yangi buyurtma (admin panel uchun)
+  static emitNewOrder(branchId, orderData) {
+    if (!this.io) return;
+    
+    const payload = {
+      order: orderData,
+      orderId: orderData.orderId || orderData._id,
+      orderNumber: orderData.orderNumber || orderData.orderId,
+      customerName: orderData.customerName,
+      total: orderData.total,
+      orderType: orderData.orderType,
+      status: orderData.status,
+      createdAt: orderData.createdAt,
+      timestamp: new Date()
+    };
+    
+    // Branch adminlarga yuborish
+    if (branchId && branchId !== 'global') {
+      this.io.to(`branch:${branchId}`).emit('new-order', payload);
+      console.log(`🔔 New order sent to branch:${branchId} - Order:${orderData.orderId || orderData._id}`);
+    }
+    
+    // Superadmin overview xonasiga ham yuborish
+    this.io.to('branch:default').emit('new-order', payload);
+    console.log(`🔔 New order sent to superadmin - Order:${orderData.orderId || orderData._id}`);
+  }
+  
   // Real-time statistika (admin dashboard uchun)
   static emitStatistics(branchId, stats) {
     if (this.io) {

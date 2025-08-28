@@ -74,7 +74,13 @@ export const fetchOrders = createAsyncThunk(
     if (params.status) searchParams.append('status', params.status);
     if (params.orderType) searchParams.append('orderType', params.orderType);
 
-    const response = await fetch(`/api/orders?${searchParams}`);
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+    const response = await fetch(`${apiBaseUrl}/orders?${searchParams}`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json',
+      },
+    });
     if (!response.ok) throw new Error('Failed to fetch orders');
     return await response.json();
   }
@@ -83,9 +89,13 @@ export const fetchOrders = createAsyncThunk(
 export const updateOrderStatus = createAsyncThunk(
   'orders/updateStatus',
   async ({ orderId, status, message }: { orderId: string; status: OrderStatus; message?: string }) => {
-    const response = await fetch(`/api/orders/${orderId}/status`, {
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+    const response = await fetch(`${apiBaseUrl}/orders/${orderId}/status`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json' 
+      },
       body: JSON.stringify({ status, message }),
     });
     if (!response.ok) throw new Error('Failed to update order status');
@@ -96,9 +106,13 @@ export const updateOrderStatus = createAsyncThunk(
 export const assignCourier = createAsyncThunk(
   'orders/assignCourier',
   async ({ orderId, courierId }: { orderId: string; courierId: string }) => {
-    const response = await fetch(`/api/orders/${orderId}/assign-courier`, {
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+    const response = await fetch(`${apiBaseUrl}/orders/${orderId}/assign-courier`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json' 
+      },
       body: JSON.stringify({ courierId }),
     });
     if (!response.ok) throw new Error('Failed to assign courier');

@@ -10,6 +10,8 @@ import OrderDetailsModal, { type Order as DetailsOrder } from '@/components/Orde
 import AssignCourierModal from '@/components/Orders/AssignCourierModal';
 import { useAuth } from '@/hooks/useAuth';
 import { useSocket } from '@/hooks/useSocket';
+import { useAppDispatch, useAppSelector } from '@/hooks/redux';
+import { fetchOrders, setSelectedOrder, handleOrderUpdate, updateOrderStatus, assignCourier, setPagination } from '@/store/slices/ordersSlice';
 import apiService from '@/services/api';
 import { useLocation } from 'react-router-dom';
 import '@/pages/Orders/orders-highlight.css';
@@ -41,19 +43,16 @@ const defaultStats: OrderStatsShape = {
 
 const OrdersPage: React.FC = () => {
   const [messageApi, contextHolder] = antdMessage.useMessage();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const dispatch = useAppDispatch();
+  
+  // Redux state
+  const { orders, selectedOrder, loading, error, pagination } = useAppSelector(state => state.orders);
+  
+  // Local UI state
   const [detailsVisible, setDetailsVisible] = useState(false);
   const [assignModalVisible, setAssignModalVisible] = useState(false);
   const [filtersVisible, setFiltersVisible] = useState(false);
   const [stats, setStats] = useState<OrderStatsShape>(defaultStats);
-
-  const [pagination, setPagination] = useState({
-    current: 1,
-    pageSize: 15,
-    total: 0,
-  });
 
   interface Filters {
     search: string;
@@ -95,9 +94,7 @@ const OrdersPage: React.FC = () => {
   // })();
   // const token = localStorage.getItem('token') || '';
   const { connected } = useSocket();
-  // TODO: Implement newOrders and orderUpdates logic with Redux
-  const newOrders: Order[] = [];
-  const orderUpdates: Order[] = [];
+  
   const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
   // 🔧 Guard: filtr o'zgarganda avtomatik modal ochilmasin
   const suppressAutoOpenRef = useRef(false);
@@ -107,96 +104,22 @@ const OrdersPage: React.FC = () => {
     return () => clearTimeout(t);
   }, [filters, pagination.current, pagination.pageSize]);
 
-  type OrdersListResponse = {
-    orders?: Array<Order & { orderId?: string; total?: number }>;
-    pagination?: { total?: number; current?: number; pageSize?: number };
-    data?: { orders?: Array<Order & { orderId?: string; total?: number }>; pagination?: { total?: number; current?: number; pageSize?: number } };
-  };
-
-  const queryClient = useQueryClient();
-  const ordersQueryKey = ['orders', {
-    page: pagination.current,
-    pageSize: pagination.pageSize,
-    status: filters.status,
-    orderType: filters.orderType,
-    search: filters.search,
-    courier: filters.courier,
-    dateFrom: filters.dateRange?.[0]?.toISOString?.(),
-    dateTo: filters.dateRange?.[1]?.toISOString?.(),
-    branch: isSuper ? branch : undefined,
-  }];
-
-  const ordersQuery = useQuery<Order[]>({
-    queryKey: ordersQueryKey,
-    queryFn: async () => {
-      const data: OrdersListResponse = await apiService.getOrders(pagination.current, pagination.pageSize, {
-        status: filters.status || undefined,
-        orderType: filters.orderType || undefined,
-        search: filters.search || undefined,
-        courier: filters.courier || undefined,
-        ...(isSuper && branch ? { branch } : {}),
-        ...(filters.dateRange && filters.dateRange[0] && filters.dateRange[1]
-          ? {
-              dateFrom: dayjs(filters.dateRange[0]).toDate().toISOString(),
-              dateTo: dayjs(filters.dateRange[1]).toDate().toISOString(),
-            }
-          : {}),
-      });
-      const rawOrders: Array<Order & { orderId?: string; total?: number; orderNumber?: string; totalAmount?: number }> = (data?.orders || data?.data?.orders || []) as Array<Order & { orderId?: string; total?: number; orderNumber?: string; totalAmount?: number }>;
-      const normalized: Order[] = rawOrders.map((o) => ({
-          ...o,
-        orderNumber: o.orderNumber || o.orderId || '',
-          totalAmount: o.totalAmount ?? o.total,
-        }));
-      const pag = data?.pagination || data?.data?.pagination || {};
-      setPagination((prev) => ({ ...prev, total: Number(pag.total || normalized.length || 0) }));
-      return normalized;
-    },
-    staleTime: 5_000,
-    refetchOnWindowFocus: false,
-  });
-
-  // Real-time invalidation on updates
+  // Load orders when component mounts or filters change
   useEffect(() => {
-    if (!orderUpdates || orderUpdates.length === 0) return;
-    queryClient.invalidateQueries({ queryKey: ordersQueryKey });
-    queryClient.invalidateQueries({ queryKey: ['orders-stats'] });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderUpdates]);
+    dispatch(fetchOrders({
+      page: pagination.current,
+      limit: pagination.pageSize,
+      status: filters.status,
+      orderType: filters.orderType,
+    }));
+  }, [dispatch, pagination.current, pagination.pageSize, filters.status, filters.orderType]);
 
-  // 🔧 FIX: Kuryer buyurtma holati real-time yangilanishi
+  // Show error messages
   useEffect(() => {
-    if (!orderUpdates || orderUpdates.length === 0) return;
-    
-    const lastUpdate = orderUpdates[0];
-    if (lastUpdate && typeof lastUpdate === 'object' && 'orderId' in lastUpdate) {
-      console.log('🚚 Real-time order status update:', lastUpdate);
-      
-      // Buyurtma ro'yxatini yangilash
-      queryClient.invalidateQueries({ queryKey: ordersQueryKey });
-      queryClient.invalidateQueries({ queryKey: ['orders-stats'] });
-      
-      // Agar buyurtma ochiq bo'lsa, uni ham yangilash
-      if (selectedOrder && selectedOrder._id === lastUpdate.orderId) {
-        setSelectedOrder(prev => prev ? { ...prev, status: lastUpdate.status as string } : null);
-      }
-      
-      // Notification ko'rsatish
-      const statusText = {
-        'assigned': 'Kuryer tayinlandi',
-        'on_delivery': 'Buyurtma qabul qilindi',
-        'delivered': 'Buyurtma yetkazildi'
-      }[lastUpdate.status as string] || 'Holat o\'zgardi';
-      
-      antdMessage.success(`${statusText} - Buyurtma №${lastUpdate.orderId}`);
+    if (error) {
+      messageApi.error(error);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderUpdates]);
-
-  useEffect(() => {
-    setOrders((ordersQuery.data || []) as Order[]);
-    setLoading(ordersQuery.isLoading);
-  }, [ordersQuery.data, ordersQuery.isLoading]);
+  }, [error, messageApi]);
 
   const statsQuery = useQuery<OrderStatsShape>({
     queryKey: ['orders-stats'],
@@ -232,7 +155,7 @@ const OrdersPage: React.FC = () => {
     if (suppressAutoOpenRef.current) return;
     const order = orders.find(o => o._id === state.focusOrderId || o.orderNumber === state.focusOrderId);
     if (order) {
-      setSelectedOrder(order);
+      dispatch(setSelectedOrder(order));
       setDetailsVisible(true);
       // highlight uchun qisqa scroll/hilite class qo'shish mumkin — hozir modal ochish yetarli
     }
@@ -257,7 +180,7 @@ const OrdersPage: React.FC = () => {
     if (suppressAutoOpenRef.current) return;
     const order = orders.find(o => o._id === pendingFocusId || o.orderNumber === pendingFocusId);
     if (order) {
-      setSelectedOrder(order);
+      dispatch(setSelectedOrder(order));
       setDetailsVisible(true);
       setPendingFocusId(null);
     }
@@ -283,7 +206,7 @@ const OrdersPage: React.FC = () => {
   );
 
   const showOrderDetails = async (order: TableOrder) => {
-    setSelectedOrder(order as unknown as Order);
+    dispatch(setSelectedOrder(order as unknown as Order));
     setDetailsVisible(true);
     const ackId = (order as unknown as { _id?: string; orderNumber?: string })._id || (order as unknown as { _id?: string; orderNumber?: string }).orderNumber;
     if (ackId) {
@@ -303,7 +226,7 @@ const OrdersPage: React.FC = () => {
             || (full as Record<string, unknown>)['orderId']
             || '';
         }
-        setSelectedOrder(merged as unknown as Order);
+        dispatch(setSelectedOrder(merged as unknown as Order));
       }
     } catch (e) {
       console.warn('Order details fetch failed', e);
@@ -318,7 +241,7 @@ const OrdersPage: React.FC = () => {
   // Deprecated: full-screen status update modal removed in favor of quick actions
 
   const openAssignCourier = (order: TableOrder) => {
-    setSelectedOrder(order as unknown as Order);
+    dispatch(setSelectedOrder(order as unknown as Order));
     setAssignModalVisible(true);
   };
 
@@ -419,15 +342,14 @@ const OrdersPage: React.FC = () => {
           data={orders}
           loading={loading}
           pagination={pagination}
-           onChangePage={(p, ps) => setPagination({ ...pagination, current: p, pageSize: ps })}
+           onChangePage={(p, ps) => dispatch(setPagination({ current: p, pageSize: ps }))}
           onShowDetails={showOrderDetails}
            onQuickStatusChange={async (order, newStatus) => {
             try {
-              await apiService.updateOrderStatus(order._id, newStatus);
+              await dispatch(updateOrderStatus({ orderId: order._id, status: newStatus })).unwrap();
               messageApi.success('Holat yangilandi');
-              queryClient.invalidateQueries({ queryKey: ordersQueryKey });
-              queryClient.invalidateQueries({ queryKey: ['orders-stats'] });
-            } catch {
+            } catch (error) {
+              console.error('Status update failed:', error);
               messageApi.error('Holatni yangilashda xatolik');
             }
           }}
