@@ -153,6 +153,13 @@ const OrdersPage: React.FC = () => {
 
   // Customer arrival handling is now done through Socket.io events in useSocket hook
 
+  // Watch for selectedOrder changes from Redux (e.g. from notification clicks)
+  useEffect(() => {
+    if (selectedOrder && !detailsVisible) {
+      setDetailsVisible(true);
+    }
+  }, [selectedOrder, detailsVisible]);
+
   // Fokus ID bo'lsa va ro'yxat yangilangan bo'lsa, moddalni ochamiz
   useEffect(() => {
     if (!pendingFocusId || orders.length === 0) return;
