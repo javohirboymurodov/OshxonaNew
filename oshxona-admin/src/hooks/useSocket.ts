@@ -35,6 +35,7 @@ export const useSocket = () => {
 
     // Listen for new orders
     socket.on('new-order', (data: any) => {
+      console.log('🔔 FRONTEND: Received new-order event', JSON.stringify(data, null, 2));
 
       
       // Convert data to order format if needed
