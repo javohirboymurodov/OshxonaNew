@@ -4,7 +4,7 @@ import { Button, Space, Card, Row, Col, Typography, Select, DatePicker, message 
 import { FilterOutlined, ReloadOutlined } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
 import OrdersStats from '@/components/Orders/OrdersStats';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import OrdersTable, { type Order as TableOrder } from '@/components/Orders/OrdersTable';
 import OrderDetailsModal, { type Order as DetailsOrder } from '@/components/Orders/OrderDetailsModal';
 import AssignCourierModal from '@/components/Orders/AssignCourierModal';
@@ -142,11 +142,15 @@ const OrdersPage: React.FC = () => {
     if (statsQuery.data) setStats(statsQuery.data);
   }, [statsQuery.data]);
 
+  // Refresh data when filters change
   useEffect(() => {
-    queryClient.invalidateQueries({ queryKey: ordersQueryKey });
-    queryClient.invalidateQueries({ queryKey: ['orders-stats'] });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters]);
+    dispatch(fetchOrders({
+      page: pagination.current,
+      limit: pagination.pageSize,
+      status: filters.status,
+      orderType: filters.orderType,
+    }));
+  }, [dispatch, filters, pagination.current, pagination.pageSize]);
 
   // Bell popoverdan focusOrderId kelsa: topib highlight + modalni ochish
   useEffect(() => {
@@ -186,12 +190,17 @@ const OrdersPage: React.FC = () => {
     }
   }, [pendingFocusId, orders]);
 
+  // Refresh data when socket reconnects
   useEffect(() => {
-    if (!connected) return;
-    queryClient.invalidateQueries({ queryKey: ordersQueryKey });
-    queryClient.invalidateQueries({ queryKey: ['orders-stats'] });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [newOrders, orderUpdates, connected]);
+    if (connected) {
+      dispatch(fetchOrders({
+        page: pagination.current,
+        limit: pagination.pageSize,
+        status: filters.status,
+        orderType: filters.orderType,
+      }));
+    }
+  }, [connected, dispatch, pagination.current, pagination.pageSize, filters.status, filters.orderType]);
 
   const getPaymentMethodText = useMemo(
     () => (method: string) => {
@@ -257,7 +266,14 @@ const OrdersPage: React.FC = () => {
         <Col>
           <Space>
             <Button icon={<FilterOutlined />} onClick={() => setFiltersVisible(true)}>Filtrlar</Button>
-            <Button type="primary" icon={<ReloadOutlined />} onClick={() => { queryClient.invalidateQueries({ queryKey: ordersQueryKey }); queryClient.invalidateQueries({ queryKey: ['orders-stats'] }); }}>Yangilash</Button>
+            <Button type="primary" icon={<ReloadOutlined />} onClick={() => { 
+              dispatch(fetchOrders({
+                page: pagination.current,
+                limit: pagination.pageSize,
+                status: filters.status,
+                orderType: filters.orderType,
+              }));
+            }}>Yangilash</Button>
           </Space>
         </Col>
       </Row>
@@ -365,8 +381,12 @@ const OrdersPage: React.FC = () => {
         getOrderTypeText={getOrderTypeText}
         getPaymentText={getPaymentMethodText}
         onStatusUpdated={() => {
-          queryClient.invalidateQueries({ queryKey: ordersQueryKey });
-          queryClient.invalidateQueries({ queryKey: ['orders-stats'] });
+          dispatch(fetchOrders({
+            page: pagination.current,
+            limit: pagination.pageSize,
+            status: filters.status,
+            orderType: filters.orderType,
+          }));
         }}
       />
 
@@ -378,7 +398,12 @@ const OrdersPage: React.FC = () => {
         onClose={() => setAssignModalVisible(false)}
         onAssigned={() => {
           messageApi.success('Kuryer tayinlandi');
-          queryClient.invalidateQueries({ queryKey: ordersQueryKey });
+          dispatch(fetchOrders({
+            page: pagination.current,
+            limit: pagination.pageSize,
+            status: filters.status,
+            orderType: filters.orderType,
+          }));
         }}
       />
 
@@ -407,7 +432,16 @@ const OrdersPage: React.FC = () => {
             </Select>
           </div>
 
-          <Button type="primary" block onClick={() => { setFiltersVisible(false); setPagination({ ...pagination, current: 1 }); queryClient.invalidateQueries({ queryKey: ordersQueryKey }); }}>
+          <Button type="primary" block onClick={() => { 
+            setFiltersVisible(false); 
+            dispatch(setPagination({ current: 1 }));
+            dispatch(fetchOrders({
+              page: 1,
+              limit: pagination.pageSize,
+              status: filters.status,
+              orderType: filters.orderType,
+            }));
+          }}>
             Filtrlarni qo'llash
           </Button>
         </Space>
