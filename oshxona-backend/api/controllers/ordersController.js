@@ -264,8 +264,13 @@ async function assignCourier(req, res) {
     if (existingOrder.status === 'delivered' || existingOrder.status === 'completed' || existingOrder.status === 'cancelled') {
       return res.status(400).json({ success: false, message: 'Ushbu buyurtma yakunlangan yoki bekor qilingan.' });
     }
-    if (existingOrder.deliveryInfo?.courier && String(existingOrder.deliveryInfo.courier) === String(courierId)) {
-      return res.status(409).json({ success: false, message: 'Ushbu kuryer allaqachon tayinlangan.' });
+    if (existingOrder.deliveryInfo?.courier) {
+      if (String(existingOrder.deliveryInfo.courier) === String(courierId)) {
+        return res.status(409).json({ success: false, message: 'Ushbu kuryer allaqachon tayinlangan.' });
+      } else {
+        // Allow re-assignment to a different courier
+        console.log(`Re-assigning courier for order ${existingOrder.orderId} from ${existingOrder.deliveryInfo.courier} to ${courierId}`);
+      }
     }
     const update = { 'deliveryInfo.courier': courierId, updatedAt: new Date() };
     // 🔧 FIX: Use centralized status service for assign
@@ -283,10 +288,27 @@ async function assignCourier(req, res) {
     
     // 🔧 FIX: Use centralized status service
     const OrderStatusService = require('../../services/orderStatusService');
-    await OrderStatusService.updateStatus(order._id, 'assigned', {
-      message: `Kuryer tayinlandi: ${courier.firstName} ${courier.lastName}`,
-      updatedBy: req.user._id
-    });
+    
+    // Only update status to 'assigned' if the order is not already in ready/preparing state
+    const targetStatus = ['ready', 'preparing'].includes(order.status) ? order.status : 'assigned';
+    
+    if (targetStatus === 'assigned') {
+      await OrderStatusService.updateStatus(order._id, 'assigned', {
+        message: `Kuryer tayinlandi: ${courier.firstName} ${courier.lastName}`,
+        updatedBy: req.user._id
+      });
+    } else {
+      // Just emit courier assignment notification without status change
+      const SocketManager = require('../../config/socketConfig');
+      SocketManager.emitOrderUpdate(order._id.toString(), {
+        type: 'courier-assigned',
+        orderId: order.orderId,
+        courierName: `${courier.firstName} ${courier.lastName}`,
+        courierPhone: courier.phone,
+        message: `Kuryer tayinlandi: ${courier.firstName} ${courier.lastName}`,
+        timestamp: new Date()
+      });
+    }
     if (!order) return res.status(404).json({ success: false, message: 'Buyurtma topilmadi!' });
     
     // Real-time notification handled by OrderStatusService
