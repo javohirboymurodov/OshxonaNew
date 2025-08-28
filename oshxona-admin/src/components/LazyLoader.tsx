@@ -9,12 +9,15 @@ interface LazyLoaderProps {
 const DefaultFallback: React.FC = () => (
   <div style={{ 
     display: 'flex', 
+    flexDirection: 'column',
     justifyContent: 'center', 
     alignItems: 'center', 
     minHeight: '200px',
-    width: '100%'
+    width: '100%',
+    gap: '12px'
   }}>
-    <Spin size="large" tip="Yuklanmoqda..." />
+    <Spin size="large" />
+    <div style={{ color: '#666', fontSize: '14px' }}>Yuklanmoqda...</div>
   </div>
 );
 

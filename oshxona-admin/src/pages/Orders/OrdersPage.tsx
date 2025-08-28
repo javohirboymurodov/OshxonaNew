@@ -4,7 +4,7 @@ import { Button, Space, Card, Row, Col, Typography, Select, DatePicker, message 
 import { FilterOutlined, ReloadOutlined } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
 import OrdersStats from '@/components/Orders/OrdersStats';
-import { useQuery } from '@tanstack/react-query';
+
 import OrdersTable, { type Order as TableOrder } from '@/components/Orders/OrdersTable';
 import OrderDetailsModal, { type Order as DetailsOrder } from '@/components/Orders/OrderDetailsModal';
 import AssignCourierModal from '@/components/Orders/AssignCourierModal';
@@ -74,18 +74,34 @@ const OrdersPage: React.FC = () => {
   const isSuper = String(((user as unknown) as { role?: string })?.role || '').toLowerCase() === 'superadmin';
   const [branch, setBranch] = useState<string>('');
   type BranchLite = { _id: string; name?: string; title?: string };
+  const [branches, setBranches] = useState<BranchLite[]>([]);
+  const [branchesLoading, setBranchesLoading] = useState(false);
 
-  const branchesQuery = useQuery<BranchLite[]>({
-    queryKey: ['branches-select'],
-    queryFn: async () => {
-      const data = await apiService.getBranches();
-      if (Array.isArray(data)) return data as BranchLite[];
-      const obj = data as { branches?: BranchLite[]; items?: BranchLite[] };
-      const list = obj?.branches || obj?.items || [];
-      return list as BranchLite[];
-    },
-    enabled: isSuper,
-  });
+  // Load branches for superadmin
+  useEffect(() => {
+    if (!isSuper) return;
+    
+    const loadBranches = async () => {
+      setBranchesLoading(true);
+      try {
+        const data = await apiService.getBranches();
+        if (Array.isArray(data)) {
+          setBranches(data as BranchLite[]);
+        } else {
+          const obj = data as { branches?: BranchLite[]; items?: BranchLite[] };
+          const list = obj?.branches || obj?.items || [];
+          setBranches(list as BranchLite[]);
+        }
+      } catch (error) {
+        console.error('Failed to load branches:', error);
+        messageApi.error('Failed to load branches');
+      } finally {
+        setBranchesLoading(false);
+      }
+    };
+
+    loadBranches();
+  }, [isSuper, messageApi]);
 
   const location = useLocation();
   // const branchId = (() => {
@@ -121,26 +137,28 @@ const OrdersPage: React.FC = () => {
     }
   }, [error, messageApi]);
 
-  const statsQuery = useQuery<OrderStatsShape>({
-    queryKey: ['orders-stats'],
-    queryFn: async () => {
-      const data = (await apiService.get(`/orders/stats${isSuper && branch ? `?branch=${encodeURIComponent(branch)}` : ''}`)) as Record<string, unknown>;
-      const hasStats = data && typeof data === 'object' && Object.prototype.hasOwnProperty.call(data, 'stats');
-      const s = (hasStats ? (data as { stats: Partial<OrderStatsShape> }).stats : (data as Partial<OrderStatsShape>)) || {} as Partial<OrderStatsShape>;
-      return {
-        pending: Number(s?.pending) || 0,
-        confirmed: Number(s?.confirmed) || 0,
-        preparing: Number(s?.preparing) || 0,
-        ready: Number(s?.ready) || 0,
-        delivered: Number(s?.delivered) || 0,
-        cancelled: Number(s?.cancelled) || 0,
-      } as OrderStatsShape;
-    }
-  });
-
+  // Load order statistics
   useEffect(() => {
-    if (statsQuery.data) setStats(statsQuery.data);
-  }, [statsQuery.data]);
+    const loadStats = async () => {
+      try {
+        const data = (await apiService.get(`/orders/stats${isSuper && branch ? `?branch=${encodeURIComponent(branch)}` : ''}`)) as Record<string, unknown>;
+        const hasStats = data && typeof data === 'object' && Object.prototype.hasOwnProperty.call(data, 'stats');
+        const s = (hasStats ? (data as { stats: Partial<OrderStatsShape> }).stats : (data as Partial<OrderStatsShape>)) || {} as Partial<OrderStatsShape>;
+        setStats({
+          pending: Number(s?.pending) || 0,
+          confirmed: Number(s?.confirmed) || 0,
+          preparing: Number(s?.preparing) || 0,
+          ready: Number(s?.ready) || 0,
+          delivered: Number(s?.delivered) || 0,
+          cancelled: Number(s?.cancelled) || 0,
+        });
+      } catch (error) {
+        console.error('Failed to load stats:', error);
+      }
+    };
+
+    loadStats();
+  }, [isSuper, branch]);
 
   // Refresh data when filters change
   useEffect(() => {
@@ -295,7 +313,7 @@ const OrdersPage: React.FC = () => {
                 value={branch || undefined}
                 onChange={(v) => setBranch(v || '')}
                 style={{ width: '100%' }}
-                 options={(branchesQuery.data || []).map((b) => ({ value: b._id, label: b.name || b.title || b._id }))}
+                 options={branches.map((b) => ({ value: b._id, label: b.name || b.title || b._id }))}
               />
             </Col>
           )}
