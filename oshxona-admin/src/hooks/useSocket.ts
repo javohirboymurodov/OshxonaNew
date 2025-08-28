@@ -27,7 +27,7 @@ export const useSocket = () => {
 
     // Join admin room for real-time updates with token
     const token = localStorage.getItem('token');
-    console.log('🚀 JOINING ADMIN ROOM WITH:', { token: token ? 'EXISTS' : 'MISSING', branchId });
+
     socket.emit('join-admin', { 
       token: token,
       branchId: branchId
@@ -35,7 +35,7 @@ export const useSocket = () => {
 
     // Listen for new orders
     socket.on('new-order', (data: any) => {
-      console.log('🔔 NEW ORDER RECEIVED - FULL DATA:', JSON.stringify(data, null, 2));
+
       
       // Convert data to order format if needed
       let orderData = data.order || data;
@@ -59,7 +59,6 @@ export const useSocket = () => {
         };
         
         dispatch(handleNewOrder(normalizedOrder));
-        console.log('✅ NEW ORDER ADDED TO REDUX STORE:', normalizedOrder);
         
         // Play notification sound
         SoundPlayer.playNotification('/notification.wav', 0.8);
@@ -70,7 +69,7 @@ export const useSocket = () => {
           duration: 5,
         });
       } else {
-        console.log('New order notification (insufficient data):', data);
+
         
         // Play notification sound even with insufficient data
         SoundPlayer.playNotification('/notification.wav', 0.8);
@@ -91,7 +90,7 @@ export const useSocket = () => {
       updatedAt: string;
       details?: any;
     }) => {
-      console.log('🔄 Order status update:', data);
+
       dispatch(handleOrderUpdate(data));
       
       // Show status update notification
@@ -116,7 +115,7 @@ export const useSocket = () => {
 
     // Listen for courier assignments
     socket.on('courier-assigned', (data: any) => {
-      console.log('🚚 Courier assigned:', data);
+
       message.success({
         content: `🚚 Kuryer tayinlandi - ${data.courierName || 'Kuryer'} buyurtma №${data.orderId}ga`,
         duration: 4,
@@ -125,7 +124,7 @@ export const useSocket = () => {
 
     // Listen for customer arrival (dine-in)
     socket.on('customer-arrived', (data: any) => {
-      console.log('👋 Customer arrived:', data);
+
       message.info({
         content: `👋 Mijoz keldi - ${data.customer?.name || 'Mijoz'} (Buyurtma №${data.orderNumber || data.orderId})`,
         duration: 6,

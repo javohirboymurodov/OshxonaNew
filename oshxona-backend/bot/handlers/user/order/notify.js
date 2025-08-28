@@ -39,7 +39,7 @@ async function notifyAdmins(order) {
         SocketManager.emitNewOrder('default', orderPayload);
       }
       
-      console.log(`📢 New order notification sent to branch:${branchId} and superadmin`);
+
     } catch (emitErr) {
       console.error('Emit new order error:', emitErr?.message || emitErr);
     }
