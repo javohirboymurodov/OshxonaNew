@@ -29,6 +29,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useAuth } from '@/hooks/useAuth';
 import { useSocket } from '@/hooks/useSocket';
 import { useNavigate as useNav } from 'react-router-dom';
+import { Order } from '@/types';
 
 const { Header, Sider, Content } = Layout;
 
@@ -43,10 +44,10 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   type UserShape = { role?: string; branch?: { _id?: string } } | null | undefined;
   const castUser = (user as unknown) as UserShape;
   const isSuper = String(castUser?.role || '').toLowerCase() === 'superadmin';
-  const branchId = isSuper ? '' : (castUser?.branch?._id || '');
-  const { connected } = useSocket();
+  // const branchId = isSuper ? '' : (castUser?.branch?._id || '');
+  // const { connected } = useSocket();
   // TODO: Implement newOrders logic with Redux
-  const newOrders: any[] = [];
+  const newOrders: Order[] = [];
   const go = useNav();
   const [notifOpen, setNotifOpen] = useState(false);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());

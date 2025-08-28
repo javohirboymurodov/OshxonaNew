@@ -89,15 +89,15 @@ const OrdersPage: React.FC = () => {
   });
 
   const location = useLocation();
-  const branchId = (() => {
-    const maybe = (user as unknown) as { branch?: { _id?: string } } | null;
-    return maybe?.branch?._id || 'default';
-  })();
-  const token = localStorage.getItem('token') || '';
+  // const branchId = (() => {
+  //   const maybe = (user as unknown) as { branch?: { _id?: string } } | null;
+  //   return maybe?.branch?._id || 'default';
+  // })();
+  // const token = localStorage.getItem('token') || '';
   const { connected } = useSocket();
   // TODO: Implement newOrders and orderUpdates logic with Redux
-  const newOrders: any[] = [];
-  const orderUpdates: any[] = [];
+  const newOrders: Order[] = [];
+  const orderUpdates: Order[] = [];
   const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
   // 🔧 Guard: filtr o'zgarganda avtomatik modal ochilmasin
   const suppressAutoOpenRef = useRef(false);
