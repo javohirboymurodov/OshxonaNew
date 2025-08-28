@@ -75,7 +75,7 @@ export const fetchOrders = createAsyncThunk(
     if (params.orderType) searchParams.append('orderType', params.orderType);
 
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-    const response = await fetch(`${apiBaseUrl}/orders?${searchParams}`, {
+    const response = await fetch(`${apiBaseUrl}/admin/orders?${searchParams}`, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
         'Content-Type': 'application/json',
@@ -90,7 +90,7 @@ export const updateOrderStatus = createAsyncThunk(
   'orders/updateStatus',
   async ({ orderId, status, message }: { orderId: string; status: OrderStatus; message?: string }) => {
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-    const response = await fetch(`${apiBaseUrl}/orders/${orderId}/status`, {
+    const response = await fetch(`${apiBaseUrl}/admin/orders/${orderId}/status`, {
       method: 'PATCH',
       headers: { 
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -107,7 +107,7 @@ export const assignCourier = createAsyncThunk(
   'orders/assignCourier',
   async ({ orderId, courierId }: { orderId: string; courierId: string }) => {
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-    const response = await fetch(`${apiBaseUrl}/orders/${orderId}/assign-courier`, {
+    const response = await fetch(`${apiBaseUrl}/admin/orders/${orderId}/assign-courier`, {
       method: 'PATCH',
       headers: { 
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
