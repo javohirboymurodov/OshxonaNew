@@ -34,18 +34,43 @@ export const useSocket = () => {
     // Listen for new orders
     socket.on('new-order', (data: any) => {
       console.log('🔔 New order received:', data);
-      if (data.order) {
-        // Add new order to Redux store
-        dispatch(handleNewOrder(data.order));
+      
+      // Convert data to order format if needed
+      let orderData = data.order || data;
+      
+      // Ensure we have required fields for Redux
+      if (orderData && (orderData._id || orderData.id || orderData.orderId)) {
+        // Normalize the order data
+        const normalizedOrder = {
+          _id: orderData._id || orderData.id || orderData.orderId,
+          orderId: orderData.orderNumber || orderData.orderId || orderData._id,
+          status: orderData.status || 'pending',
+          total: orderData.total || 0,
+          orderType: orderData.orderType || 'delivery',
+          customerInfo: {
+            name: orderData.customerName || orderData.customer?.name || 'Mijoz'
+          },
+          createdAt: orderData.createdAt || new Date().toISOString(),
+          updatedAt: orderData.updatedAt || new Date().toISOString(),
+          items: orderData.items || [],
+          paymentMethod: orderData.paymentMethod || 'cash'
+        };
+        
+        dispatch(handleNewOrder(normalizedOrder));
+        console.log('New order added to store:', normalizedOrder);
         
         // Show notification
-        console.log('New order added to store:', data.order);
         message.success({
-          content: `🔔 Yangi buyurtma keldi - №${data.order.orderNumber || data.order._id}`,
+          content: `🔔 Yangi buyurtma keldi - №${normalizedOrder.orderId}`,
           duration: 5,
         });
-      } else if (data.orderId && data.orderNumber) {
-        console.log('New order notification (minimal data):', data);
+      } else {
+        console.log('New order notification (insufficient data):', data);
+        // Still show notification even if we can't add to store
+        message.success({
+          content: `🔔 Yangi buyurtma keldi`,
+          duration: 5,
+        });
       }
     });
 

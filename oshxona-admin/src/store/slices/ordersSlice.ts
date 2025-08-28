@@ -60,6 +60,7 @@ interface OrdersState {
     cancelled: number;
   };
   statsLoading: boolean;
+  newOrders: Order[];
 }
 
 const initialState: OrdersState = {
@@ -83,6 +84,7 @@ const initialState: OrdersState = {
     cancelled: 0,
   },
   statsLoading: false,
+  newOrders: [],
 };
 
 // Async thunks for API calls
@@ -209,6 +211,12 @@ const ordersSlice = createSlice({
     handleNewOrder: (state, action: PayloadAction<Order>) => {
       state.orders.unshift(action.payload);
       state.pagination.total += 1;
+      // Add to newOrders for notifications
+      state.newOrders.unshift(action.payload);
+      // Keep only last 10 new orders
+      if (state.newOrders.length > 10) {
+        state.newOrders = state.newOrders.slice(0, 10);
+      }
     },
     
     setRealTimeUpdates: (state, action: PayloadAction<boolean>) => {
@@ -217,6 +225,14 @@ const ordersSlice = createSlice({
     
     clearError: (state) => {
       state.error = null;
+    },
+    
+    clearNewOrders: (state) => {
+      state.newOrders = [];
+    },
+    
+    dismissNewOrder: (state, action: PayloadAction<string>) => {
+      state.newOrders = state.newOrders.filter(order => order._id !== action.payload);
     },
   },
   
@@ -315,6 +331,8 @@ export const {
   handleNewOrder,
   setRealTimeUpdates,
   clearError,
+  clearNewOrders,
+  dismissNewOrder,
 } = ordersSlice.actions;
 
 export default ordersSlice.reducer;
