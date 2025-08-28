@@ -27,8 +27,8 @@ class ContactAndAboutHandlers {
         `🕐 Ish vaqti: 09:00 - 23:00 (har kuni)`;
       
       const keyboard = { inline_keyboard: [
-        [{ text: '📞 Qo\'ng\'iroq qilish', url: 'tel:+998712000000' }],
         [{ text: '📱 WhatsApp', url: 'https://wa.me/998901234567' }],
+        [{ text: '📋 Raqamni nusxalash', callback_data: 'copy_phone' }],
         [{ text: '🔙 Orqaga', callback_data: 'contact' }]
       ] };
       
@@ -114,6 +114,31 @@ class ContactAndAboutHandlers {
   }
 
   /**
+   * Copy phone number
+   */
+  static async copyPhone(ctx) {
+    try {
+      const text = `📞 **Telefon raqamlarimiz:**\n\n` +
+        `📱 **Buyurtma berish:**\n` +
+        `\`+998 71 200 00 00\`\n\n` +
+        `📞 **Qo'llab-quvvatlash:**\n` +
+        `\`+998 71 200 00 01\`\n\n` +
+        `📲 **WhatsApp:**\n` +
+        `\`+998 90 123 45 67\`\n\n` +
+        `💡 Raqamni bosib nusxalash mumkin!`;
+      
+      const keyboard = { inline_keyboard: [
+        [{ text: '📱 WhatsApp', url: 'https://wa.me/998901234567' }],
+        [{ text: '🔙 Orqaga', callback_data: 'contact_phone' }]
+      ] };
+      
+      await ctx.editMessageText(text, { parse_mode: 'Markdown', reply_markup: keyboard });
+    } catch (e) { 
+      console.error('copy_phone error:', e); 
+    }
+  }
+
+  /**
    * Show about information
    */
   static async showAbout(ctx) {
@@ -155,6 +180,7 @@ class ContactAndAboutHandlers {
     bot.action('contact_address', ContactAndAboutHandlers.showContactAddress);
     bot.action('contact_telegram', ContactAndAboutHandlers.showContactTelegram);
     bot.action('contact_website', ContactAndAboutHandlers.showContactWebsite);
+    bot.action('copy_phone', ContactAndAboutHandlers.copyPhone);
     
     // About
     bot.action('about', ContactAndAboutHandlers.showAbout);
