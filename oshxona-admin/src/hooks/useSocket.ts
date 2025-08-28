@@ -1,17 +1,24 @@
 import { useEffect } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { message } from 'antd';
 import { useAppDispatch, useAppSelector } from './redux';
 import { handleOrderUpdate, handleNewOrder } from '../store/slices/ordersSlice';
 import { OrderStatus } from '../utils/orderStatus';
+import { useAuth } from './useAuth';
+import { SoundPlayer } from '@/utils/sound';
 
 let socket: Socket | null = null;
 
 export const useSocket = () => {
   const dispatch = useAppDispatch();
   const realTimeUpdates = useAppSelector(state => state.orders.realTimeUpdates);
+  const { user } = useAuth();
+  
+  // Extract branchId to avoid reconnecting when other user properties change
+  const branchId = user?.branch && typeof user.branch === 'object' ? user.branch._id : user?.branch || 'default';
 
   useEffect(() => {
-    if (!realTimeUpdates) return;
+    if (!realTimeUpdates || !user) return;
 
     // Initialize socket connection
     socket = io(import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000', {
@@ -20,17 +27,61 @@ export const useSocket = () => {
 
     // Join admin room for real-time updates with token
     const token = localStorage.getItem('token');
+
     socket.emit('join-admin', { 
       token: token,
-      branchId: 'default' // or get from user context
+      branchId: branchId
     });
 
     // Listen for new orders
     socket.on('new-order', (data: any) => {
-      console.log('🔔 New order received:', data);
-      if (data.orderId && data.orderNumber) {
-        // Optionally fetch full order details or handle with provided data
-        console.log('New order notification:', data);
+
+
+      
+      // Convert data to order format if needed
+      let orderData = data.order || data;
+      
+      // Ensure we have required fields for Redux
+      if (orderData && (orderData._id || orderData.id || orderData.orderId)) {
+        // Normalize the order data
+        const normalizedOrder = {
+          _id: orderData._id || orderData.id || orderData.orderId,
+          orderId: orderData.orderNumber || orderData.orderId || orderData._id,
+          status: orderData.status || 'pending',
+          total: orderData.total || 0,
+          orderType: orderData.orderType || 'delivery',
+          customerInfo: {
+            name: orderData.customerName || orderData.customer?.name || 'Mijoz'
+          },
+          createdAt: orderData.createdAt || new Date().toISOString(),
+          updatedAt: orderData.updatedAt || new Date().toISOString(),
+          items: orderData.items || [],
+          paymentMethod: orderData.paymentMethod || 'cash'
+        };
+        
+        dispatch(handleNewOrder(normalizedOrder));
+        
+        // Play notification sound
+
+        SoundPlayer.playNotification('/notification.wav', 0.8);
+        
+        // Show notification
+        message.success({
+          content: `🔔 Yangi buyurtma keldi - №${normalizedOrder.orderId}`,
+          duration: 5,
+        });
+      } else {
+
+        
+        // Play notification sound even with insufficient data
+
+        SoundPlayer.playNotification('/notification.wav', 0.8);
+        
+        // Still show notification even if we can't add to store
+        message.success({
+          content: `🔔 Yangi buyurtma keldi`,
+          duration: 5,
+        });
       }
     });
 
@@ -42,14 +93,45 @@ export const useSocket = () => {
       updatedAt: string;
       details?: any;
     }) => {
-      console.log('🔄 Order status update:', data);
+
       dispatch(handleOrderUpdate(data));
+      
+      // Show status update notification
+      const statusMessages = {
+        'confirmed': '✅ Buyurtma tasdiqlandi',
+        'preparing': '👨‍🍳 Buyurtma tayyorlanmoqda',
+        'ready': '🍽️ Buyurtma tayyor',
+        'assigned': '🚚 Kuryer tayinlandi', 
+        'on_delivery': '🚗 Yetkazilmoqda',
+        'delivered': '✅ Yetkazildi',
+        'picked_up': '📦 Olib ketildi',
+        'completed': '🎉 Buyurtma yakunlandi',
+        'cancelled': '❌ Buyurtma bekor qilindi'
+      };
+      
+      const statusMessage = statusMessages[data.status] || 'Holat o\'zgartirildi';
+      message.info({
+        content: `${statusMessage} - №${data.orderId}`,
+        duration: 3,
+      });
     });
 
     // Listen for courier assignments
     socket.on('courier-assigned', (data: any) => {
-      console.log('🚚 Courier assigned:', data);
-      // Refresh orders or update specific order
+
+      message.success({
+        content: `🚚 Kuryer tayinlandi - ${data.courierName || 'Kuryer'} buyurtma №${data.orderId}ga`,
+        duration: 4,
+      });
+    });
+
+    // Listen for customer arrival (dine-in)
+    socket.on('customer-arrived', (data: any) => {
+
+      message.info({
+        content: `👋 Mijoz keldi - ${data.customer?.name || 'Mijoz'} (Buyurtma №${data.orderNumber || data.orderId})`,
+        duration: 6,
+      });
     });
 
     // Connection status
@@ -88,7 +170,7 @@ export const useSocket = () => {
         socket = null;
       }
     };
-  }, [dispatch, realTimeUpdates]);
+  }, [dispatch, realTimeUpdates, branchId]);
 
   return {
     socket,

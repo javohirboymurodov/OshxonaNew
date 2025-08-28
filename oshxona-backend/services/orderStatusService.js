@@ -5,7 +5,7 @@ const SocketManager = require('../config/socketConfig');
 class OrderStatusService {
   // Valid status transitions
   static statusFlow = {
-    'pending': ['confirmed', 'cancelled'],
+    'pending': ['confirmed', 'assigned', 'cancelled'], // Allow direct assignment from pending
     'confirmed': ['assigned', 'preparing', 'cancelled'],
     'assigned': ['on_delivery', 'cancelled'],
     'preparing': ['ready', 'cancelled'], 

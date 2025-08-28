@@ -28,7 +28,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useAuth } from '@/hooks/useAuth';
 import { useSocket } from '@/hooks/useSocket';
+import { useAppSelector, useAppDispatch } from '@/hooks/redux';
+import { dismissNewOrder, setSelectedOrder } from '@/store/slices/ordersSlice';
 import { useNavigate as useNav } from 'react-router-dom';
+import { Order } from '@/types';
 
 const { Header, Sider, Content } = Layout;
 
@@ -43,10 +46,10 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   type UserShape = { role?: string; branch?: { _id?: string } } | null | undefined;
   const castUser = (user as unknown) as UserShape;
   const isSuper = String(castUser?.role || '').toLowerCase() === 'superadmin';
-  const branchId = isSuper ? '' : (castUser?.branch?._id || '');
-  const { connected } = useSocket();
-  // TODO: Implement newOrders logic with Redux
-  const newOrders: any[] = [];
+  // const branchId = isSuper ? '' : (castUser?.branch?._id || '');
+  // const { connected } = useSocket();
+  const dispatch = useAppDispatch();
+  const { newOrders } = useAppSelector(state => state.orders);
   const go = useNav();
   const [notifOpen, setNotifOpen] = useState(false);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
@@ -228,16 +231,30 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                   <List
                     locale={{ emptyText: 'Hozircha yangi buyurtma yo\'q' }}
                     dataSource={visibleOrders.slice(0, 10)}
-                    renderItem={(item: { id?: string; orderId?: string; orderType?: string; customer?: { name?: string }; total?: number }) => (
+                    renderItem={(item: { _id?: string; id?: string; orderId?: string; orderType?: string; customer?: { name?: string }; customerInfo?: { name?: string }; total?: number }) => (
                       <List.Item
                         style={{ cursor: 'pointer' }}
                         onClick={() => {
-                          const id = String(item.id || item.orderId || '');
-                          if (id) {
-                            setDismissedIds((prev) => new Set(prev).add(id));
+                          const orderId = String(item._id || item.id || item.orderId || '');
+                          if (orderId) {
+                            // Dismiss notification
+                            dispatch(dismissNewOrder(orderId));
+                            setDismissedIds((prev) => new Set(prev).add(orderId));
                           }
                           setNotifOpen(false);
-                          go('/orders', { state: { focusOrderId: id } });
+                          
+                          // If we're not on orders page, navigate first
+                          const currentPath = window.location.pathname;
+                          if (currentPath !== '/orders') {
+                            go('/orders', { state: { focusOrderId: orderId } });
+                          } else {
+                            // If already on orders page, find and open modal directly
+                            const fullOrder = (item as Order);
+                            if (fullOrder && fullOrder._id) {
+                              dispatch(setSelectedOrder(fullOrder));
+                              // Modal will be opened by OrdersPage component through Redux
+                            }
+                          }
                         }}
                       >
                           <List.Item.Meta
@@ -249,7 +266,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                                   || (item.orderType === 'dine_in' && '🍽️ Avvaldan buyurtma')
                                   || (item.orderType === 'table' && '🪑 Stol (QR)')
                                   || ''}
-                                {item.customer?.name ? ` • ${item.customer.name}` : ''}
+                                {(item.customer?.name || item.customerInfo?.name) ? ` • ${item.customer?.name || item.customerInfo?.name}` : ''}
                                 {' • '}{(item.total || 0).toLocaleString()} so'm
                               </span>
                             }

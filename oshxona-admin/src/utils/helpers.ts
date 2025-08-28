@@ -65,6 +65,7 @@ export const confirmDelete = (onConfirm: () => void, text?: string): void => {
 };
 
 // Debounce function
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const debounce = <T extends (...args: any[]) => any>(
   func: T,
   delay: number

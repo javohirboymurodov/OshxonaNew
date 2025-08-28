@@ -3,7 +3,7 @@ import { OrderStatus } from '../../utils/orderStatus';
 
 export interface Order {
   _id: string;
-  orderNumber: string;
+  orderId: string;
   user?: { _id: string; firstName?: string; lastName?: string; telegramId?: number; phone?: string } | null;
   customerInfo?: { name?: string; phone?: string } | null;
   items: Array<{
@@ -15,7 +15,10 @@ export interface Order {
   totalAmount?: number;
   total?: number;
   courier?: { firstName?: string; lastName?: string; phone?: string } | null;
-  deliveryInfo?: { courier?: { firstName?: string; lastName?: string; phone?: string } | null } | null;
+  deliveryInfo?: { 
+    address?: string;
+    courier?: { firstName?: string; lastName?: string; phone?: string } | null;
+  } | null;
   status: OrderStatus;
   orderType: 'delivery' | 'pickup' | 'dine_in' | 'table';
   paymentMethod: 'cash' | 'card' | 'online' | string;
@@ -48,6 +51,16 @@ interface OrdersState {
     dateRange?: [string, string];
   };
   realTimeUpdates: boolean;
+  stats: {
+    pending: number;
+    confirmed: number;
+    preparing: number;
+    ready: number;
+    delivered: number;
+    cancelled: number;
+  };
+  statsLoading: boolean;
+  newOrders: Order[];
 }
 
 const initialState: OrdersState = {
@@ -62,6 +75,16 @@ const initialState: OrdersState = {
   },
   filters: {},
   realTimeUpdates: true,
+  stats: {
+    pending: 0,
+    confirmed: 0,
+    preparing: 0,
+    ready: 0,
+    delivered: 0,
+    cancelled: 0,
+  },
+  statsLoading: false,
+  newOrders: [],
 };
 
 // Async thunks for API calls
@@ -74,7 +97,13 @@ export const fetchOrders = createAsyncThunk(
     if (params.status) searchParams.append('status', params.status);
     if (params.orderType) searchParams.append('orderType', params.orderType);
 
-    const response = await fetch(`/api/orders?${searchParams}`);
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+    const response = await fetch(`${apiBaseUrl}/admin/orders?${searchParams}`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json',
+      },
+    });
     if (!response.ok) throw new Error('Failed to fetch orders');
     return await response.json();
   }
@@ -83,9 +112,13 @@ export const fetchOrders = createAsyncThunk(
 export const updateOrderStatus = createAsyncThunk(
   'orders/updateStatus',
   async ({ orderId, status, message }: { orderId: string; status: OrderStatus; message?: string }) => {
-    const response = await fetch(`/api/orders/${orderId}/status`, {
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+    const response = await fetch(`${apiBaseUrl}/admin/orders/${orderId}/status`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json' 
+      },
       body: JSON.stringify({ status, message }),
     });
     if (!response.ok) throw new Error('Failed to update order status');
@@ -96,12 +129,31 @@ export const updateOrderStatus = createAsyncThunk(
 export const assignCourier = createAsyncThunk(
   'orders/assignCourier',
   async ({ orderId, courierId }: { orderId: string; courierId: string }) => {
-    const response = await fetch(`/api/orders/${orderId}/assign-courier`, {
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+    const response = await fetch(`${apiBaseUrl}/admin/orders/${orderId}/assign-courier`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json' 
+      },
       body: JSON.stringify({ courierId }),
     });
     if (!response.ok) throw new Error('Failed to assign courier');
+    return await response.json();
+  }
+);
+
+export const fetchOrderStats = createAsyncThunk(
+  'orders/fetchStats',
+  async () => {
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+    const response = await fetch(`${apiBaseUrl}/admin/orders/stats`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!response.ok) throw new Error('Failed to fetch order stats');
     return await response.json();
   }
 );
@@ -157,8 +209,15 @@ const ordersSlice = createSlice({
     
     // Handle new order
     handleNewOrder: (state, action: PayloadAction<Order>) => {
+
       state.orders.unshift(action.payload);
       state.pagination.total += 1;
+      // Add to newOrders for notifications
+      state.newOrders.unshift(action.payload);
+      // Keep only last 10 new orders
+      if (state.newOrders.length > 10) {
+        state.newOrders = state.newOrders.slice(0, 10);
+      }
     },
     
     setRealTimeUpdates: (state, action: PayloadAction<boolean>) => {
@@ -167,6 +226,14 @@ const ordersSlice = createSlice({
     
     clearError: (state) => {
       state.error = null;
+    },
+    
+    clearNewOrders: (state) => {
+      state.newOrders = [];
+    },
+    
+    dismissNewOrder: (state, action: PayloadAction<string>) => {
+      state.newOrders = state.newOrders.filter(order => order._id !== action.payload);
     },
   },
   
@@ -179,9 +246,10 @@ const ordersSlice = createSlice({
       })
       .addCase(fetchOrders.fulfilled, (state, action) => {
         state.loading = false;
-        state.orders = action.payload.orders || [];
-        state.pagination.total = action.payload.total || 0;
-        state.pagination.current = action.payload.page || 1;
+        const data = action.payload.data || action.payload;
+        state.orders = data.orders || [];
+        state.pagination.total = data.pagination?.total || 0;
+        state.pagination.current = data.pagination?.current || 1;
       })
       .addCase(fetchOrders.rejected, (state, action) => {
         state.loading = false;
@@ -193,7 +261,8 @@ const ordersSlice = createSlice({
         state.error = null;
       })
       .addCase(updateOrderStatus.fulfilled, (state, action) => {
-        const updatedOrder = action.payload.order;
+        const data = action.payload.data || action.payload;
+        const updatedOrder = data.order || action.payload.order;
         if (updatedOrder) {
           const orderIndex = state.orders.findIndex(order => order._id === updatedOrder._id);
           if (orderIndex !== -1) {
@@ -213,7 +282,8 @@ const ordersSlice = createSlice({
         state.error = null;
       })
       .addCase(assignCourier.fulfilled, (state, action) => {
-        const updatedOrder = action.payload.order;
+        const data = action.payload.data || action.payload;
+        const updatedOrder = data.order || action.payload.order;
         if (updatedOrder) {
           const orderIndex = state.orders.findIndex(order => order._id === updatedOrder._id);
           if (orderIndex !== -1) {
@@ -226,6 +296,29 @@ const ordersSlice = createSlice({
       })
       .addCase(assignCourier.rejected, (state, action) => {
         state.error = action.error.message || 'Failed to assign courier';
+      })
+      
+      // Fetch stats
+      .addCase(fetchOrderStats.pending, (state) => {
+        state.statsLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchOrderStats.fulfilled, (state, action) => {
+        state.statsLoading = false;
+        const data = action.payload.data || action.payload;
+        const stats = data.stats || data;
+        state.stats = {
+          pending: Number(stats?.pending) || 0,
+          confirmed: Number(stats?.confirmed) || 0,
+          preparing: Number(stats?.preparing) || 0,
+          ready: Number(stats?.ready) || 0,
+          delivered: Number(stats?.delivered) || 0,
+          cancelled: Number(stats?.cancelled) || 0,
+        };
+      })
+      .addCase(fetchOrderStats.rejected, (state, action) => {
+        state.statsLoading = false;
+        state.error = action.error.message || 'Failed to fetch order stats';
       });
   },
 });
@@ -239,6 +332,8 @@ export const {
   handleNewOrder,
   setRealTimeUpdates,
   clearError,
+  clearNewOrders,
+  dismissNewOrder,
 } = ordersSlice.actions;
 
 export default ordersSlice.reducer;
