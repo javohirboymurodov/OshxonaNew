@@ -193,9 +193,10 @@ const ordersSlice = createSlice({
       })
       .addCase(fetchOrders.fulfilled, (state, action) => {
         state.loading = false;
-        state.orders = action.payload.orders || [];
-        state.pagination.total = action.payload.total || 0;
-        state.pagination.current = action.payload.page || 1;
+        const data = action.payload.data || action.payload;
+        state.orders = data.orders || [];
+        state.pagination.total = data.pagination?.total || 0;
+        state.pagination.current = data.pagination?.current || 1;
       })
       .addCase(fetchOrders.rejected, (state, action) => {
         state.loading = false;
