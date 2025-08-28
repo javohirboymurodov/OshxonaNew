@@ -299,7 +299,7 @@ async function getOrders(req, res) {
     
     // Adminlar faqat o'z filialidagi buyurtmalarni ko'rishi kerak
     if (req.user.role === 'admin' && req.user.branch) {
-      query.branchId = req.user.branch;
+      query.branch = req.user.branch;
     }
     // Superadmin barcha filiallarni ko'ra oladi (branch filter yo'q)
     
@@ -314,22 +314,22 @@ async function getOrders(req, res) {
     
     console.log('🔍 Orders query with branch filter:', JSON.stringify(query));
     
-    // Debug: Database dagi barcha branchId larni ko'rish
-    const allBranchIds = await Order.distinct('branchId');
-    console.log('📋 All branchIds in database:', allBranchIds);
+    // Debug: Database dagi barcha branch larni ko'rish
+    const allBranchIds = await Order.distinct('branch');
+    console.log('📋 All branches in database:', allBranchIds);
     
     // Debug: Jami orders soni
     const totalOrdersCount = await Order.countDocuments({});
     console.log(`📊 Total orders in database: ${totalOrdersCount}`);
     
     // Debug: Birinchi 3 ta order ni ko'rish
-    const sampleOrders = await Order.find({}).limit(3).select('_id branchId status orderNumber');
+    const sampleOrders = await Order.find({}).limit(3).select('_id branch status orderId');
     console.log('📋 Sample orders:', sampleOrders);
     
     // Debug: Agar admin bo'lsa, bu branch uchun orders borligini tekshirish
     if (req.user.role === 'admin' && req.user.branch) {
-      const directCount = await Order.countDocuments({ branchId: req.user.branch });
-      console.log(`🔎 Direct count for branchId "${req.user.branch}": ${directCount}`);
+      const directCount = await Order.countDocuments({ branch: req.user.branch });
+      console.log(`🔎 Direct count for branch "${req.user.branch}": ${directCount}`);
     }
     
     const orders = await Order.find(query).populate('user', 'firstName lastName phone').populate('items.product', 'name price').sort({ createdAt: -1 }).limit(limit * 1).skip((page - 1) * limit);
@@ -348,7 +348,7 @@ async function getOrdersStats(req, res) {
     
     // Adminlar faqat o'z filialidagi buyurtma statistikasini ko'rishi kerak
     if (req.user.role === 'admin' && req.user.branch) {
-      matchQuery.branchId = req.user.branch;
+      matchQuery.branch = req.user.branch;
     }
     // Superadmin barcha filiallarni ko'ra oladi
     
