@@ -11,7 +11,8 @@ import AssignCourierModal from '@/components/Orders/AssignCourierModal';
 import { useAuth } from '@/hooks/useAuth';
 import { useSocket } from '@/hooks/useSocket';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
-import { fetchOrders, setSelectedOrder, handleOrderUpdate, updateOrderStatus, assignCourier, setPagination, fetchOrderStats } from '@/store/slices/ordersSlice';
+import { fetchOrders, setSelectedOrder, updateOrderStatus, setPagination, fetchOrderStats } from '@/store/slices/ordersSlice';
+import apiService from '@/services/api';
 import { useLocation } from 'react-router-dom';
 import '@/pages/Orders/orders-highlight.css';
 
@@ -22,23 +23,7 @@ const { RangePicker } = DatePicker;
 
 type Order = TableOrder & Partial<DetailsOrder>;
 
-interface OrderStatsShape {
-  pending: number;
-  confirmed: number;
-  preparing: number;
-  ready: number;
-  delivered: number;
-  cancelled: number;
-}
-
-const defaultStats: OrderStatsShape = {
-    pending: 0,
-    confirmed: 0,
-    preparing: 0,
-    ready: 0,
-    delivered: 0,
-    cancelled: 0,
-};
+// OrderStatsShape is now defined in Redux slice
 
 const OrdersPage: React.FC = () => {
   const [messageApi, contextHolder] = antdMessage.useMessage();

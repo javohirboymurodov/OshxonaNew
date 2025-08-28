@@ -24,7 +24,10 @@ export interface Order {
   totalAmount?: number;
   total?: number;
   courier?: { firstName?: string; lastName?: string; phone?: string } | null;
-  deliveryInfo?: { courier?: { firstName?: string; lastName?: string; phone?: string } | null } | null;
+  deliveryInfo?: { 
+    address?: string;
+    courier?: { firstName?: string; lastName?: string; phone?: string } | null;
+  } | null;
   status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'assigned' | 'picked_up' | 'on_delivery' | 'delivered' | 'completed' | 'cancelled';
   orderType: 'delivery' | 'pickup' | 'dine_in' | 'table';
   paymentMethod: 'cash' | 'card' | 'online' | string;
@@ -111,16 +114,38 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ data, loading, pagination, on
     },
     {
       title: 'Yetkazish',
-      key: 'deliveryMeta',
+      key: 'delivery',
       render: (record: Order) => {
-        if (record.orderType !== 'delivery') return '-';
-        const d = record.deliveryMeta;
-        if (!d) return '-';
-        const parts: string[] = [];
-        if (d.distanceKm != null) parts.push(`${d.distanceKm} km`);
-        if (d.etaMinutes != null) parts.push(`${d.etaMinutes} min`);
-        if (d.deliveryFee != null) parts.push(`${Number(d.deliveryFee).toLocaleString()} so'm`);
-        return parts.join(' • ');
+        if (record.orderType === 'delivery') {
+          // Yetkazib berish uchun
+          const d = record.deliveryMeta;
+          if (d) {
+            const parts: string[] = [];
+            if (d.distanceKm != null) parts.push(`${d.distanceKm} km`);
+            if (d.etaMinutes != null) parts.push(`${d.etaMinutes} min`);
+            if (d.deliveryFee != null) parts.push(`${Number(d.deliveryFee).toLocaleString()} so'm`);
+            if (parts.length > 0) return parts.join(' • ');
+          }
+          // Yetkazib berish uchun delivery info bor bo'lsa
+          if (record.deliveryInfo?.address) {
+            return `📍 ${record.deliveryInfo.address}`;
+          }
+          return 'Yetkazib berish';
+        }
+        
+        if (record.orderType === 'pickup') {
+          return '🏪 Olib ketish';
+        }
+        
+        if (record.orderType === 'dine_in') {
+          return '🍽️ Restoranda';
+        }
+        
+        if (record.orderType === 'table') {
+          return '📱 QR buyurtma';
+        }
+        
+        return '-';
       }
     },
     {

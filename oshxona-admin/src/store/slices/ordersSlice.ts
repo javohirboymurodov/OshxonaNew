@@ -15,7 +15,10 @@ export interface Order {
   totalAmount?: number;
   total?: number;
   courier?: { firstName?: string; lastName?: string; phone?: string } | null;
-  deliveryInfo?: { courier?: { firstName?: string; lastName?: string; phone?: string } | null } | null;
+  deliveryInfo?: { 
+    address?: string;
+    courier?: { firstName?: string; lastName?: string; phone?: string } | null;
+  } | null;
   status: OrderStatus;
   orderType: 'delivery' | 'pickup' | 'dine_in' | 'table';
   paymentMethod: 'cash' | 'card' | 'online' | string;
