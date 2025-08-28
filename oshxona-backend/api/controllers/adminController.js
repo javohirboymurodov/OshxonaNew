@@ -318,6 +318,14 @@ async function getOrders(req, res) {
     const allBranchIds = await Order.distinct('branchId');
     console.log('📋 All branchIds in database:', allBranchIds);
     
+    // Debug: Jami orders soni
+    const totalOrdersCount = await Order.countDocuments({});
+    console.log(`📊 Total orders in database: ${totalOrdersCount}`);
+    
+    // Debug: Birinchi 3 ta order ni ko'rish
+    const sampleOrders = await Order.find({}).limit(3).select('_id branchId status orderNumber');
+    console.log('📋 Sample orders:', sampleOrders);
+    
     // Debug: Agar admin bo'lsa, bu branch uchun orders borligini tekshirish
     if (req.user.role === 'admin' && req.user.branch) {
       const directCount = await Order.countDocuments({ branchId: req.user.branch });
