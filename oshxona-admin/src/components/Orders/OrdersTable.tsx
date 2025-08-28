@@ -17,7 +17,7 @@ export interface OrderItem {
 
 export interface Order {
   _id: string;
-  orderNumber: string;
+  orderId: string;
   user?: { _id: string; firstName?: string; lastName?: string; telegramId?: number; phone?: string } | null;
   customerInfo?: { name?: string; phone?: string } | null;
   items: OrderItem[];
@@ -105,8 +105,8 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ data, loading, pagination, on
   const columns: ColumnsType<Order> = [
     {
       title: 'Buyurtma raqami',
-      dataIndex: 'orderNumber',
-      key: 'orderNumber',
+      dataIndex: 'orderId',
+      key: 'orderId',
       render: (text: string) => <Text strong style={{ color: '#1890ff' }}>{text}</Text>,
     },
     {

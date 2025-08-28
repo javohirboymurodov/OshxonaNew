@@ -11,8 +11,7 @@ import AssignCourierModal from '@/components/Orders/AssignCourierModal';
 import { useAuth } from '@/hooks/useAuth';
 import { useSocket } from '@/hooks/useSocket';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
-import { fetchOrders, setSelectedOrder, handleOrderUpdate, updateOrderStatus, assignCourier, setPagination } from '@/store/slices/ordersSlice';
-import apiService from '@/services/api';
+import { fetchOrders, setSelectedOrder, handleOrderUpdate, updateOrderStatus, assignCourier, setPagination, fetchOrderStats } from '@/store/slices/ordersSlice';
 import { useLocation } from 'react-router-dom';
 import '@/pages/Orders/orders-highlight.css';
 
@@ -46,13 +45,13 @@ const OrdersPage: React.FC = () => {
   const dispatch = useAppDispatch();
   
   // Redux state
-  const { orders, selectedOrder, loading, error, pagination } = useAppSelector(state => state.orders);
+  const { orders, selectedOrder, loading, error, pagination, stats, statsLoading } = useAppSelector(state => state.orders);
   
   // Local UI state
   const [detailsVisible, setDetailsVisible] = useState(false);
   const [assignModalVisible, setAssignModalVisible] = useState(false);
   const [filtersVisible, setFiltersVisible] = useState(false);
-  const [stats, setStats] = useState<OrderStatsShape>(defaultStats);
+  // stats is now in Redux state
 
   interface Filters {
     search: string;
@@ -139,26 +138,8 @@ const OrdersPage: React.FC = () => {
 
   // Load order statistics
   useEffect(() => {
-    const loadStats = async () => {
-      try {
-        const data = (await apiService.getOrderStats()) as Record<string, unknown>;
-        const hasStats = data && typeof data === 'object' && Object.prototype.hasOwnProperty.call(data, 'stats');
-        const s = (hasStats ? (data as { stats: Partial<OrderStatsShape> }).stats : (data as Partial<OrderStatsShape>)) || {} as Partial<OrderStatsShape>;
-        setStats({
-          pending: Number(s?.pending) || 0,
-          confirmed: Number(s?.confirmed) || 0,
-          preparing: Number(s?.preparing) || 0,
-          ready: Number(s?.ready) || 0,
-          delivered: Number(s?.delivered) || 0,
-          cancelled: Number(s?.cancelled) || 0,
-        });
-      } catch (error) {
-        console.error('Failed to load stats:', error);
-      }
-    };
-
-    loadStats();
-  }, [isSuper, branch]);
+    dispatch(fetchOrderStats());
+  }, [dispatch]);
 
   // Refresh data when filters change
   useEffect(() => {

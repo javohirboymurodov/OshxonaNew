@@ -3,7 +3,7 @@ import { OrderStatus } from '../../utils/orderStatus';
 
 export interface Order {
   _id: string;
-  orderNumber: string;
+  orderId: string;
   user?: { _id: string; firstName?: string; lastName?: string; telegramId?: number; phone?: string } | null;
   customerInfo?: { name?: string; phone?: string } | null;
   items: Array<{
@@ -48,6 +48,15 @@ interface OrdersState {
     dateRange?: [string, string];
   };
   realTimeUpdates: boolean;
+  stats: {
+    pending: number;
+    confirmed: number;
+    preparing: number;
+    ready: number;
+    delivered: number;
+    cancelled: number;
+  };
+  statsLoading: boolean;
 }
 
 const initialState: OrdersState = {
@@ -62,6 +71,15 @@ const initialState: OrdersState = {
   },
   filters: {},
   realTimeUpdates: true,
+  stats: {
+    pending: 0,
+    confirmed: 0,
+    preparing: 0,
+    ready: 0,
+    delivered: 0,
+    cancelled: 0,
+  },
+  statsLoading: false,
 };
 
 // Async thunks for API calls
@@ -116,6 +134,21 @@ export const assignCourier = createAsyncThunk(
       body: JSON.stringify({ courierId }),
     });
     if (!response.ok) throw new Error('Failed to assign courier');
+    return await response.json();
+  }
+);
+
+export const fetchOrderStats = createAsyncThunk(
+  'orders/fetchStats',
+  async () => {
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+    const response = await fetch(`${apiBaseUrl}/admin/orders/stats`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!response.ok) throw new Error('Failed to fetch order stats');
     return await response.json();
   }
 );
@@ -241,6 +274,28 @@ const ordersSlice = createSlice({
       })
       .addCase(assignCourier.rejected, (state, action) => {
         state.error = action.error.message || 'Failed to assign courier';
+      })
+      
+      // Fetch stats
+      .addCase(fetchOrderStats.pending, (state) => {
+        state.statsLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchOrderStats.fulfilled, (state, action) => {
+        state.statsLoading = false;
+        const data = action.payload.data || action.payload;
+        state.stats = {
+          pending: Number(data?.pending) || 0,
+          confirmed: Number(data?.confirmed) || 0,
+          preparing: Number(data?.preparing) || 0,
+          ready: Number(data?.ready) || 0,
+          delivered: Number(data?.delivered) || 0,
+          cancelled: Number(data?.cancelled) || 0,
+        };
+      })
+      .addCase(fetchOrderStats.rejected, (state, action) => {
+        state.statsLoading = false;
+        state.error = action.error.message || 'Failed to fetch order stats';
       });
   },
 });
