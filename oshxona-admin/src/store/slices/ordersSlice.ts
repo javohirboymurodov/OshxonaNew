@@ -209,7 +209,7 @@ const ordersSlice = createSlice({
     
     // Handle new order
     handleNewOrder: (state, action: PayloadAction<Order>) => {
-      console.log('🔔 REDUX: Adding new order to store', action.payload.orderId);
+
       state.orders.unshift(action.payload);
       state.pagination.total += 1;
       // Add to newOrders for notifications

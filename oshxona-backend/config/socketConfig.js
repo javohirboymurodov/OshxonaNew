@@ -158,7 +158,7 @@ class SocketManager {
         sound: true // Admin panelda ovoz signali uchun
       };
       
-      console.log(`🔔 EMIT NEW ORDER TO BRANCH:${branchId} - Order:${orderData.orderId || orderData._id}`);
+
       this.io.to(`branch:${branchId}`).emit('new-order', payload);
     } else {
 
