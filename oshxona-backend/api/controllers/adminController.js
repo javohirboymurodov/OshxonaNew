@@ -289,6 +289,14 @@ async function getOrders(req, res) {
     const { page = 1, limit = 15, status, orderType, dateFrom, dateTo, search } = req.query;
     const query = {};
     
+    // Debug: Admin user ma'lumotlarini ko'rish
+    console.log('🔍 Admin user info:', {
+      userId: req.user.userId || req.user.id,
+      role: req.user.role,
+      branch: req.user.branch,
+      branchType: typeof req.user.branch
+    });
+    
     // Adminlar faqat o'z filialidagi buyurtmalarni ko'rishi kerak
     if (req.user.role === 'admin' && req.user.branch) {
       query.branchId = req.user.branch;
@@ -305,6 +313,17 @@ async function getOrders(req, res) {
     }
     
     console.log('🔍 Orders query with branch filter:', JSON.stringify(query));
+    
+    // Debug: Database dagi barcha branchId larni ko'rish
+    const allBranchIds = await Order.distinct('branchId');
+    console.log('📋 All branchIds in database:', allBranchIds);
+    
+    // Debug: Agar admin bo'lsa, bu branch uchun orders borligini tekshirish
+    if (req.user.role === 'admin' && req.user.branch) {
+      const directCount = await Order.countDocuments({ branchId: req.user.branch });
+      console.log(`🔎 Direct count for branchId "${req.user.branch}": ${directCount}`);
+    }
+    
     const orders = await Order.find(query).populate('user', 'firstName lastName phone').populate('items.product', 'name price').sort({ createdAt: -1 }).limit(limit * 1).skip((page - 1) * limit);
     const total = await Order.countDocuments(query);
     console.log(`📊 Found ${orders.length} orders out of ${total} total for this branch`);
