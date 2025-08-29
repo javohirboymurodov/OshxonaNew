@@ -82,7 +82,7 @@ export const useSocket = () => {
         
         // Play notification sound
         console.log('🔔 Playing notification sound...');
-        SoundPlayer.playNotification('/notification.wav', 0.8);
+        SoundPlayer.playNotification('/beep.wav', 0.8);
         
         // Show notification
         console.log('🔔 Showing Antd message notification...');
@@ -95,7 +95,7 @@ export const useSocket = () => {
         
         // Play notification sound even with insufficient data
 
-        SoundPlayer.playNotification('/notification.wav', 0.8);
+        SoundPlayer.playNotification('/beep.wav', 0.8);
         
         // Still show notification even if we can't add to store
         message.success({

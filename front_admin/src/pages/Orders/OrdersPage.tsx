@@ -282,6 +282,23 @@ const OrdersPage: React.FC = () => {
             >
               🧪 Test Notification
             </Button>
+            <Button 
+              type="default" 
+              onClick={() => {
+                console.log('🔊 Testing sound directly...');
+                const audio = new Audio('/beep.wav');
+                audio.volume = 0.8;
+                audio.play().then(() => {
+                  console.log('🔊 ✅ Direct sound test successful');
+                  messageApi.success('Sound test muvaffaqiyatli!');
+                }).catch(error => {
+                  console.error('🔊 ❌ Direct sound test failed:', error);
+                  messageApi.error('Sound test xatolik: ' + error.message);
+                });
+              }}
+            >
+              🔊 Test Sound
+            </Button>
           </Space>
         </Col>
       </Row>
