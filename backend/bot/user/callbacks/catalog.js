@@ -20,6 +20,9 @@ function registerCatalogCallbacks(bot) {
 
   // Branches
   bot.action('branches', CatalogHandlers.showBranches);
+  bot.action('show_branches', CatalogHandlers.showBranches);
+  bot.action('show_categories', CatalogHandlers.showCategories);
+  bot.action('show_catalog', CatalogHandlers.showCategories);
 
   // Nearest branch - request location
   bot.action('nearest_branch', async (ctx) => {

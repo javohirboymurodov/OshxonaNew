@@ -28,8 +28,28 @@ function registerProfileCallbacks(bot) {
     }
   });
 
+  // My profile alias
+  bot.action('my_profile', async (ctx) => {
+    try {
+      await showMyOrders(ctx);
+    } catch (error) {
+      console.error('❌ my_profile error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
   // Pagination and details for "My Orders"
   bot.action(/^my_orders_(.+)$/, myOrdersCallbackHandler);
+  bot.action(/^orders_page_\d+$/, myOrdersCallbackHandler);
+  bot.action(/^order_detail_.+$/, myOrdersCallbackHandler);
+  bot.action('back_to_my_orders', async (ctx) => {
+    try {
+      await showMyOrders(ctx);
+    } catch (error) {
+      console.error('❌ back_to_my_orders error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
 
   // ========================================
   // 💎 LOYALTY PROGRAM
@@ -37,6 +57,15 @@ function registerProfileCallbacks(bot) {
 
   // Loyalty level
   bot.action('loyalty_level', async (ctx) => {
+    try {
+      await loyaltyHandlers.showLoyaltyLevel(ctx);
+    } catch (error) {
+      console.error('❌ loyalty_level error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+  
+  bot.action('my_loyalty_level', async (ctx) => {
     try {
       await loyaltyHandlers.showLoyaltyLevel(ctx);
     } catch (error) {
@@ -82,6 +111,16 @@ function registerProfileCallbacks(bot) {
       await loyaltyHandlers.usePoints(ctx, points);
     } catch (error) {
       console.error('❌ use_points_amount error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // My bonuses alias  
+  bot.action('my_bonuses', async (ctx) => {
+    try {
+      await loyaltyHandlers.showLoyaltyBonuses(ctx);
+    } catch (error) {
+      console.error('❌ my_bonuses error:', error);
       if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
     }
   });
