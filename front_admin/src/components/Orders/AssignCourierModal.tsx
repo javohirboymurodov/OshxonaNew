@@ -134,6 +134,13 @@ const AssignCourierModal: React.FC<Props> = ({ open, orderId, onClose, onAssigne
       await apiService.assignCourier(orderId, courierId);
       onAssigned?.();
       onClose();
+    } catch (error: any) {
+      if (error.response?.status === 409) {
+        // 409 Conflict - Kuryer allaqachon tayinlangan
+        console.log('Kuryer allaqachon tayinlangan yoki boshqa xatolik:', error.response?.data?.message);
+      } else {
+        console.error('Kuryer tayinlashda xatolik:', error);
+      }
     } finally {
       setLoading(false);
     }
