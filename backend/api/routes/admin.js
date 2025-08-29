@@ -61,8 +61,11 @@ router.put('/categories/:id', AdminController.updateCategory);
 // Get orders for admin's branch
 router.get('/orders', AdminController.getOrders);
 
-// Orders stats
+
 router.get('/orders/stats', AdminController.getOrdersStats);
+
+// Get single order by ID
+router.get('/orders/:id', OrdersController.getOrderById);
 
 // Update order status
 router.patch('/orders/:id/status', OrdersController.updateStatus);
@@ -247,6 +250,28 @@ router.post('/orders/:orderId/courier/check-distance', requireRole(['courier']),
   } catch (error) {
     console.error('Courier distance check route error:', error);
     res.status(500).json({ success: false, message: 'Xatolik yuz berdi!' });
+  }
+});
+
+// Test notification endpoint
+router.post('/test-notification', requireRole(['admin', 'superadmin']), async (req, res) => {
+  try {
+    const SocketManager = require('../../config/socketConfig');
+    const { branchId = 'default' } = req.body;
+    
+    console.log('🧪 Test notification endpoint called by:', req.user?.id);
+    console.log('🧪 BranchId:', branchId);
+    
+    SocketManager.emitTestNotification(branchId);
+    
+    res.json({ 
+      success: true, 
+      message: 'Test notification sent',
+      branchId: branchId
+    });
+  } catch (error) {
+    console.error('Test notification error:', error);
+    res.status(500).json({ success: false, message: 'Failed to send test notification' });
   }
 });
 

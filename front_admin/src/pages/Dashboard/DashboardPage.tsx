@@ -32,7 +32,7 @@ import { Line, Pie, Column, Bar } from '@ant-design/plots';
 import apiService from '@/services/api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
-import { useSocket } from '@/hooks/useSocket';
+// import { useSocket } from '@/hooks/useSocket'; // Moved to MainLayout
 import { Order } from '@/types';
 import dayjs from 'dayjs';
 
@@ -127,7 +127,7 @@ const DashboardPage: React.FC = () => {
   });
   // const token = localStorage.getItem('token') || '';
   // const branchId = ((user as { branch?: { _id?: string } } | null | undefined)?.branch?._id) || 'default';
-  const { connected } = useSocket();
+  // const { connected } = useSocket(); // Moved to MainLayout
   // TODO: Implement newOrders logic with Redux
   const newOrders: Order[] = [];
 
@@ -304,10 +304,10 @@ const DashboardPage: React.FC = () => {
     }
   }, [dashQuery.isLoading, dashQuery.isError, dashQuery.data]);
 
-  useEffect(() => {
-    if (!connected) return;
-    queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-  }, [connected, newOrders, queryClient]);
+  // useEffect(() => {
+  //   if (!connected) return;
+  //   queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+  // }, [newOrders, queryClient]); // removed connected dependency - handled in MainLayout
 
   const getStatusColor = (status: string) => {
     const colors: { [key: string]: string } = {
@@ -537,7 +537,7 @@ const DashboardPage: React.FC = () => {
           <Col>
             <Title level={2} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               Dashboard
-              {connected && newOrders.length > 0 && (
+              {newOrders.length > 0 && (
                 <span style={{
                   background: '#ff4d4f',
                   color: '#fff',

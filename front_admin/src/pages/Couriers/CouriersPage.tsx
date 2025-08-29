@@ -4,7 +4,7 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useAuth } from '@/hooks/useAuth';
-import { useSocket } from '@/hooks/useSocket';
+
 import { apiService } from '@/services/api';
 
 const { Text } = Typography;
@@ -46,7 +46,7 @@ const CouriersPage: React.FC = () => {
   const branchId = (user as any)?.branch || (user as any)?.branchId || '';
   const token = useMemo(() => localStorage.getItem('token') || '', []);
 
-  const { socket, connected } = useSocket({ token, branchId });
+  // const { socket, connected } = useSocket(); // Moved to MainLayout
 
   const [markers, setMarkers] = useState<Record<string, CourierMarker>>({});
   const [branches, setBranches] = useState<BranchMarker[]>([]);
@@ -154,24 +154,24 @@ const CouriersPage: React.FC = () => {
     }, 30000); // 30 seconds
 
     return () => clearInterval(interval);
-  }, [connected, refreshCouriers]);
+  }, [refreshCouriers]); // removed connected dependency
 
-  // Realtime updates via Socket.IO
-  useEffect(() => {
-    if (!socket || !connected) return;
-    const onLocation = (payload: CourierMarker) => {
-      setMarkers(prev => ({
-        ...prev,
-        [payload.courierId]: {
-          ...(prev[payload.courierId] || {}),
-          ...payload
-        }
-      }));
-      setLastUpdate(new Date());
-    };
-    socket.on('courier:location', onLocation);
-    return () => { socket.off('courier:location', onLocation); };
-  }, [socket, connected]);
+  // Realtime updates via Socket.IO - handled in MainLayout
+  // useEffect(() => {
+  //   if (!socket || !connected) return;
+  //   const onLocation = (payload: CourierMarker) => {
+  //     setMarkers(prev => ({
+  //       ...prev,
+  //       [payload.courierId]: {
+  //         ...(prev[payload.courierId] || {}),
+  //         ...payload
+  //       }
+  //     }));
+  //     setLastUpdate(new Date());
+  //   };
+  //   socket.on('courier:location', onLocation);
+  //   return () => { socket.off('courier:location', onLocation); };
+  // }, [socket, connected]);
 
   const filtered = useMemo(() => {
     const list = Object.values(markers);
@@ -216,7 +216,7 @@ const CouriersPage: React.FC = () => {
           >
             🔄 Yangilash
           </Button>
-          {connected ? <Tag color="green">Socket ulandi</Tag> : <Tag>Ulanmagan</Tag>}
+          <Tag color="green">Real-time updates</Tag>
         </Space>
       }>
         <div style={{ height: 560, width: '100%' }}>

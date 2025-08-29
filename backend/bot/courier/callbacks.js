@@ -33,6 +33,9 @@ function registerCourierCallbacks(bot) {
   
   // Buyurtmani bekor qilish
   bot.action(/^courier_cancel_(.+)$/, CourierHandlers.cancelOrder);
+  
+  // Buyurtma tafsilotlari
+  bot.action(/^courier_order_details_(.+)$/, CourierHandlers.orderDetails);
 
   // ========================================
   // 🔙 NAVIGATION

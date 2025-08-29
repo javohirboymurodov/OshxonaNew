@@ -18,10 +18,14 @@ export const useSocket = () => {
   const branchId = user?.branch && typeof user.branch === 'object' ? user.branch._id : user?.branch || 'default';
 
   useEffect(() => {
-    if (!realTimeUpdates || !user) return;
+    if (!realTimeUpdates || !user) {
+      return;
+    }
 
     // Initialize socket connection
-    socket = io(import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000', {
+    const socketUrl = import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+    
+    socket = io(socketUrl, {
       transports: ['websocket', 'polling'],
     });
 
@@ -35,9 +39,6 @@ export const useSocket = () => {
 
     // Listen for new orders
     socket.on('new-order', (data: any) => {
-
-
-      
       // Convert data to order format if needed
       let orderData = data.order || data;
       
@@ -62,8 +63,7 @@ export const useSocket = () => {
         dispatch(handleNewOrder(normalizedOrder));
         
         // Play notification sound
-
-        SoundPlayer.playNotification('/notification.wav', 0.8);
+        SoundPlayer.playNotification('/beep.wav', 0.8);
         
         // Show notification
         message.success({
@@ -71,11 +71,8 @@ export const useSocket = () => {
           duration: 5,
         });
       } else {
-
-        
         // Play notification sound even with insufficient data
-
-        SoundPlayer.playNotification('/notification.wav', 0.8);
+        SoundPlayer.playNotification('/beep.wav', 0.8);
         
         // Still show notification even if we can't add to store
         message.success({
@@ -136,31 +133,30 @@ export const useSocket = () => {
 
     // Connection status
     socket.on('connect', () => {
-      console.log('✅ Socket connected');
       // Re-join admin room after reconnection
       const token = localStorage.getItem('token');
       socket.emit('join-admin', { 
         token: token,
-        branchId: 'default'
+        branchId: branchId
       });
     });
 
     socket.on('disconnect', () => {
-      console.log('❌ Socket disconnected');
+      console.log('Socket disconnected');
     });
 
     socket.on('error', (error: any) => {
-      console.error('❌ Socket error:', error);
+      console.error('Socket error:', error);
     });
 
     // Listen for authentication errors
     socket.on('auth-error', (error: any) => {
-      console.error('❌ Socket auth error:', error);
+      console.error('Socket auth error:', error);
     });
 
     // Listen for successful admin join
     socket.on('joined-admin', (data: any) => {
-      console.log('✅ Successfully joined admin room:', data);
+      // Admin room joined successfully
     });
 
     // Cleanup on unmount

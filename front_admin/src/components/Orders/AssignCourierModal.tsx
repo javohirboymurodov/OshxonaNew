@@ -119,7 +119,7 @@ const AssignCourierModal: React.FC<Props> = ({ open, orderId, onClose, onAssigne
     (async () => {
       if (!open || !orderId) return;
       try {
-        const data = (await apiService.get(`/orders/${encodeURIComponent(orderId)}`)) as unknown as GetOrderResponse;
+        const data = (await apiService.get(`/admin/orders/${encodeURIComponent(orderId)}`)) as unknown as GetOrderResponse;
         const ord = (data?.order || data?.data?.order) as OrderMinimal | undefined;
         const cid = ord?.deliveryInfo?.courier?._id || null;
         setAssignedCourierId(cid);
@@ -134,6 +134,16 @@ const AssignCourierModal: React.FC<Props> = ({ open, orderId, onClose, onAssigne
       await apiService.assignCourier(orderId, courierId);
       onAssigned?.();
       onClose();
+    } catch (error: any) {
+      if (error.response?.status === 409) {
+        // 409 Conflict - Kuryer allaqachon tayinlangan, lekin muvaffaqiyat sifatida ishlash
+        console.log('Kuryer allaqachon tayinlangan:', error.response?.data?.message);
+        onAssigned?.(); // Refresh qilish uchun
+        onClose(); // Modalni yopish
+      } else {
+        console.error('Kuryer tayinlashda xatolik:', error);
+        // Boshqa error'larda ham yopish mumkin yoki user'ga xabar berish
+      }
     } finally {
       setLoading(false);
     }

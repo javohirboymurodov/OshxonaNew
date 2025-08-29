@@ -249,6 +249,53 @@ async function updateStatus(req, res) {
   }
 }
 
+// GET /api/admin/orders/:id
+async function getOrderById(req, res) {
+  try {
+    const { id } = req.params;
+    const branchId = req.user.role === 'superadmin' ? null : req.user.branch;
+    const query = { _id: id };
+    if (branchId) query.branch = branchId;
+    const orderDoc = await Order.findOne(query)
+      .populate('user', 'firstName lastName phone address')
+      .populate('deliveryInfo.courier', 'firstName lastName phone courierInfo')
+      .populate('items.product', 'name price description')
+      .populate('branch', 'name title address');
+    if (!orderDoc) return res.status(404).json({ success: false, message: 'Buyurtma topilmadi!' });
+    let order = orderDoc.toObject();
+    try {
+      if (order.orderType === 'delivery' && order.deliveryInfo?.location?.latitude && order.deliveryInfo?.location?.longitude) {
+        let origin = null;
+        if (branchId) {
+          const Branch = require('../../models/Branch');
+          const branch = await Branch.findById(branchId);
+          if (branch?.address?.coordinates?.latitude && branch?.address?.coordinates?.longitude) {
+            origin = { lat: branch.address.coordinates.latitude, lon: branch.address.coordinates.longitude };
+          }
+        }
+        if (!origin && process.env.DEFAULT_RESTAURANT_LAT && process.env.DEFAULT_RESTAURANT_LON) {
+          origin = { lat: parseFloat(process.env.DEFAULT_RESTAURANT_LAT), lon: parseFloat(process.env.DEFAULT_RESTAURANT_LON) };
+        }
+        const DeliveryService = require('../../services/deliveryService');
+        const calc = await DeliveryService.calculateDeliveryTime({ latitude: order.deliveryInfo.location.latitude, longitude: order.deliveryInfo.location.longitude }, order.items, origin);
+        const fee = await DeliveryService.calculateDeliveryFee({ latitude: order.deliveryInfo.location.latitude, longitude: order.deliveryInfo.location.longitude }, order.total ?? order.totalAmount ?? 0);
+        order.deliveryMeta = {
+          distanceKm: calc?.distance ?? null,
+          etaMinutes: calc?.totalTime ?? null,
+          preparationMinutes: calc?.preparationTime ?? null,
+          deliveryMinutes: calc?.deliveryTime ?? null,
+          deliveryFee: fee?.fee ?? null,
+          isFreeDelivery: fee?.isFreeDelivery ?? false
+        };
+      }
+    } catch (e) {}
+    res.json({ success: true, data: { order } });
+  } catch (error) {
+    console.error('Get single order error:', error);
+    res.status(500).json({ success: false, message: 'Buyurtma ma\'lumotlarini olishda xatolik!' });
+  }
+}
+
 // PATCH /api/orders/:id/assign-courier
 async function assignCourier(req, res) {
   try {
@@ -266,7 +313,9 @@ async function assignCourier(req, res) {
     }
     if (existingOrder.deliveryInfo?.courier) {
       if (String(existingOrder.deliveryInfo.courier) === String(courierId)) {
-        return res.status(409).json({ success: false, message: 'Ushbu kuryer allaqachon tayinlangan.' });
+        // Same courier already assigned - return success instead of error
+        console.log(`Courier ${courierId} already assigned to order ${existingOrder.orderId} - returning success`);
+        return res.json({ success: true, message: 'Kuryer allaqachon tayinlangan.' });
       } else {
         // Allow re-assignment to a different courier
         console.log(`Re-assigning courier for order ${existingOrder.orderId} from ${existingOrder.deliveryInfo.courier} to ${courierId}`);
@@ -787,6 +836,7 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 module.exports = { 
   listOrders, 
   getOrder, 
+  getOrderById,
   getStats, 
   updateStatus, 
   assignCourier,
