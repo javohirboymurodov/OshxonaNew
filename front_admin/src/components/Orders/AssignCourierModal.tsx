@@ -119,7 +119,7 @@ const AssignCourierModal: React.FC<Props> = ({ open, orderId, onClose, onAssigne
     (async () => {
       if (!open || !orderId) return;
       try {
-        const data = (await apiService.get(`/orders/${encodeURIComponent(orderId)}`)) as unknown as GetOrderResponse;
+        const data = (await apiService.get(`/admin/orders/${encodeURIComponent(orderId)}`)) as unknown as GetOrderResponse;
         const ord = (data?.order || data?.data?.order) as OrderMinimal | undefined;
         const cid = ord?.deliveryInfo?.courier?._id || null;
         setAssignedCourierId(cid);
