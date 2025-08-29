@@ -223,33 +223,21 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ data, loading, pagination, on
               type="link" 
               size="small" 
               icon={<EyeOutlined />} 
-              onClick={(e) => {
-                e.stopPropagation();
-                onShowDetails(record);
-              }} 
+              onClick={() => onShowDetails(record)} 
             />
             {onQuickStatusChange && next.length > 0 && (
               <Dropdown
                 menu={{ items: menuItems, onClick: ({ key }) => onQuickStatusChange(record, String(key)) }}
                 placement="bottom"
               >
-                <Button 
-                  type="link" 
-                  size="small"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  Holat
-                </Button>
+                <Button type="link" size="small">Holat</Button>
               </Dropdown>
             )}
             {record.orderType === 'delivery' && !['delivered', 'completed', 'picked_up'].includes(record.status) && onAssignCourier && (
               <Button 
                 type="link" 
                 size="small" 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAssignCourier(record);
-                }}
+                onClick={() => onAssignCourier(record)}
               >
                 Kuryer
               </Button>
@@ -283,16 +271,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ data, loading, pagination, on
       onChange={(p) => onChangePage(p.current!, p.pageSize!)}
       scroll={{ x: 1000 }}
       size="middle"
-      onRow={(record) => ({
-        onClick: (e) => {
-          // Only open details if clicked outside of buttons
-          const target = e.target as HTMLElement;
-          if (target.closest('button') || target.closest('.ant-dropdown')) {
-            return; // Don't open details if button or dropdown clicked
-          }
-          onShowDetails(record);
-        }
-      })}
+
     />
   );
 };

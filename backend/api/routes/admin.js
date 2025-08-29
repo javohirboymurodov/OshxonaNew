@@ -61,6 +61,9 @@ router.put('/categories/:id', AdminController.updateCategory);
 // Get orders for admin's branch
 router.get('/orders', AdminController.getOrders);
 
+// Get single order by ID
+router.get('/orders/:id', OrdersController.getOrderById);
+
 // Orders stats
 router.get('/orders/stats', AdminController.getOrdersStats);
 

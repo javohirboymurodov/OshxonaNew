@@ -249,6 +249,32 @@ async function updateStatus(req, res) {
   }
 }
 
+// GET /api/admin/orders/:id
+async function getOrderById(req, res) {
+  try {
+    const { id } = req.params;
+    const branchId = req.user.role === 'superadmin' ? null : req.user.branch;
+    
+    const query = { _id: id };
+    if (branchId) query.branch = branchId;
+    
+    const order = await Order.findOne(query)
+      .populate('user', 'firstName lastName phone telegramId')
+      .populate('deliveryInfo.courier', 'firstName lastName phone courierInfo')
+      .populate('branch', 'name address coordinates')
+      .populate('items.product', 'name price images category');
+    
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Buyurtma topilmadi!' });
+    }
+    
+    res.json({ success: true, data: { order } });
+  } catch (error) {
+    console.error('Get order by ID error:', error);
+    res.status(500).json({ success: false, message: 'Buyurtmani olishda xatolik!' });
+  }
+}
+
 // PATCH /api/orders/:id/assign-courier
 async function assignCourier(req, res) {
   try {
@@ -787,6 +813,7 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 module.exports = { 
   listOrders, 
   getOrder, 
+  getOrderById,
   getStats, 
   updateStatus, 
   assignCourier,
