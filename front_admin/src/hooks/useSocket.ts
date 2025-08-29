@@ -18,15 +18,30 @@ export const useSocket = () => {
   const branchId = user?.branch && typeof user.branch === 'object' ? user.branch._id : user?.branch || 'default';
 
   useEffect(() => {
-    if (!realTimeUpdates || !user) return;
+    console.log('🔧 useSocket useEffect triggered:', { 
+      realTimeUpdates, 
+      user: !!user, 
+      branchId,
+      userRole: user?.role 
+    });
+
+    if (!realTimeUpdates || !user) {
+      console.log('❌ useSocket early return:', { realTimeUpdates, user: !!user });
+      return;
+    }
 
     // Initialize socket connection
-    socket = io(import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000', {
+    const socketUrl = import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+    console.log('🚀 Initializing socket connection to:', socketUrl);
+    
+    socket = io(socketUrl, {
       transports: ['websocket', 'polling'],
     });
 
     // Join admin room for real-time updates with token
     const token = localStorage.getItem('token');
+    console.log('🔑 Token available:', !!token);
+    console.log('🏢 Joining admin room with branchId:', branchId);
 
     socket.emit('join-admin', { 
       token: token,
@@ -35,11 +50,14 @@ export const useSocket = () => {
 
     // Listen for new orders
     socket.on('new-order', (data: any) => {
-
+      console.log('🔔 NEW ORDER EVENT RECEIVED:', data);
+      console.log('🔔 Raw data type:', typeof data);
+      console.log('🔔 Data keys:', Object.keys(data || {}));
 
       
       // Convert data to order format if needed
       let orderData = data.order || data;
+      console.log('🔔 Processing orderData:', orderData);
       
       // Ensure we have required fields for Redux
       if (orderData && (orderData._id || orderData.id || orderData.orderId)) {
@@ -59,13 +77,15 @@ export const useSocket = () => {
           paymentMethod: orderData.paymentMethod || 'cash'
         };
         
+        console.log('🔔 Dispatching handleNewOrder with:', normalizedOrder);
         dispatch(handleNewOrder(normalizedOrder));
         
         // Play notification sound
-
+        console.log('🔔 Playing notification sound...');
         SoundPlayer.playNotification('/notification.wav', 0.8);
         
         // Show notification
+        console.log('🔔 Showing Antd message notification...');
         message.success({
           content: `🔔 Yangi buyurtma keldi - №${normalizedOrder.orderId}`,
           duration: 5,
@@ -136,9 +156,11 @@ export const useSocket = () => {
 
     // Connection status
     socket.on('connect', () => {
-      console.log('✅ Socket connected');
+      console.log('✅ Socket connected successfully');
+      console.log('🔄 Socket ID:', socket.id);
       // Re-join admin room after reconnection
       const token = localStorage.getItem('token');
+      console.log('🔄 Re-joining admin room with branchId:', branchId);
       socket.emit('join-admin', { 
         token: token,
         branchId: branchId

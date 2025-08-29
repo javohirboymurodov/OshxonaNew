@@ -258,6 +258,30 @@ const OrdersPage: React.FC = () => {
                 orderType: filters.orderType,
               }));
             }}>Yangilash</Button>
+            <Button 
+              type="default" 
+              onClick={async () => {
+                try {
+                  console.log('🧪 Sending test notification...');
+                  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/admin/test-notification`, {
+                    method: 'POST',
+                    headers: {
+                      'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ branchId: 'default' })
+                  });
+                  const result = await response.json();
+                  console.log('🧪 Test notification result:', result);
+                  messageApi.success('Test notification yuborildi!');
+                } catch (error) {
+                  console.error('🧪 Test notification error:', error);
+                  messageApi.error('Test notification xatolik!');
+                }
+              }}
+            >
+              🧪 Test Notification
+            </Button>
           </Space>
         </Col>
       </Row>

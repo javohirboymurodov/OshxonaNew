@@ -37,12 +37,17 @@ class SocketManager {
   
   static setupEventHandlers() {
     this.io.on('connection', (socket) => {
-
+      console.log(`🔗 New socket connection: ${socket.id}`);
+      console.log(`🔗 Total connections: ${this.io.sockets.sockets.size}`);
       
       // Admin panelga qo'shilish
       socket.on('join-admin', (data) => {
         try {
-
+          console.log(`🔑 Admin join attempt from socket ${socket.id}:`, {
+            hasToken: !!data?.token,
+            branchId: data?.branchId,
+            dataKeys: Object.keys(data || {})
+          });
           
           if (!data || !data.token) {
             console.log('❌ No token provided for admin join');
@@ -53,10 +58,16 @@ class SocketManager {
           const { token, branchId } = data;
           const decoded = jwt.verify(token, process.env.JWT_SECRET);
           
-
+          console.log(`🔓 JWT decoded successfully:`, {
+            userId: decoded.userId || decoded.id,
+            role: decoded.role,
+            branchId: branchId || 'global'
+          });
           
           if (decoded.role === 'admin' || decoded.role === 'superadmin') {
             const roomName = `branch:${branchId || 'global'}`;
+            console.log(`🏢 Admin joining room: ${roomName}`);
+            
             socket.join(roomName);
             this.connectedAdmins.set(socket.id, {
               userId: decoded.userId || decoded.id,
@@ -66,11 +77,11 @@ class SocketManager {
             
             // Log room size after joining
             const room = this.io.sockets.adapter.rooms.get(roomName);
-
-            
-
+            console.log(`👥 Room ${roomName} now has ${room ? room.size : 0} clients`);
+            console.log(`👥 Total connected admins: ${this.connectedAdmins.size}`);
             
             socket.emit('joined-admin', { branchId: branchId || 'global', success: true });
+            console.log(`✅ Admin ${decoded.userId || decoded.id} successfully joined ${roomName}`);
           } else {
             console.log('❌ Invalid role for admin access:', decoded.role);
             socket.emit('auth-error', { message: 'Admin role required' });
@@ -151,6 +162,12 @@ class SocketManager {
 
   // Yangi buyurtma eventini adminlarga yuborish
   static emitNewOrder(branchId, orderData) {
+    console.log(`📢 emitNewOrder called:`, {
+      branchId,
+      hasIo: !!this.io,
+      orderData: orderData
+    });
+    
     if (this.io) {
       const payload = {
         ...orderData,
@@ -158,10 +175,17 @@ class SocketManager {
         sound: true // Admin panelda ovoz signali uchun
       };
       
+      const roomName = `branch:${branchId}`;
+      const room = this.io.sockets.adapter.rooms.get(roomName);
+      
+      console.log(`📢 Emitting new-order to room ${roomName}:`);
+      console.log(`👥 Room has ${room ? room.size : 0} clients`);
+      console.log(`📦 Payload:`, payload);
 
-      this.io.to(`branch:${branchId}`).emit('new-order', payload);
+      this.io.to(roomName).emit('new-order', payload);
+      console.log(`✅ new-order event emitted to ${roomName}`);
     } else {
-
+      console.error('❌ Socket.io instance not available');
     }
   }
   
