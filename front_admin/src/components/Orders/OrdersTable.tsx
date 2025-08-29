@@ -236,7 +236,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ data, loading, pagination, on
                 <Button type="link" size="small">Holat</Button>
               </Dropdown>
             )}
-            {record.orderType === 'delivery' && !['delivered', 'completed', 'picked_up', 'on_delivery'].includes(record.status) && onAssignCourier && (
+            {record.orderType === 'delivery' && !['delivered', 'completed', 'cancelled'].includes(record.status) && onAssignCourier && (
               <Button 
                 type="link" 
                 size="small" 
