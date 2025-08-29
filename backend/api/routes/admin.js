@@ -61,11 +61,11 @@ router.put('/categories/:id', AdminController.updateCategory);
 // Get orders for admin's branch
 router.get('/orders', AdminController.getOrders);
 
+// Orders stats (must be before :id route)
+router.get('/orders/stats', AdminController.getOrdersStats);
+
 // Get single order by ID
 router.get('/orders/:id', OrdersController.getOrderById);
-
-// Orders stats
-router.get('/orders/stats', AdminController.getOrdersStats);
 
 // Update order status
 router.patch('/orders/:id/status', OrdersController.updateStatus);
