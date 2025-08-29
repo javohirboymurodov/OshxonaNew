@@ -46,8 +46,8 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   type UserShape = { role?: string; branch?: { _id?: string } } | null | undefined;
   const castUser = (user as unknown) as UserShape;
   const isSuper = String(castUser?.role || '').toLowerCase() === 'superadmin';
-  // const branchId = isSuper ? '' : (castUser?.branch?._id || '');
-  // const { connected } = useSocket();
+  // branchId is handled inside useSocket hook
+  const { connected } = useSocket();
   const dispatch = useAppDispatch();
   const { newOrders } = useAppSelector(state => state.orders);
   const go = useNav();

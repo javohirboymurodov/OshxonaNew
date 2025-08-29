@@ -141,7 +141,7 @@ export const useSocket = () => {
       const token = localStorage.getItem('token');
       socket.emit('join-admin', { 
         token: token,
-        branchId: 'default'
+        branchId: branchId
       });
     });
 
