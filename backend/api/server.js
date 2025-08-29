@@ -9,7 +9,7 @@ const SocketManager = require('../config/socketConfig');
 const Database = require('../config/database');
 const { specs, swaggerUi } = require('../docs/swagger');
 const logger = require('../utils/logger');
-const { errorHandler, notFoundHandler } = require('../utils/errorHandler');
+const { ErrorHandler} = require('../utils/ErrorHandler');
 const requestLogger = require('../middleware/requestLogger');
 const SecurityService = require('../middleware/security');
 
