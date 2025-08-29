@@ -9,7 +9,7 @@ function registerUXCallbacks(bot) {
   // Quick order menu
   bot.action('quick_order', async (ctx) => {
     try {
-      await quickOrderHandlers.showQuickOrderMenu(ctx);
+      await quickOrderHandlers.showQuickOrder(ctx);
     } catch (error) {
       console.error('❌ quick_order error:', error);
       if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');

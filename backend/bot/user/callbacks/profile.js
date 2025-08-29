@@ -8,6 +8,16 @@ function registerProfileCallbacks(bot) {
   // 📋 MY ORDERS
   // ========================================
 
+  // Profile (main entry point)
+  bot.action('profile', async (ctx) => {
+    try {
+      await showMyOrders(ctx);
+    } catch (error) {
+      console.error('❌ profile error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
   // Main my orders
   bot.action('my_orders', async (ctx) => {
     try {

@@ -125,23 +125,14 @@ function registerCatalogCallbacks(bot) {
   // Category handling
   bot.action(/^category_(.+)$/, async (ctx) => {
     try {
-      await CatalogHandlers.showCategoryProducts(ctx);
+      await CatalogHandlers.handleShowCategoryProducts(ctx);
     } catch (error) {
       console.error('❌ category error:', error);
       if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
     }
   });
 
-  // Profile
-  bot.action('profile', async (ctx) => {
-    try {
-      const { showMyOrders } = require('../../handlers/user/myOrders');
-      await showMyOrders(ctx);
-    } catch (error) {
-      console.error('❌ profile error:', error);
-      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
-    }
-  });
+
 
   // ========================================
   // 📦 PRODUCT HANDLING
@@ -172,7 +163,7 @@ function registerCatalogCallbacks(bot) {
   // Category products pagination: category_products_<categoryId>_<page>
   bot.action(/^category_products_(.+)_(\d+)$/, async (ctx) => {
     try {
-      await CatalogHandlers.showCategoryProducts(ctx);
+      await CatalogHandlers.handleShowCategoryProducts(ctx);
     } catch (error) {
       console.error('❌ category_products error:', error);
       if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
