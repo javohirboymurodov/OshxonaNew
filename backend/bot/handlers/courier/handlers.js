@@ -158,12 +158,39 @@ async function activeOrders(ctx) {
   if (!allowed) return ctx.answerCbQuery('❌ Ruxsat yo\'q');
   let orders = [];
   try {
-    orders = await Order.find({ 'deliveryInfo.courier': user._id, status: { $in: ['assigned', 'on_delivery'] } }).sort({ createdAt: -1 }).limit(10);
+    orders = await Order.find({ 'deliveryInfo.courier': user._id, status: { $in: ['assigned', 'on_delivery'] } })
+      .populate('user', 'firstName lastName phone')
+      .sort({ createdAt: -1 }).limit(10);
   } catch {}
   if (!orders || orders.length === 0) return ctx.answerCbQuery('📭 Faol buyurtmalar yo\'q');
+  
   let text = '📋 Faol buyurtmalar:\n\n';
-  orders.forEach((o, i) => { text += `${i + 1}. #${o.orderId} – ${o.status}\n`; });
-  await ctx.reply(text, { reply_markup: { inline_keyboard: [[{ text: '🔙 Ortga', callback_data: 'courier_main_menu' }]] } });
+  const keyboard = [];
+  
+  orders.forEach((order, index) => {
+    const statusEmoji = {
+      'assigned': '🆕',
+      'on_delivery': '🚗'
+    };
+    
+    const customerName = order.user ? `${order.user.firstName || ''} ${order.user.lastName || ''}`.trim() : 'Mijoz';
+    const statusText = order.status === 'assigned' ? 'Tayinlangan' : 'Yetkazilmoqda';
+    
+    text += `${index + 1}. ${statusEmoji[order.status] || '📦'} #${order.orderId}\n`;
+    text += `   👤 ${customerName}\n`;
+    text += `   💰 ${Number(order.total || 0).toLocaleString()} so'm\n`;
+    text += `   📊 ${statusText}\n\n`;
+    
+    // Har bir buyurtma uchun inline tugma
+    keyboard.push([{ 
+      text: `📋 #${order.orderId} - ${statusText}`, 
+      callback_data: `courier_order_details_${order._id}` 
+    }]);
+  });
+  
+  keyboard.push([{ text: '🔙 Ortga', callback_data: 'courier_main_menu' }]);
+  
+  await ctx.reply(text, { reply_markup: { inline_keyboard: keyboard } });
   await ctx.answerCbQuery();
 }
 
@@ -331,6 +358,29 @@ async function onWay(ctx) {
     
     await ctx.answerCbQuery('🚗 Yo\'lda ekanligingiz belgilandi');
     
+    // Yangi keyboard - faqat "Yetkazdim" va "Bekor qilish" tugmalari
+    const keyboard = {
+      inline_keyboard: [
+        [
+          { text: '✅ Yetkazdim', callback_data: `courier_delivered_${orderId}` }
+        ],
+        [
+          { text: '❌ Bekor qilish', callback_data: `courier_cancel_${orderId}` }
+        ],
+        [
+          { text: '🔙 Kuryer paneli', callback_data: 'courier_main_menu' }
+        ]
+      ]
+    };
+    
+    // Xabarni yangilash
+    try {
+      await ctx.editMessageReplyMarkup(keyboard);
+    } catch (error) {
+      // Agar edit qilishda xatolik bo'lsa, yangi xabar yuborish
+      await ctx.reply('🚗 Yo\'lda ekansiz! Yetkazib bergandan keyin tugmani bosing.', { reply_markup: keyboard });
+    }
+    
     // 🔧 FIX: Adminlarga real-time xabar
     try {
       const SocketManager = require('../../../config/socketConfig');
@@ -496,6 +546,85 @@ async function cancelOrder(ctx) {
   }
 }
 
+// Buyurtma tafsilotlari
+async function orderDetails(ctx) {
+  const { user, allowed } = await ensureCourierByTelegram(ctx);
+  if (!allowed) return ctx.answerCbQuery('❌ Ruxsat yo\'q');
+  
+  const callbackData = ctx.callbackQuery?.data;
+  const orderId = callbackData?.replace('courier_order_details_', '');
+  
+  if (!orderId) {
+    await ctx.answerCbQuery('❌ Buyurtma ID topilmadi');
+    return;
+  }
+  
+  try {
+    const order = await Order.findById(orderId)
+      .populate('user', 'firstName lastName phone')
+      .populate('items.product', 'name');
+    
+    if (!order || order.deliveryInfo?.courier?.toString() !== user._id.toString()) {
+      await ctx.answerCbQuery('❌ Buyurtma topilmadi yoki ruxsat yo\'q');
+      return;
+    }
+    
+    const customerName = order.user ? `${order.user.firstName || ''} ${order.user.lastName || ''}`.trim() : 'Mijoz';
+    const customerPhone = order.user?.phone || order.customerInfo?.phone || 'Noma\'lum';
+    
+    let text = `📋 Buyurtma tafsilotlari\n\n`;
+    text += `🆔 Raqam: #${order.orderId}\n`;
+    text += `👤 Mijoz: ${customerName}\n`;
+    text += `📞 Telefon: ${customerPhone}\n`;
+    text += `💰 Jami: ${Number(order.total || 0).toLocaleString()} so'm\n`;
+    text += `📊 Holat: ${order.status === 'assigned' ? 'Tayinlangan' : 'Yetkazilmoqda'}\n`;
+    
+    if (order.deliveryInfo?.address) {
+      text += `📍 Manzil: ${order.deliveryInfo.address}\n`;
+    }
+    
+    if (order.deliveryInfo?.instructions) {
+      text += `📝 Izoh: ${order.deliveryInfo.instructions}\n`;
+    }
+    
+    text += `\n🛒 Buyurtma tarkibi:\n`;
+    if (order.items && order.items.length > 0) {
+      order.items.forEach((item, index) => {
+        const productName = item.product?.name || item.productName || 'Mahsulot';
+        text += `${index + 1}. ${productName} x ${item.quantity} = ${Number(item.totalPrice || 0).toLocaleString()} so'm\n`;
+      });
+    }
+    
+    const keyboard = [];
+    
+    // Status ga qarab tugmalar
+    if (order.status === 'assigned') {
+      keyboard.push([
+        { text: '✅ Qabul qildim', callback_data: `courier_accept_${orderId}` }
+      ]);
+    } else if (order.status === 'on_delivery') {
+      keyboard.push([
+        { text: '🚗 Yo\'ldaman', callback_data: `courier_on_way_${orderId}` },
+        { text: '✅ Yetkazdim', callback_data: `courier_delivered_${orderId}` }
+      ]);
+    }
+    
+    keyboard.push([
+      { text: '❌ Bekor qilish', callback_data: `courier_cancel_${orderId}` }
+    ]);
+    keyboard.push([
+      { text: '🔙 Faol buyurtmalar', callback_data: 'courier_active_orders' }
+    ]);
+    
+    await ctx.reply(text, { reply_markup: { inline_keyboard: keyboard } });
+    await ctx.answerCbQuery();
+    
+  } catch (error) {
+    console.error('Order details error:', error);
+    await ctx.answerCbQuery('❌ Xatolik yuz berdi');
+  }
+}
+
 module.exports = { 
   start, 
   toggleShift, 
@@ -508,7 +637,8 @@ module.exports = {
   acceptOrder,
   onWay,
   delivered,
-  cancelOrder
+  cancelOrder,
+  orderDetails
 };
 
 function normalizePhone(p) {

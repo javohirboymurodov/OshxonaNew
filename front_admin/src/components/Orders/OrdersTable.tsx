@@ -219,7 +219,15 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ data, loading, pagination, on
         const menuItems = next.map((s) => ({ key: s, label: getStatusConfig(s).text }));
         return (
           <Space size="small">
-            <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => onShowDetails(record)} />
+            <Button 
+              type="link" 
+              size="small" 
+              icon={<EyeOutlined />} 
+              onClick={(e) => {
+                e.stopPropagation();
+                onShowDetails(record);
+              }}
+            />
             {onQuickStatusChange && next.length > 0 && (
               <Dropdown
                 menu={{ items: menuItems, onClick: ({ key }) => onQuickStatusChange(record, String(key)) }}
@@ -228,8 +236,17 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ data, loading, pagination, on
                 <Button type="link" size="small">Holat</Button>
               </Dropdown>
             )}
-            {record.orderType === 'delivery' && !['delivered', 'completed', 'picked_up'].includes(record.status) && onAssignCourier && (
-              <Button type="link" size="small" onClick={() => onAssignCourier(record)}>Kuryer</Button>
+            {record.orderType === 'delivery' && !['delivered', 'completed', 'cancelled'].includes(record.status) && onAssignCourier && (
+              <Button 
+                type="link" 
+                size="small" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAssignCourier(record);
+                }}
+              >
+                Kuryer
+              </Button>
             )}
             {record.orderType === 'delivery' && record.status === 'assigned' && (
               <Button type="link" size="small" style={{ color: 'green' }}>✅ Qabul qildi</Button>

@@ -296,18 +296,8 @@ class PaymentFlow extends BaseHandler {
       // Start order tracking
       orderTracker.trackOrder(order._id.toString(), user._id.toString());
       
-      // For delivery orders, send tracking notification after delay
-      // For dine-in orders, skip the automatic notification to avoid duplicates
-      const shouldSendTrackingNotification = ctx.session.orderType === 'delivery';
-      
-      if (shouldSendTrackingNotification) {
-        setTimeout(async () => {
-          await orderTracker.updateOrderStatus(order._id.toString(), 'confirmed', {
-            prepTime: 20,
-            message: 'Buyurtmangiz qabul qilindi va tayyorlash boshlandi'
-          });
-        }, 2000);
-      }
+      // Order tracking started - Admin will manually confirm the order
+      // No automatic status updates - waiting for admin confirmation
 
       // Process loyalty points for completed order
       let loyaltyUpdate = null;

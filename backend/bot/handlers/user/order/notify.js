@@ -13,8 +13,17 @@ async function notifyAdmins(order) {
 
     // Emit to web admin panel (Socket.IO)
     try {
+      console.log('🔔 notifyAdmins: Starting socket notification...');
       const SocketManager = require('../../../../config/socketConfig');
       const branchId = (order.branch && order.branch.toString) ? order.branch.toString() : 'default';
+      
+      console.log('🔔 notifyAdmins: Processing order:', {
+        orderId: order._id,
+        orderNumber: order.orderId,
+        branchId: branchId,
+        orderType: populatedOrder.orderType,
+        customerName: populatedOrder.user?.firstName
+      });
       
       const orderPayload = {
         _id: order._id,
@@ -32,14 +41,13 @@ async function notifyAdmins(order) {
       };
       
       // Send to specific branch only (no superadmin notification)
-
+      console.log('🔔 notifyAdmins: Calling SocketManager.emitNewOrder with:', {
+        branchId,
+        payloadKeys: Object.keys(orderPayload)
+      });
       SocketManager.emitNewOrder(branchId, orderPayload);
+      console.log('🔔 notifyAdmins: SocketManager.emitNewOrder completed');
       
-
-<<<<<<< Current (Your changes)
-
-=======
->>>>>>> Incoming (Background Agent changes)
     } catch (emitErr) {
       console.error('Emit new order error:', emitErr?.message || emitErr);
     }
