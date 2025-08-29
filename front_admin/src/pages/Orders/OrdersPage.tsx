@@ -199,6 +199,7 @@ const OrdersPage: React.FC = () => {
   );
 
   const showOrderDetails = async (order: TableOrder) => {
+    console.log('👁️ showOrderDetails chaqirildi:', order.orderId);
     dispatch(setSelectedOrder(order as unknown as Order));
     setDetailsVisible(true);
     const ackId = (order as unknown as { _id?: string; orderNumber?: string })._id || (order as unknown as { _id?: string; orderNumber?: string }).orderNumber;
@@ -234,6 +235,7 @@ const OrdersPage: React.FC = () => {
   // Deprecated: full-screen status update modal removed in favor of quick actions
 
   const openAssignCourier = (order: TableOrder) => {
+    console.log('🚚 openAssignCourier chaqirildi:', order.orderId);
     dispatch(setSelectedOrder(order as unknown as Order));
     setAssignModalVisible(true);
   };
