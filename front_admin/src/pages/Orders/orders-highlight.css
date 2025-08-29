@@ -1,0 +1,11 @@
+.row-highlight {
+  animation: rowFlash 1.6s ease-in-out 1;
+  background: #fffbe6 !important;
+}
+
+@keyframes rowFlash {
+  0% { background: #fff1b8; }
+  100% { background: #fffbe6; }
+}
+
+
