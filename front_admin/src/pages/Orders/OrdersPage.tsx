@@ -9,7 +9,7 @@ import OrdersTable, { type Order as TableOrder } from '@/components/Orders/Order
 import OrderDetailsModal, { type Order as DetailsOrder } from '@/components/Orders/OrderDetailsModal';
 import AssignCourierModal from '@/components/Orders/AssignCourierModal';
 import { useAuth } from '@/hooks/useAuth';
-import { useSocket } from '@/hooks/useSocket';
+// import { useSocket } from '@/hooks/useSocket'; // Moved to MainLayout
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { fetchOrders, setSelectedOrder, updateOrderStatus, setPagination, fetchOrderStats } from '@/store/slices/ordersSlice';
 import apiService from '@/services/api';
@@ -93,7 +93,7 @@ const OrdersPage: React.FC = () => {
   //   return maybe?.branch?._id || 'default';
   // })();
   // const token = localStorage.getItem('token') || '';
-  const { connected } = useSocket();
+  // const { connected } = useSocket(); // Moved to MainLayout
   
   const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
   // 🔧 Guard: filtr o'zgarganda avtomatik modal ochilmasin
@@ -174,17 +174,17 @@ const OrdersPage: React.FC = () => {
     }
   }, [pendingFocusId, orders]);
 
-  // Refresh data when socket reconnects
-  useEffect(() => {
-    if (connected) {
-      dispatch(fetchOrders({
-        page: pagination.current,
-        limit: pagination.pageSize,
-        status: filters.status,
-        orderType: filters.orderType,
-      }));
-    }
-  }, [connected, dispatch, pagination.current, pagination.pageSize, filters.status, filters.orderType]);
+  // Refresh data when socket reconnects - handled in MainLayout
+  // useEffect(() => {
+  //   if (connected) {
+  //     dispatch(fetchOrders({
+  //       page: pagination.current,
+  //       limit: pagination.pageSize,
+  //       status: filters.status,
+  //       orderType: filters.orderType,
+  //     }));
+  //   }
+  // }, [connected, dispatch, pagination.current, pagination.pageSize, filters.status, filters.orderType]);
 
   const getPaymentMethodText = useMemo(
     () => (method: string) => {
@@ -226,10 +226,10 @@ const OrdersPage: React.FC = () => {
     }
   };
 
-  // Bell popoverdan kirilganda newOrders ichidagi eng so'nggi buyurtmani ochish
-  useEffect(() => {
-    if (!connected || !detailsVisible) return;
-  }, [connected, detailsVisible]);
+  // Bell popoverdan kirilganda newOrders ichidagi eng so'nggi buyurtmani ochish - handled in MainLayout
+  // useEffect(() => {
+  //   if (!connected || !detailsVisible) return;
+  // }, [connected, detailsVisible]);
 
   // Deprecated: full-screen status update modal removed in favor of quick actions
 
