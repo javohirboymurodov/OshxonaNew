@@ -9,9 +9,11 @@ class OrderStatusService {
     'confirmed': ['assigned', 'preparing', 'cancelled'],
     'assigned': ['on_delivery', 'cancelled'],
     'preparing': ['ready', 'cancelled'], 
-    'ready': ['assigned', 'delivered'],
+    'ready': ['assigned', 'delivered', 'picked_up'], // Added picked_up for pickup orders
     'on_delivery': ['delivered', 'cancelled'],
-    'delivered': [],
+    'delivered': ['completed'],
+    'picked_up': ['completed'], // Pickup orders complete after picked_up
+    'completed': [], // Final status
     'cancelled': []
   };
 
@@ -24,6 +26,8 @@ class OrderStatusService {
     'ready': '🎯 Tayyor',
     'on_delivery': '🚗 Yetkazilmoqda',
     'delivered': '✅ Yetkazildi',
+    'picked_up': '📦 Olib ketildi',
+    'completed': '🎉 Yakunlandi',
     'cancelled': '❌ Bekor qilindi'
   };
 
@@ -73,6 +77,22 @@ class OrderStatusService {
 
       // Send real-time notifications
       await this.sendNotifications(order, newStatus, details);
+
+      // Auto-complete orders when they reach final delivery state
+      if ((newStatus === 'delivered' && order.orderType === 'delivery') || 
+          (newStatus === 'picked_up' && order.orderType === 'pickup')) {
+        
+        setTimeout(async () => {
+          try {
+            await this.updateStatus(orderId, 'completed', {
+              message: 'Buyurtma avtomatik yakunlandi',
+              updatedBy: 'system'
+            });
+          } catch (completionError) {
+            console.error('❌ Auto-completion error:', completionError);
+          }
+        }, 3000); // 3 seconds delay for auto-completion
+      }
 
       // Real-time tracking lifecycle management
       try {
@@ -141,7 +161,7 @@ class OrderStatusService {
    * Check if customer should be notified
    */
   static shouldNotifyCustomer(status) {
-    return ['confirmed', 'ready', 'on_delivery', 'delivered'].includes(status);
+    return ['confirmed', 'ready', 'on_delivery', 'delivered', 'picked_up', 'completed'].includes(status);
   }
 
   /**

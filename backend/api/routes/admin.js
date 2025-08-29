@@ -253,26 +253,5 @@ router.post('/orders/:orderId/courier/check-distance', requireRole(['courier']),
   }
 });
 
-// Test notification endpoint
-router.post('/test-notification', requireRole(['admin', 'superadmin']), async (req, res) => {
-  try {
-    const SocketManager = require('../../config/socketConfig');
-    const { branchId = 'default' } = req.body;
-    
-    console.log('🧪 Test notification endpoint called by:', req.user?.id);
-    console.log('🧪 BranchId:', branchId);
-    
-    SocketManager.emitTestNotification(branchId);
-    
-    res.json({ 
-      success: true, 
-      message: 'Test notification sent',
-      branchId: branchId
-    });
-  } catch (error) {
-    console.error('Test notification error:', error);
-    res.status(500).json({ success: false, message: 'Failed to send test notification' });
-  }
-});
 
 module.exports = router;

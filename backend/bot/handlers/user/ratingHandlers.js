@@ -60,6 +60,8 @@ class RatingHandlers {
     }
   }
 
+
+
   /**
    * Handle order rating
    */

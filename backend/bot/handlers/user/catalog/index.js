@@ -81,6 +81,25 @@ class UserCatalogHandlers extends BaseHandler {
     return BranchHandlers.shareBranchLocation(ctx, branchId);
   }
 
+  static async showBranchPhone(ctx) {
+    return this.safeExecute(async () => {
+      const callbackData = ctx.callbackQuery.data;
+      const phoneMatch = callbackData.match(/^branch_phone_(.+)$/);
+      
+      if (!phoneMatch) {
+        return await ctx.answerCbQuery('❌ Telefon ma\'lumoti noto\'g\'ri!');
+      }
+
+      const branchId = phoneMatch[1];
+      const { Branch } = require('../../../../models');
+      const branch = await Branch.findById(branchId).select('phone');
+      
+      if (!branch) return ctx.answerCbQuery('❌ Filial topilmadi');
+      await ctx.reply(`📞 ${branch.phone || 'Telefon raqami topilmadi'}`);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('📞 Telefon');
+    }, ctx, '❌ Telefon ko\'rsatishda xatolik!');
+  }
+
   static async searchBranches(searchTerm) {
     return BranchHandlers.searchBranches(searchTerm);
   }
