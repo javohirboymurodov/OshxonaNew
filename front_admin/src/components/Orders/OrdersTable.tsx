@@ -225,7 +225,6 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ data, loading, pagination, on
               icon={<EyeOutlined />} 
               onClick={(e) => {
                 e.stopPropagation();
-                console.log('👁️ KO\'RISH TUGMASI BOSILDI:', record.orderId);
                 onShowDetails(record);
               }}
             />
@@ -237,17 +236,12 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ data, loading, pagination, on
                 <Button type="link" size="small">Holat</Button>
               </Dropdown>
             )}
-            {(() => {
-              const shouldShow = record.orderType === 'delivery' && !['delivered', 'completed', 'picked_up'].includes(record.status) && onAssignCourier;
-              console.log(`🔍 Kuryer tugmasi: ${record.orderId} | orderType=${record.orderType} | status=${record.status} | shouldShow=${shouldShow}`);
-              return shouldShow;
-            })() && (
+            {record.orderType === 'delivery' && !['delivered', 'completed', 'picked_up', 'on_delivery'].includes(record.status) && onAssignCourier && (
               <Button 
                 type="link" 
                 size="small" 
                 onClick={(e) => {
                   e.stopPropagation();
-                  console.log('🚚 KURYER TUGMASI BOSILDI:', record.orderId);
                   onAssignCourier(record);
                 }}
               >
