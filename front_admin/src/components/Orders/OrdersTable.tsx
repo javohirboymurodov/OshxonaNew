@@ -277,17 +277,6 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ data, loading, pagination, on
       onChange={(p) => onChangePage(p.current!, p.pageSize!)}
       scroll={{ x: 1000 }}
       size="middle"
-      onRow={(record) => {
-        console.log('🔥 TABLE ROW CLICKED:', record.orderId);
-        return {
-          onClick: (e) => {
-            console.log('🔥 TABLE ROW onClick TRIGGERED:', record.orderId);
-            console.log('🔥 Event target:', e.target);
-            console.log('🔥 Event type:', e.type);
-            // CHECK IF THIS IS TRIGGERING onShowDetails!!!
-          }
-        };
-      }}
     />
   );
 };

@@ -36,6 +36,7 @@ const OrdersPage: React.FC = () => {
   const [detailsVisible, setDetailsVisible] = useState(false);
   const [assignModalVisible, setAssignModalVisible] = useState(false);
   const [filtersVisible, setFiltersVisible] = useState(false);
+  const [selectedOrderForAssign, setSelectedOrderForAssign] = useState<TableOrder | null>(null);
   // stats is now in Redux state
 
   interface Filters {
@@ -234,8 +235,10 @@ const OrdersPage: React.FC = () => {
   // Deprecated: full-screen status update modal removed in favor of quick actions
 
   const openAssignCourier = (order: TableOrder) => {
-    dispatch(setSelectedOrder(order as unknown as Order));
+    // Don't set selectedOrder - it triggers OrderDetailsModal via useEffect
+    // dispatch(setSelectedOrder(order as unknown as Order));
     setAssignModalVisible(true);
+    setSelectedOrderForAssign(order); // Use local state instead
   };
 
   // quick status change handles update inline; legacy handler removed
@@ -383,8 +386,11 @@ const OrdersPage: React.FC = () => {
 
       <AssignCourierModal
         open={assignModalVisible}
-        orderId={selectedOrder?._id || null}
-        onClose={() => setAssignModalVisible(false)}
+        orderId={selectedOrderForAssign?._id || null}
+        onClose={() => {
+          setAssignModalVisible(false);
+          setSelectedOrderForAssign(null);
+        }}
         onAssigned={() => {
           messageApi.success('Kuryer tayinlandi');
           dispatch(fetchOrders({
@@ -393,6 +399,8 @@ const OrdersPage: React.FC = () => {
             status: filters.status,
             orderType: filters.orderType,
           }));
+          setAssignModalVisible(false);
+          setSelectedOrderForAssign(null);
         }}
       />
 
