@@ -12,14 +12,11 @@ export class SoundPlayer {
    */
   static async playNotification(soundFile: string = '/beep.wav', volume: number = 0.7): Promise<void> {
     try {
-      console.log('🔊 Playing sound:', soundFile, 'volume:', volume);
-      
       // Try multiple audio play methods for better compatibility
       
       // Method 1: Cached audio
       let audio = this.audioCache.get(soundFile);
       if (!audio) {
-        console.log('🔊 Creating new Audio instance for:', soundFile);
         audio = new Audio(soundFile);
         audio.volume = Math.max(0, Math.min(1, volume));
         this.audioCache.set(soundFile, audio);
@@ -29,27 +26,21 @@ export class SoundPlayer {
       audio.currentTime = 0;
       audio.volume = Math.max(0, Math.min(1, volume));
       
-
-      
       try {
-        console.log('🔊 Attempting to play cached audio...');
         await audio.play();
-        console.log('🔊 ✅ Cached audio played successfully');
         return;
       } catch (cacheError) {
-        console.log('🔊 ❌ Cached audio failed:', cacheError.message);
+        // Try alternative methods if cached fails
       }
       
       // Method 2: Fresh audio instance
-      console.log('🔊 Trying fresh audio instance...');
       try {
         const freshAudio = new Audio(soundFile);
         freshAudio.volume = volume;
         await freshAudio.play();
-        console.log('🔊 ✅ Fresh audio played successfully');
         return;
       } catch (freshError) {
-        console.log('🔊 ❌ Fresh audio failed:', freshError.message);
+        // Continue to next method
       }
       
       // Method 3: HTML5 Audio with promise handling
@@ -70,7 +61,7 @@ export class SoundPlayer {
 
       
           } catch (error) {
-        console.error('🔊 ❌ All sound play methods failed:', error);
+        console.error('Failed to play notification sound:', error);
     }
   }
   
@@ -98,7 +89,6 @@ export class SoundPlayer {
       audio.preload = 'auto';
       audio.volume = 0.01; // Very quiet preload
       this.audioCache.set('/beep.wav', audio);
-      console.log('🔊 Sound preloaded successfully');
     } catch (error) {
       console.warn('Failed to preload notification sound:', error);
     }
