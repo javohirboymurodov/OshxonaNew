@@ -136,10 +136,13 @@ const AssignCourierModal: React.FC<Props> = ({ open, orderId, onClose, onAssigne
       onClose();
     } catch (error: any) {
       if (error.response?.status === 409) {
-        // 409 Conflict - Kuryer allaqachon tayinlangan
-        console.log('Kuryer allaqachon tayinlangan yoki boshqa xatolik:', error.response?.data?.message);
+        // 409 Conflict - Kuryer allaqachon tayinlangan, lekin muvaffaqiyat sifatida ishlash
+        console.log('Kuryer allaqachon tayinlangan:', error.response?.data?.message);
+        onAssigned?.(); // Refresh qilish uchun
+        onClose(); // Modalni yopish
       } else {
         console.error('Kuryer tayinlashda xatolik:', error);
+        // Boshqa error'larda ham yopish mumkin yoki user'ga xabar berish
       }
     } finally {
       setLoading(false);

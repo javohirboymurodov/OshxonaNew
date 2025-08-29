@@ -313,7 +313,9 @@ async function assignCourier(req, res) {
     }
     if (existingOrder.deliveryInfo?.courier) {
       if (String(existingOrder.deliveryInfo.courier) === String(courierId)) {
-        return res.status(409).json({ success: false, message: 'Ushbu kuryer allaqachon tayinlangan.' });
+        // Same courier already assigned - return success instead of error
+        console.log(`Courier ${courierId} already assigned to order ${existingOrder.orderId} - returning success`);
+        return res.json({ success: true, message: 'Kuryer allaqachon tayinlangan.' });
       } else {
         // Allow re-assignment to a different courier
         console.log(`Re-assigning courier for order ${existingOrder.orderId} from ${existingOrder.deliveryInfo.courier} to ${courierId}`);
