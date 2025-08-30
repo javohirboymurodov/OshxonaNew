@@ -17,12 +17,27 @@ function registerOrderCallbacks(bot) {
     }
   });
 
-  // Fallback: checkout -> start order process
+  // Checkout: start order flow with order type selection
   bot.action('checkout', async (ctx) => {
     try {
-      await ctx.answerCbQuery('🛒 Avval mahsulotlarni tanlang');
-      const CatalogHandlers = require('../../handlers/user/catalog/index');
-      await CatalogHandlers.showCategories(ctx);
+      // Check if cart has items
+      const { User, Cart } = require('../../../models');
+      const user = await User.findOne({ telegramId: ctx.from.id });
+      
+      if (!user) {
+        return await ctx.answerCbQuery('❌ Foydalanuvchi topilmadi!');
+      }
+      
+      const cart = await Cart.findOne({ user: user._id, isActive: true });
+      
+      if (!cart || cart.items.length === 0) {
+        return await ctx.answerCbQuery('❌ Savat bo\'sh!');
+      }
+      
+      // Start order flow with order type selection
+      const OrderFlow = require('../../handlers/user/order/orderFlow');
+      await OrderFlow.startOrder(ctx);
+      await ctx.answerCbQuery('🛒 Buyurtma turiga o\'tamiz');
     } catch (error) {
       console.error('❌ checkout error:', error);
       if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
