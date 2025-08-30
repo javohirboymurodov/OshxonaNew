@@ -5,8 +5,9 @@
  * Bu fayl barcha security operatsiyalarini import qilib, bitta interfeys taqdim etadi
  */
 
-// Import from security modules
-const securityModules = require('./security');
+const RateLimitService = require('./security/rateLimitService');
+const SecurityValidationService = require('./security/validationService');
+const SecurityFeaturesService = require('./security/securityFeatures');
 
 /**
  * Security Service Class
@@ -15,69 +16,69 @@ const securityModules = require('./security');
 class SecurityService {
   // Rate limiting methods
   static createRateLimit(options = {}) {
-    return securityModules.createRateLimit(options);
+    return RateLimitService.createRateLimit(options);
   }
 
   static getAPIRateLimit() {
-    return securityModules.getAPIRateLimit();
+    return RateLimitService.getAPIRateLimit();
   }
 
   static getAuthRateLimit() {
-    return securityModules.getAuthRateLimit();
+    return RateLimitService.getAuthRateLimit();
   }
 
   static getOrderRateLimit() {
-    return securityModules.getOrderRateLimit();
+    return RateLimitService.getOrderRateLimit();
   }
 
   static getAdminRateLimit() {
-    return securityModules.getAdminRateLimit();
+    return RateLimitService.getAdminRateLimit();
   }
 
   static getFileUploadRateLimit() {
-    return securityModules.getFileUploadRateLimit();
+    return RateLimitService.getFileUploadRateLimit();
   }
 
   // Validation & sanitization methods
   static validateInput(data, rules) {
-    return securityModules.validateInput(data, rules);
+    return SecurityValidationService.validateInput(data, rules);
   }
 
   static sanitizeInput(data) {
-    return securityModules.sanitizeInput(data);
+    return SecurityValidationService.sanitizeInput(data);
   }
 
   static validateFileUpload(file) {
-    return securityModules.validateFileUpload(file);
+    return SecurityValidationService.validateFileUpload(file);
   }
 
   static validateJWT(token) {
-    return securityModules.validateJWT(token);
+    return SecurityValidationService.validateJWT(token);
   }
 
   // Security features methods
   static async detectSuspiciousActivity(req, activityType) {
-    return securityModules.detectSuspiciousActivity(req, activityType);
+    return SecurityFeaturesService.detectSuspiciousActivity(req, activityType);
   }
 
   static requestValidator(schema) {
-    return securityModules.requestValidator(schema);
+    return SecurityFeaturesService.requestValidator(schema);
   }
 
   static securityHeaders() {
-    return securityModules.securityHeaders();
+    return SecurityFeaturesService.securityHeaders();
   }
 
   static mongoSanitization() {
-    return securityModules.mongoSanitization();
+    return SecurityFeaturesService.mongoSanitization();
   }
 
   static ipWhitelist(allowedIPs = []) {
-    return securityModules.ipWhitelist(allowedIPs);
+    return SecurityFeaturesService.ipWhitelist(allowedIPs);
   }
 
   static activityLogger() {
-    return securityModules.activityLogger();
+    return SecurityFeaturesService.activityLogger();
   }
 }
 
