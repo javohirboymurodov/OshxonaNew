@@ -1,6 +1,6 @@
 // middleware/validation.js
 const Joi = require('joi');
-const { ValidationError } = require('../utils/errorHandler');
+const { ValidationError } = require('../utils/ErrorHandler');
 
 // Common validation schemas
 const schemas = {
