@@ -8,6 +8,9 @@
 const MobileDataService = require('./dataService');
 const MobileKeyboardService = require('./keyboardService');
 const MobileUIUtils = require('./uiUtils');
+const QuickOrderService = require('./quickOrderService');
+const QuickAddService = require('./quickAddService');
+const FavoritesService = require('./favoritesService');
 
 module.exports = {
   // Data services - ma'lumot xizmatlari
@@ -30,8 +33,24 @@ module.exports = {
   formatMobileText: MobileUIUtils.formatMobileText,
   getProgressIndicator: MobileUIUtils.getProgressIndicator,
   
+  // Quick order services - tezkor buyurtma xizmatlari
+  showQuickOrder: QuickOrderService.showQuickOrder,
+  showPopularProducts: QuickOrderService.showPopularProducts,
+  showFastProducts: QuickOrderService.showFastProducts,
+  
+  // Quick add services - tezkor qo'shish xizmatlari
+  quickAddProduct: QuickAddService.quickAddProduct,
+  
+  // Favorites services - sevimlilar xizmatlari
+  addToFavorites: FavoritesService.addToFavorites,
+  showFavorites: FavoritesService.showFavorites,
+  removeFromFavorites: FavoritesService.removeFromFavorites,
+  
   // Direct access to classes - to'g'ridan-to'g'ri kirish
   Data: MobileDataService,
   Keyboard: MobileKeyboardService,
-  UI: MobileUIUtils
+  UI: MobileUIUtils,
+  QuickOrder: QuickOrderService,
+  QuickAdd: QuickAddService,
+  Favorites: FavoritesService
 };
