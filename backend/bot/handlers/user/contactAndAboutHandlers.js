@@ -152,7 +152,7 @@ class ContactAndAboutHandlers {
         `• Qulay narxlar\n\n` +
         `🕐 **Ish vaqti:** 09:00 - 23:00 (har kuni)\n` +
         `📞 **Qo'llab-quvvatlash:** +998 71 200 00 00\n\n` +
-        `📅 **Ochilgan sana:** 2020-yil\n` +
+        `📅 **Ochilgan sana:** 2025-yil\n` +
         `👥 **Mijozlar soni:** 10,000+`;
       
       const keyboard = { inline_keyboard: [
