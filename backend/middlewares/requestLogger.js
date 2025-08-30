@@ -1,54 +1,60 @@
-// middleware/requestLogger.js
 const logger = require('../utils/logger');
+
+/**
+ * Request Logger Middleware
+ * So'rovlarni loglash middleware
+ */
 
 const requestLogger = (req, res, next) => {
   const start = Date.now();
   
-  // Log request
-  logger.http(`${req.method} ${req.originalUrl}`, {
+  // Log request start
+  logger.info(`📥 ${req.method} ${req.path}`, {
     method: req.method,
-    url: req.originalUrl,
+    path: req.path,
+    query: req.query,
     ip: req.ip,
     userAgent: req.get('User-Agent'),
-    userId: req.user?.id,
-    body: req.method === 'POST' || req.method === 'PUT' ? 
-      sanitizeBody(req.body) : undefined
+    timestamp: new Date().toISOString()
   });
 
-  // Override res.json to log response
-  const originalJson = res.json;
-  res.json = function(body) {
+  // Override res.end to log response
+  const originalEnd = res.end;
+  res.end = function(chunk, encoding) {
     const duration = Date.now() - start;
     
-    logger.http(`Response ${req.method} ${req.originalUrl}`, {
+    // Log response
+    logger.info(`📤 ${req.method} ${req.path} - ${res.statusCode}`, {
       method: req.method,
-      url: req.originalUrl,
+      path: req.path,
       statusCode: res.statusCode,
       duration: `${duration}ms`,
-      userId: req.user?.id,
-      responseSize: JSON.stringify(body).length
+      ip: req.ip,
+      timestamp: new Date().toISOString()
     });
 
-    return originalJson.call(this, body);
+    // Call original end
+    originalEnd.call(this, chunk, encoding);
   };
 
   next();
 };
 
-// Sanitize sensitive data from logs
-const sanitizeBody = (body) => {
-  if (!body || typeof body !== 'object') return body;
-  
-  const sensitive = ['password', 'token', 'secret', 'key', 'auth'];
-  const sanitized = { ...body };
-  
-  for (const key in sanitized) {
-    if (sensitive.some(s => key.toLowerCase().includes(s))) {
-      sanitized[key] = '[REDACTED]';
-    }
-  }
-  
-  return sanitized;
+// Error logging middleware
+const errorLogger = (err, req, res, next) => {
+  logger.error(`❌ ${req.method} ${req.path}`, {
+    error: err.message,
+    stack: err.stack,
+    method: req.method,
+    path: req.path,
+    ip: req.ip,
+    timestamp: new Date().toISOString()
+  });
+
+  next(err);
 };
 
-module.exports = requestLogger;
+module.exports = {
+  requestLogger,
+  errorLogger
+};

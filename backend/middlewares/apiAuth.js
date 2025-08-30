@@ -29,18 +29,11 @@ const auth = async (req, res, next) => {
       });
     }
 
-    req.user = {
-      _id: user._id,
-      userId: user._id,
-      role: user.role,
-      email: user.email,
-      branch: user.branch || null
-    };
-
+    req.user = user;
     next();
   } catch (error) {
     console.error('Auth middleware error:', error);
-    res.status(401).json({
+    return res.status(401).json({
       success: false,
       message: 'Token noto\'g\'ri!'
     });
@@ -50,30 +43,33 @@ const auth = async (req, res, next) => {
 // Role-based middleware
 const requireRole = (roles) => {
   return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({
+    if (!req.user) {
+      return res.status(401).json({
         success: false,
-        message: 'Bu amalni bajarish uchun ruxsatingiz yo\'q!'
+        message: 'Autentifikatsiya talab qilinadi!'
       });
     }
+
+    const userRole = req.user.role;
+    const allowedRoles = Array.isArray(roles) ? roles : [roles];
+
+    if (!allowedRoles.includes(userRole)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Bu amalni bajarish uchun ruxsat yo\'q!'
+      });
+    }
+
     next();
   };
 };
 
 // Admin middleware
 const requireAdmin = (req, res, next) => {
-  const role = req.user.role;
-  if (role !== 'admin' && role !== 'superadmin') {
+  if (!req.user || !['admin', 'superadmin'].includes(req.user.role)) {
     return res.status(403).json({
       success: false,
       message: 'Admin ruxsati kerak!'
-    });
-  }
-  // Admin (superadmin emas) bo'lsa, majburiy ravishda filialga biriktirilgan bo'lishi shart
-  if (role === 'admin' && !req.user.branch) {
-    return res.status(403).json({
-      success: false,
-      message: 'Admin uchun filial (branch) biriktirilmagan. Iltimos, superadmin orqali filial bering.'
     });
   }
   next();
