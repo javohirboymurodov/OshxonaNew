@@ -111,7 +111,7 @@ async function testAllFixes() {
     // Test 6: Security Middleware
     console.log('\n6️⃣ Testing Security Middleware...');
     try {
-      const SecurityService = require('../middleware/security');
+      const SecurityService = require('../middlewares/security');
       console.log('✅ Security Service loaded successfully');
       
       // Test rate limit creation
@@ -121,7 +121,7 @@ async function testAllFixes() {
       }
       
       // Test validation schemas
-      const validationSchemas = require('../middleware/validationSchemas');
+      const validationSchemas = require('../middlewares/validationSchemas');
       if (validationSchemas.login && validationSchemas.createProduct) {
         console.log('   ✅ Validation schemas loaded');
       }

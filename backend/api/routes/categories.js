@@ -1,7 +1,7 @@
 const express = require('express');
 const CategoriesController = require('../controllers/categoriesController');
 const { Category } = require('../../models');
-const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const { authenticateToken, requireAdmin } = require('../../middlewares/apiAuth');
 
 const router = express.Router();
 

@@ -1,5 +1,5 @@
 const express = require('express');
-const { authenticateToken, requireAdmin, requireRole } = require('../middleware/auth');
+const { authenticateToken, requireAdmin, requireRole } = require('../../middlewares/apiAuth');
 const AdminController = require('../controllers/adminController');
 const OrdersController = require('../controllers/ordersController');
 const { uploadSingle, handleUploadError } = require('../../config/localUploadConfig');

@@ -1,5 +1,5 @@
 const express = require('express');
-const { authenticateToken, requireSuperAdmin } = require('../middleware/auth');
+const { authenticateToken, requireSuperAdmin } = require('../../middlewares/apiAuth');
 const SuperAdminController = require('../controllers/superadminController');
 
 const router = express.Router();

@@ -12,7 +12,7 @@ const Database = require('../config/database');
 // Services
 const LoyaltyService = require('../services/loyaltyService');
 const orderTracker = require('../services/orderTrackingService');
-const SecurityService = require('../middleware/security');
+const SecurityService = require('../middlewares/security');
 const MobileUXService = require('../bot/handlers/user/ux/mobileOptimizations');
 
 async function testImprovements() {
