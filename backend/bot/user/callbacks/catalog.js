@@ -7,6 +7,9 @@ function registerCatalogCallbacks(bot) {
   // 📂 CATALOG & CATEGORIES
   // ========================================
 
+  bot.action('show_categories', async (ctx) => { await CatalogHandlers.showCategories(ctx); });
+  bot.action('show_catalog', async (ctx) => { await CatalogHandlers.showCategories(ctx); });
+
   // Cart
   bot.action('show_cart', async (ctx) => {
     try {
