@@ -1,5 +1,3 @@
-const rateLimit = require('express-rate-limit');
-
 /**
  * Rate Limit Service
  * Rate limiting xizmati
@@ -12,6 +10,7 @@ class RateLimitService {
    * @returns {Function} - rate limit middleware
    */
   static createRateLimit(options = {}) {
+    const rateLimit = require('express-rate-limit');
     return rateLimit({
       windowMs: options.windowMs || 15 * 60 * 1000, // 15 minutes
       max: options.max || 100,

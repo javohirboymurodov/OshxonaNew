@@ -1,5 +1,3 @@
-const helmet = require('helmet');
-const mongoSanitize = require('express-mongo-sanitize');
 const { User } = require('../../models');
 
 /**
@@ -91,6 +89,7 @@ class SecurityFeaturesService {
    * @returns {Function} - middleware funksiya
    */
   static securityHeaders() {
+    const helmet = require('helmet');
     return helmet({
       contentSecurityPolicy: {
         directives: {
@@ -114,6 +113,7 @@ class SecurityFeaturesService {
    * @returns {Function} - middleware funksiya
    */
   static mongoSanitization() {
+    const mongoSanitize = require('express-mongo-sanitize');
     return mongoSanitize({
       replaceWith: '_',
       onSanitize: ({ req, key }) => {
