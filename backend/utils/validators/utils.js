@@ -1,5 +1,3 @@
-const { ErrorHandler, ERROR_TYPES } = require('../ErrorHandler');
-
 /**
  * Validation Utility Functions
  * Validatsiya yordamchi funksiyalari
@@ -15,15 +13,14 @@ class ValidationUtils {
   static formatValidationError(validationResult, fieldName = 'Input') {
     if (validationResult.isValid) return null;
 
-    return ErrorHandler.createError(
-      ERROR_TYPES.VALIDATION_ERROR,
-      `${fieldName}: ${validationResult.error}`,
-      {
-        field: fieldName,
-        originalValue: validationResult.original,
-        validationError: validationResult.error
-      }
-    );
+    return {
+      type: 'VALIDATION_ERROR',
+      message: `${fieldName}: ${validationResult.error}`,
+      field: fieldName,
+      originalValue: validationResult.original,
+      validationError: validationResult.error,
+      timestamp: new Date()
+    };
   }
 
   /**

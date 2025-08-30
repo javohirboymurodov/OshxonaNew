@@ -1,5 +1,3 @@
-const { ErrorHandler, ERROR_TYPES } = require('../ErrorHandler');
-
 /**
  * User Data Validator
  * Foydalanuvchi ma'lumotlari validatori
