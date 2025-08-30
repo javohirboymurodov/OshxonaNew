@@ -4,6 +4,7 @@ const loyaltyHandlers = require('../../handlers/user/loyalty/loyaltyHandlers');
 const RatingHandlers = require('../../handlers/user/ratingHandlers');
 const profileHandlers = require('../../handlers/user/profile');
 const trackingHandlers = require('../../handlers/user/tracking/trackingHandlers');
+const User = require('../../../models/User');
 
 function registerProfileCallbacks(bot) {
   // ========================================
@@ -29,23 +30,46 @@ function registerProfileCallbacks(bot) {
     }
   });
 
-  // My profile alias
-  bot.action('my_profile', async (ctx) => {
-  // User profile interface (stats, settings, orders, loyalty)
-  const message = `👤 Mening profilim\n\n` +
-    `📊 Statistika\n💎 Loyalty\n📋 Buyurtmalarim\n⚙️ Sozlamalar`;
-  
-  await ctx.editMessageText(message, {
-    reply_markup: {
-      inline_keyboard: [
-        [{ text: '📋 Buyurtmalarim', callback_data: 'my_orders' }],
-        [{ text: '💎 Loyalty dasturi', callback_data: 'my_loyalty_level' }],
-        [{ text: '📊 Statistikam', callback_data: 'my_stats' }],
-        [{ text: '🔙 Bosh sahifa', callback_data: 'main_menu' }]
-      ]
+  // Profile menu
+  bot.action('profile_menu', async (ctx) => {
+    try {
+      await profileHandlers.showProfileMenu(ctx);
+    } catch (error) {
+      console.error('❌ profile_menu error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
     }
   });
-});
+
+  // Change phone
+  bot.action('change_phone', async (ctx) => {
+    try {
+      await profileHandlers.changePhone(ctx);
+    } catch (error) {
+      console.error('❌ change_phone error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // Change language
+  bot.action('change_language', async (ctx) => {
+    try {
+      await profileHandlers.changeLanguage(ctx);
+    } catch (error) {
+      console.error('❌ change_language error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // Set language
+  bot.action(/^set_lang_(uz|ru|en)$/, async (ctx) => {
+    try {
+      const lang = ctx.match[1];
+      await profileHandlers.setLanguage(ctx, lang);
+    } catch (error) {
+      console.error('❌ set_language error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
 
   // Pagination and details for "My Orders"
   bot.action(/^my_orders_(.+)$/, myOrdersCallbackHandler);
@@ -117,27 +141,7 @@ function registerProfileCallbacks(bot) {
   bot.action(/^use_points_(\d+)$/, async (ctx) => {
     try {
       const amount = parseInt(ctx.match[1]);
-      ctx.session.pointsToUse = amount;
-      
-      const user = await User.findOne({ telegramId: ctx.from.id });
-      if (!user || user.loyaltyPoints < amount) {
-        await ctx.answerCbQuery('❌ Yetarli ball yo\'q!', { show_alert: true });
-        return;
-      }
-
-      await ctx.answerCbQuery(`✅ ${amount.toLocaleString()} ball tanlandi`);
-      await ctx.editMessageText(
-        `✅ <b>${amount.toLocaleString()} ball tanlandi</b>\n\n💡 Keyingi buyurtmangizda avtomatik qo'llaniladi.\n\n🛒 Buyurtma berishni boshlaysizmi?`,
-        {
-          parse_mode: 'HTML',
-          reply_markup: {
-            inline_keyboard: [
-              [{ text: '🛒 Buyurtma berish', callback_data: 'start_order' }],
-              [{ text: '🔙 Orqaga', callback_data: 'my_bonuses' }]
-            ]
-          }
-        }
-      );
+      await profileHandlers.usePointsAmount(ctx, amount);
     } catch (error) {
       console.error('❌ use_points_amount error:', error);
       if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
