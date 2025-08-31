@@ -18,10 +18,10 @@ class ProductDisplay extends BaseHandler {
    * @param {number} page - sahifa raqami
    */
   static async showCategoryProducts(ctx, categoryId, page = 1) {
-    return this.safeExecute(async () => {
+    return BaseHandler.safeExecute(async () => {
       console.log('🔍 DEBUG: showCategoryProducts called with:', { categoryId, page });
       
-      if (!this.isValidObjectId(categoryId)) {
+      if (!BaseHandler.isValidObjectId(categoryId)) {
         console.log('❌ Invalid categoryId:', categoryId);
         return await ctx.answerCbQuery('❌ Kategoriya ID noto\'g\'ri!');
       }
@@ -232,10 +232,10 @@ class ProductDisplay extends BaseHandler {
    * @param {string} productId - mahsulot ID
    */
   static async showProductDetails(ctx, productId) {
-    return this.safeExecute(async () => {
+    return BaseHandler.safeExecute(async () => {
       console.log('🔍 DEBUG: showProductDetails called with productId:', productId);
       
-      if (!this.isValidObjectId(productId)) {
+      if (!BaseHandler.isValidObjectId(productId)) {
         console.log('❌ Invalid productId:', productId);
         return await ctx.answerCbQuery('❌ Mahsulot ID noto\'g\'ri!');
       }
@@ -260,7 +260,7 @@ class ProductDisplay extends BaseHandler {
       }
 
       // Check availability in branches
-      const availability = await this.checkProductAvailability(productId);
+      const availability = await ProductDisplay.checkProductAvailability(productId);
       if (availability.available) {
         message += `✅ **Mavjud:** ${availability.availableBranches} ta filialda\n`;
       } else {
@@ -350,7 +350,7 @@ class ProductDisplay extends BaseHandler {
    */
   static async checkProductAvailability(productId) {
     try {
-      if (!this.isValidObjectId(productId)) {
+      if (!BaseHandler.isValidObjectId(productId)) {
         return { available: false, availableBranches: 0 };
       }
 

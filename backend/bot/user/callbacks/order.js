@@ -64,7 +64,7 @@ function registerOrderCallbacks(bot) {
   bot.action(/^choose_branch_(.+)_(.+)$/, async (ctx) => {
     try {
       const orderHandlers = require('../../handlers/user/order/orderFlow');
-      await orderHandlers.handleBranchSelection(ctx);
+      await orderHandlers.handleChooseBranch(ctx);
     } catch (error) {
       console.error('❌ choose_branch error:', error);
       if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
