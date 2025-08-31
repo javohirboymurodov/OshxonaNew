@@ -33,9 +33,18 @@ const auth = async (req, res, next) => {
     next();
   } catch (error) {
     console.error('Auth middleware error:', error);
+    
+    let message = 'Token noto\'g\'ri!';
+    if (error.name === 'TokenExpiredError') {
+      message = 'Token muddati tugagan!';
+    } else if (error.name === 'JsonWebTokenError') {
+      message = 'Token formati noto\'g\'ri!';
+    }
+    
     return res.status(401).json({
       success: false,
-      message: 'Token noto\'g\'ri!'
+      message,
+      error: error.name
     });
   }
 };

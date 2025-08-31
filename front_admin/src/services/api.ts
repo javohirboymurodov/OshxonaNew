@@ -5,6 +5,16 @@ import { ApiResponse, LoginResponse } from '@/types';
 class ApiService {
   private api: AxiosInstance;
 
+  // Helper method to validate JWT format
+  private isValidJWTFormat(token: string): boolean {
+    try {
+      const parts = token.split('.');
+      return parts.length === 3 && parts.every(part => part.length > 0);
+    } catch {
+      return false;
+    }
+  }
+
   constructor() {
     // Development da proxy orqali /api ishlatamiz
     const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
@@ -16,12 +26,20 @@ class ApiService {
       },
     });
 
-    // Request interceptor - token qo'shish
+    // Request interceptor - token validation and addition
     this.api.interceptors.request.use(
       (config) => {
         const token = localStorage.getItem('token');
         if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
+          // Validate token format before sending
+          if (this.isValidJWTFormat(token)) {
+            config.headers.Authorization = `Bearer ${token}`;
+          } else {
+            console.warn('🔧 Malformed token detected, clearing...');
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+            return Promise.reject(new Error('Invalid token format'));
+          }
         }
         return config;
       },
