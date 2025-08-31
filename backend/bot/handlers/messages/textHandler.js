@@ -65,16 +65,32 @@ async function handleTableNumber(ctx, user, text) {
   try {
     console.log('🎯 Processing table number:', text);
     const tableNumber = text.trim();
+    
+    // Validation
     if (!tableNumber) {
       await ctx.reply('❌ Stol raqamini kiriting');
+      return;
+    }
+    
+    // Check if it's a valid number or alphanumeric (A1, B5, etc.)
+    if (!/^[A-Za-z]?\d+[A-Za-z]?$/.test(tableNumber)) {
+      await ctx.reply('❌ Stol raqami noto\'g\'ri formatda!\n\nMisol: 15, A5, 23B, 101');
+      return;
+    }
+    
+    // Check reasonable range (1-999)
+    const numericPart = tableNumber.replace(/[A-Za-z]/g, '');
+    if (parseInt(numericPart) > 999 || parseInt(numericPart) < 1) {
+      await ctx.reply('❌ Stol raqami 1 dan 999 gacha bo\'lishi kerak!');
       return;
     }
     
     ctx.session.waitingFor = null;
     
     // Find the user's latest dine-in order and update table number
+    let latestOrder = null;
     try {
-      const latestOrder = await Order.findOne({ 
+      latestOrder = await Order.findOne({ 
         user: user._id, 
         orderType: 'dine_in',
         status: { $in: ['pending', 'confirmed', 'preparing', 'ready'] }
@@ -95,7 +111,7 @@ async function handleTableNumber(ctx, user, text) {
     
     // Send to admin panel via socket
     try {
-      const SocketManager = require('../../../services/socketManager');
+      const SocketManager = require('../../../config/socketConfig');
       if (SocketManager.io) {
         SocketManager.io.emit('customer_arrived', {
           customer: {

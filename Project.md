@@ -326,11 +326,12 @@ VITE_APP_NAME=Oshxona
 - ❌ `security.js` (395 qator) - bitta katta fayl
 
 **Keyin (After Refactoring):**
-- ✅ **10 ta katta fayl** → **60+ ta kichik modul**
-- ✅ **5,721 qator** → **modullar bo'yicha ajratildi**
+- ✅ **11 ta katta fayl** → **70+ ta kichik modul**
+- ✅ **6,116 qator** → **modullar bo'yicha ajratildi**
 - ✅ **Backward compatibility** - barcha eski import lar ishlaydi
 - ✅ **Maintainable** - har bir modul o'z vazifasini bajaradi
 - ✅ **Middleware consolidation** - bitta papkada birlashtirildi
+- ✅ **Bot fixes** - navigation va callback parsing to'g'irlandi
 
 ### 🎯 **Refactoring Natijalari:**
 
@@ -467,6 +468,13 @@ middlewares/                    # Unified middleware directory
     └── securityFeatures.js (195 qator)
 ```
 
+**Middleware Consolidation Details:**
+- **3 ta papka** → **1 ta papka** (middleware/, api/middleware/, middlewares/ → middlewares/)
+- **Duplicate fayllar** olib tashlandi
+- **Unused bot middlewares** o'chirildi (auth.js, rateLimit.js, session.js)
+- **Import pathlar** yangilandi (../middleware/auth → ../../middlewares/apiAuth)
+- **Naming conflicts** hal qilindi (auth.js → apiAuth.js)
+
 ### 🔥 **Refactoring Afzalliklari:**
 
 1. **📦 Modullar bo'yicha ajratildi** - har bir fayl o'z vazifasini bajaradi
@@ -496,10 +504,32 @@ middlewares/                    # Unified middleware directory
 'show_categories' → bot kategoriyalar ✅
 ```
 
+#### **🔧 Technical Fixes:**
+```javascript
+// Callback parsing tartibini to'g'rilash:
+1. /^category_products_(.+)$/ // Birinchi - aniq pattern ✅
+2. /^category_([^_]+)$/       // Ikkinchi - oddiy pattern ✅
+
+// BaseHandler xatoliklarini to'g'rilash:
+this.safeExecute → BaseHandler.safeExecute ✅
+this.isValidObjectId → BaseHandler.isValidObjectId ✅
+
+// Payment method extraction:
+const method = ctx.match[1]; // Extract from callback_data ✅
+await handlePaymentMethod(ctx, method); ✅
+
+// Image handling:
+URL yuborish → File stream yuborish ✅
+File existence check qo'shildi ✅
+```
+
 #### **🎯 User Experience Yaxshilandi:**
 1. **🛒 Savatdan buyurtma:** Savat → Buyurtma turi → Lokatsiya/Filial → To'lov
 2. **🛍️ Katalog tanlash:** Katalog → WebApp yoki Bot kategoriyalar
 3. **📱 WebApp Integration:** To'liq katalog (userfront/) Telegram WebApp sifatida
+4. **🛒 Savat tugmalari:** ➖ ➕ quantity tugmalari ishlaydi
+5. **❤️ Sevimlilar:** Mahsulot tafsilotlarida sevimlilar tugmasi
+6. **🖼️ Rasm yuborish:** File stream bilan to'g'ri ishlaydi
 
 ### ⚠️ **ErrorHandler Tahlili:**
 - **443 qator** - katta fayl, lekin **faqat 1 marta** ishlatilgan

@@ -135,38 +135,23 @@ function registerOrderCallbacks(bot) {
   // Dine-in arrival handler
   bot.action('dinein_arrived_preview', async (ctx) => {
     try {
+      // Set session to wait for table number text input
+      ctx.session = ctx.session || {};
+      ctx.session.waitingFor = 'table_number';
+      
       await ctx.editMessageText('🏁 Restoranmizdagi stolingiz raqamini kiriting:', {
         reply_markup: {
           inline_keyboard: [
-            [
-              { text: '1', callback_data: 'table_number_1' },
-              { text: '2', callback_data: 'table_number_2' },
-              { text: '3', callback_data: 'table_number_3' }
-            ],
-            [
-              { text: '4', callback_data: 'table_number_4' },
-              { text: '5', callback_data: 'table_number_5' },
-              { text: '6', callback_data: 'table_number_6' }
-            ],
             [{ text: '🔙 Ortga', callback_data: 'back_to_main' }]
           ]
         }
       });
+      
+      // Ask user to type table number
+      await ctx.reply('📝 Stol raqamini yozing (masalan: 15, 23, 101):');
       await ctx.answerCbQuery();
     } catch (error) {
       console.error('❌ dinein_arrived_preview error:', error);
-      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
-    }
-  });
-
-  // Enter table number handler
-  bot.action(/^table_number_(\d+)$/, async (ctx) => {
-    try {
-      const tableNumber = ctx.match[1];
-      const orderHandlers = require('../../handlers/user/order/orderFlow');
-      await orderHandlers.handleTableArrival(ctx, tableNumber);
-    } catch (error) {
-      console.error('❌ table_number error:', error);
       if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
     }
   });
