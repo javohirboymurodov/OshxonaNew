@@ -128,23 +128,21 @@ bot.action(/^branch_.+$/, async (ctx) => {
  
 
 
-  // Category handling
-  bot.action(/^category_(.+)$/, async (ctx) => {
-    try {
-      await CatalogHandlers.handleShowCategoryProducts(ctx);
-    } catch (error) {
-      console.error('❌ category error:', error);
-      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
-    }
-  });
-
-
-
   // ========================================
   // 📦 PRODUCT HANDLING
   // ========================================
 
-  // Product details callback (for product_details_* pattern) - MUST BE FIRST!
+  // Category products pagination: category_products_<categoryId>_<page> OR category_products_<categoryId>
+  bot.action(/^category_products_(.+)$/, async (ctx) => {
+    try {
+      await CatalogHandlers.handleShowCategoryProducts(ctx);
+    } catch (error) {
+      console.error('❌ category_products error:', error);
+      if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
+    }
+  });
+
+  // Product details callback (for product_details_* pattern)
   bot.action(/^product_details_(.+)$/, async (ctx) => {
     try {
       const productId = ctx.match[1];
@@ -166,12 +164,12 @@ bot.action(/^branch_.+$/, async (ctx) => {
     }
   });
 
-  // Category products pagination: category_products_<categoryId>_<page>
-  bot.action(/^category_products_(.+)_(\d+)$/, async (ctx) => {
+  // Category handling - MUST BE AFTER category_products!
+  bot.action(/^category_(.+)$/, async (ctx) => {
     try {
       await CatalogHandlers.handleShowCategoryProducts(ctx);
     } catch (error) {
-      console.error('❌ category_products error:', error);
+      console.error('❌ category error:', error);
       if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
     }
   });

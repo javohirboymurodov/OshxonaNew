@@ -15,7 +15,7 @@ class LocationHandlers extends BaseHandler {
    * @param {number} longitude - longitude
    */
   static async processLocation(ctx, latitude, longitude) {
-    return this.safeExecute(async () => {
+    return BaseHandler.safeExecute(async () => {
       console.log('=== processLocation ===');
       console.log('Lat:', latitude, 'Lon:', longitude);
 
@@ -148,7 +148,7 @@ class LocationHandlers extends BaseHandler {
         const branchLon = branch.address?.coordinates?.longitude;
         
         if (branchLat && branchLon) {
-          const dist = this.calculateDistance(lat, lon, branchLat, branchLon);
+          const dist = LocationHandlers.calculateDistance(lat, lon, branchLat, branchLon);
           if (dist < bestDist) {
             bestDist = dist;
             best = branch;
@@ -173,11 +173,11 @@ class LocationHandlers extends BaseHandler {
    */
   static calculateDistance(lat1, lon1, lat2, lon2) {
     const R = 6371; // Earth's radius in kilometers
-    const dLat = this.deg2rad(lat2 - lat1);
-    const dLon = this.deg2rad(lon2 - lon1);
+    const dLat = LocationHandlers.deg2rad(lat2 - lat1);
+    const dLon = LocationHandlers.deg2rad(lon2 - lon1);
     const a = 
       Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(this.deg2rad(lat1)) * Math.cos(this.deg2rad(lat2)) * 
+      Math.cos(LocationHandlers.deg2rad(lat1)) * Math.cos(LocationHandlers.deg2rad(lat2)) * 
       Math.sin(dLon/2) * Math.sin(dLon/2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     return R * c;

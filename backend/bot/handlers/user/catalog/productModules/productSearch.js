@@ -50,7 +50,7 @@ class ProductSearch extends BaseHandler {
         isVisible: true
       };
 
-      if (categoryId && this.isValidObjectId(categoryId)) {
+      if (categoryId && BaseHandler.isValidObjectId(categoryId)) {
         matchCondition.category = new mongoose.Types.ObjectId(categoryId);
       }
 

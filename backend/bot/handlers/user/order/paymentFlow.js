@@ -14,7 +14,7 @@ class PaymentFlow extends BaseHandler {
    * @param {Object} ctx - Telegraf context
    */
   static async askForPaymentMethod(ctx) {
-    return this.safeExecute(async () => {
+    return BaseHandler.safeExecute(async () => {
       console.log('=== askForPaymentMethod called ===');
       
       const user = await User.findOne({ telegramId: ctx.from.id });
@@ -30,7 +30,7 @@ class PaymentFlow extends BaseHandler {
           return;
         }
         
-        const UserOrderHandlers = require('./index.js.backup');
+        const UserOrderHandlers = require('./index');
         return await UserOrderHandlers.askForPhone(ctx);
       }
 
@@ -89,7 +89,7 @@ class PaymentFlow extends BaseHandler {
    * @param {string} method - to'lov usuli
    */
   static async handlePaymentMethod(ctx, method) {
-    return this.safeExecute(async () => {
+    return BaseHandler.safeExecute(async () => {
       console.log('=== handlePaymentMethod ===');
       console.log('Payment method:', method);
 
@@ -228,7 +228,7 @@ class PaymentFlow extends BaseHandler {
    * @param {Object} ctx - Telegraf context
    */
   static async finalizeOrder(ctx) {
-    return this.safeExecute(async () => {
+    return BaseHandler.safeExecute(async () => {
       console.log('=== finalizeOrder called ===');
 
       const user = await User.findOne({ telegramId: ctx.from.id });

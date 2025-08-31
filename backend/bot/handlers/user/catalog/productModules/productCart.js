@@ -15,8 +15,8 @@ class ProductCart extends BaseHandler {
    * @param {string} productId - mahsulot ID
    */
   static async addToCart(ctx, productId) {
-    return this.safeExecute(async () => {
-      if (!this.isValidObjectId(productId)) {
+    return BaseHandler.safeExecute(async () => {
+      if (!BaseHandler.isValidObjectId(productId)) {
         return await ctx.answerCbQuery('❌ Mahsulot ID noto\'g\'ri!');
       }
 
@@ -65,7 +65,7 @@ class ProductCart extends BaseHandler {
    */
   static async checkProductAvailability(productId) {
     try {
-      if (!this.isValidObjectId(productId)) {
+      if (!BaseHandler.isValidObjectId(productId)) {
         return { available: false, availableBranches: 0 };
       }
 

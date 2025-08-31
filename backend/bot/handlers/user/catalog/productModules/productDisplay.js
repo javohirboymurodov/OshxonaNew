@@ -293,20 +293,25 @@ class ProductDisplay extends BaseHandler {
         ]);
       }
       
+      // Add to favorites button
+      keyboard.inline_keyboard.push([
+        { text: '❤️ Sevimlilarga qo\'shish', callback_data: `add_favorite_${productId}` }
+      ]);
+      
       keyboard.inline_keyboard.push(
         [{ text: '🔙 Kategoriya', callback_data: `category_products_${product.categoryId._id}` }],
         [{ text: '🏠 Bosh sahifa', callback_data: 'back_to_main' }]
       );
 
       // Send with image if available
-      const imageUrl = buildAbsoluteImageUrl(product.image);
+      const imageSource = buildAbsoluteImageUrl(product.image);
       
-      if (imageUrl) {
+      if (imageSource) {
         try {
           if (ctx.callbackQuery) {
             await ctx.deleteMessage();
           }
-          await ctx.replyWithPhoto(imageUrl, {
+          await ctx.replyWithPhoto(imageSource, {
             caption: message,
             parse_mode: 'Markdown',
             reply_markup: keyboard
