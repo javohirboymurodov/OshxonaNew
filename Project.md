@@ -3,279 +3,523 @@
 ## 🎯 Loyiha Maqsadi
 Oshxona uchun to'liq professional boshqaruv tizimi: Telegram bot orqali mijozlar buyurtma beradi, admin panel orqali boshqariladi, kuryerlar real-time lokatsiya bilan ishlaydi.
 
-## 🏗️ Arxitektura (2025 - Post Refactoring + Auth Fixes)
-- **Monorepo** strukturasi: `backend/`, `front_admin/`, `userfront/`
-- **Backend**: Node.js + Express + MongoDB Atlas + Socket.IO + Telegraf
-- **Admin Panel**: React + TypeScript + Ant Design + Redux Toolkit + Vite
-- **User WebApp**: React + TypeScript + Vite (Telegram WebApp)
-- **Deployment**: Render.com (backend), Vercel (frontend)
-- **Database**: MongoDB Atlas (Production), Memory Server (Testing)
+## 🏗️ Dasturning Qismlari
 
-## 🚀 Asosiy Xususiyatlar
+### 1. **Backend System (Node.js + Express + MongoDB)**
+- **API Server**: RESTful API endpoints bilan barcha operatsiyalar
+- **Telegram Bot Engine**: User va courier uchun bot interfeysi
+- **Database Management**: MongoDB Atlas bilan ma'lumotlar saqlash
+- **Real-time Communication**: Socket.IO bilan jonli yangilanishlar
+- **Security Layer**: JWT authentication, rate limiting, input validation
+- **File Management**: Rasm va hujjatlar yuklash/saqlash
+- **Background Services**: Caching, logging, monitoring
 
-### 1. Telegram Bot (User Interface) - ✅ OPTIMIZED
-- **Buyurtma turlari**: Yetkazib berish, Olib ketish, Avvaldan buyurtma, QR stol
-- **Buyurtma oqimi**: Lokatsiya/filial → Vaqt → Mahsulotlar → Savat → To'lov
-- **WebApp integratsiya**: Katalog va savat boshqaruvi (`userfront/`)
-- **Telefon raqam gating**: Faqat telefon ulangandan keyin buyurtma
-- **Real-time tracking**: Buyurtma holati va kuryer lokatsiyasi
-- **Performance optimized**: User caching (5min), 3-5x tezroq response
-- **Smart navigation**: Fixed catalog vs categories, proper order flow
+### 2. **Admin Panel (React + TypeScript + Redux)**
+- **Dashboard Interface**: Statistikalar, grafiklar, real-time metrics
+- **Order Management System**: Buyurtmalarni ko'rish, boshqarish, status yangilash
+- **Product Management**: Mahsulot CRUD, kategoriya boshqaruvi, promo tizimi
+- **User Management**: Foydalanuvchilar, rollar, permissions boshqaruvi
+- **Courier Control Panel**: Kuryerlar ro'yxati, lokatsiya tracking, assignment
+- **Branch Operations**: Filial ma'lumotlari, settings, inventory
+- **Analytics Dashboard**: Hisobotlar, trends, performance metrics
+- **Real-time Notifications**: Socket.IO bilan jonli xabarlar
 
-### 2. Admin Panel (React + TypeScript) - ✅ ENHANCED
-- **Multi-branch**: Filiallar bo'yicha boshqaruv
-- **RBAC**: Superadmin, Admin, Courier rollari
-- **Real-time**: Socket.IO bilan buyurtmalar va kuryer lokatsiyasi
-- **Dashboard**: Statistikalar, grafiklar, filial filtri
-- **Redux Toolkit**: Type-safe state management
-- **Auto token refresh**: ✅ FIXED - Seamless authentication experience
-- **Complete logout**: ✅ FIXED - No more login page redirects
-- **Performance**: 2-3x tezroq loading, optimized queries
+### 3. **User WebApp (Telegram WebApp)**
+- **Interactive Catalog**: Mahsulotlar katalogi bilan interaktiv tajriba
+- **Smart Shopping Cart**: Savat boshqaruvi, quantity control
+- **Order Placement**: To'liq buyurtma berish jarayoni
+- **Payment Interface**: To'lov usullari va processing
+- **User Profile**: Shaxsiy ma'lumotlar va buyurtmalar tarixi
+- **Telegram Integration**: Bot bilan seamless integratsiya
 
-### 3. Kuryer Tizimi - ✅ ENHANCED
-- **Live location**: Real-time lokatsiya yangilanishi
-- **Buyurtma boshqaruvi**: Qabul qilish, yo'lda, yetkazdim
-- **Telegram integratsiya**: Bot orqali boshqaruv
-- **Status synchronization**: Admin panel bilan real-time sync
-- **Performance tracking**: Shift management, earnings
+### 4. **Courier Mobile System**
+- **Telegram Bot Interface**: Kuryer uchun maxsus bot interfeysi
+- **Order Queue**: Buyurtmalar navbati va qabul qilish
+- **GPS Tracking**: Real-time lokatsiya ulashish
+- **Delivery Management**: Yetkazish jarayoni boshqaruvi
+- **Earnings Tracker**: Daromad va statistika ko'rish
+- **Shift Management**: Ish vaqti boshqaruvi
 
-### 4. Promo/Aksiyalar - ✅ WORKING
-- **Chegirma turlari**: Foiz yoki summa
-- **Vaqt chegarasi**: Boshlash va tugash sanasi
-- **Filial bo'yicha**: Barcha filiallarga yoki alohida
-- **Avtomatik**: Vaqt o'tganda promo o'chadi
+## 👥 Rollar va Ularning To'liq Imkoniyatlari
 
-## 📁 Hozirgi Fayl Tuzilmasi (2025 - Optimized + Auth Fixed)
+### 🍽️ **User (Mijoz) - Telegram Bot orqali**
 
-```
-OshxonaNew/
-├── backend/                    # Backend + Telegram Bot
-│   ├── api/                    # Express API
-│   │   ├── routes/             # API marshrutlari
-│   │   │   ├── auth.js         # ✅ FIXED: Login, refresh, logout, /me endpoints
-│   │   │   ├── admin.js        # Admin operations
-│   │   │   ├── orders.js       # Order management
-│   │   │   ├── products.js     # Product CRUD
-│   │   │   ├── categories.js   # Category management
-│   │   │   ├── couriers.js     # Courier operations
-│   │   │   ├── dashboard.js    # Statistics endpoints
-│   │   │   ├── superadmin.js   # SuperAdmin only endpoints
-│   │   │   ├── users.js        # User management
-│   │   │   ├── tables.js       # Table management
-│   │   │   └── public.js       # Public endpoints (WebApp)
-│   │   ├── controllers/        # ✅ REFACTORED: Modular controllers
-│   │   │   ├── orders/         # 📦 Order operations (split from 852 lines)
-│   │   │   │   ├── index.js              # Central export
-│   │   │   │   ├── adminController.js    # Admin operations (298 lines)
-│   │   │   │   ├── statusController.js   # Status management (172 lines)
-│   │   │   │   ├── statsController.js    # Statistics (49 lines)
-│   │   │   │   ├── courierController.js  # Courier wrapper (12 lines)
-│   │   │   │   └── courier/              # 🚚 Courier operations
-│   │   │   │       ├── index.js              # Central export
-│   │   │   │       ├── assignmentController.js # Assignment (218 lines)
-│   │   │   │       ├── deliveryController.js   # Delivery flow (362 lines)
-│   │   │   │       └── locationController.js   # Location tracking (141 lines)
-│   │   │   ├── admin/          # 👨‍💼 Admin operations (split from 411 lines)
-│   │   │   │   ├── index.js                 # Central export
-│   │   │   │   ├── dashboardController.js   # Dashboard stats (73 lines)
-│   │   │   │   ├── branchController.js      # Branch operations (47 lines)
-│   │   │   │   ├── productController.js     # Product CRUD (422 lines)
-│   │   │   │   ├── categoryController.js    # Category CRUD (96 lines)
-│   │   │   │   ├── orderController.js       # Order operations (128 lines)
-│   │   │   │   ├── inventoryController.js   # Inventory management (110 lines)
-│   │   │   │   └── settingsController.js    # Settings (43 lines)
-│   │   │   ├── ordersController.js       # Main entry point (12 lines)
-│   │   │   └── adminController.js        # Main entry point (11 lines)
-│   │   └── server.js           # ✅ OPTIMIZED: Express server with performance tuning
-│   ├── bot/                    # ✅ REFACTORED: Telegram bot modular structure
-│   │   ├── handlers/           # Event handlers (REFACTORED from large files)
-│   │   │   ├── messageHandlers.js        # Main entry (18 lines, was 613)
-│   │   │   ├── messages/                 # 📨 Message processing modules
-│   │   │   │   ├── index.js              # Central export
-│   │   │   │   ├── contactHandler.js     # Contact processing (48 lines)
-│   │   │   │   ├── locationHandler.js    # Location processing (241 lines)
-│   │   │   │   └── textHandler.js        # Text processing (357 lines)
-│   │   │   ├── courier/                  # 🚚 Courier handlers (REFACTORED)
-│   │   │   │   ├── handlers.js           # Main entry (38 lines, was 672)
-│   │   │   │   └── modules/              # Courier modules
-│   │   │   │       ├── index.js              # Central export
-│   │   │   │       ├── authHandlers.js       # Authentication (103 lines)
-│   │   │   │       ├── shiftHandlers.js      # Shift management (175 lines)
-│   │   │   │       ├── profileHandlers.js    # Profile/stats (159 lines)
-│   │   │   │       └── orderHandlers.js      # Order operations (436 lines)
-│   │   │   └── user/                     # 👤 User handlers (REFACTORED)
-│   │   │       ├── catalog/              # 🛍️ Product catalog (REFACTORED)
-│   │   │       │   ├── productHandlers.js    # Main entry (41 lines, was 539)
-│   │   │       │   └── modules/              # Product modules
-│   │   │       │       ├── index.js              # Central export
-│   │   │       │       ├── utils.js              # Utility functions (33 lines)
-│   │   │       │       ├── productDisplay.js     # Display operations (379 lines)
-│   │   │       │       ├── productCart.js        # Cart operations (94 lines)
-│   │   │       │       └── productSearch.js      # Search operations (82 lines)
-│   │   │       ├── order/                # 🛒 Order processing (REFACTORED)
-│   │   │       │   ├── index.js              # Main entry (111 lines, was 512)
-│   │   │       │   ├── orderFlow.js          # Order flow logic (291 lines)
-│   │   │       │   ├── paymentFlow.js        # Payment processing (377 lines)
-│   │   │       │   ├── notify.js             # Notifications (231 lines)
-│   │   │       │   └── modules/              # Order modules
-│   │   │       │       ├── index.js              # Central export
-│   │   │       │       ├── phoneHandlers.js      # Phone operations (34 lines)
-│   │   │       │       ├── dineInHandlers.js     # Dine-in operations (282 lines)
-│   │   │       │       └── locationHandlers.js   # Location processing (195 lines)
-│   │   │       ├── ux/                   # 📱 Mobile UX (REFACTORED)
-│   │   │       │   ├── mobileOptimizations.js    # Main entry (75 lines, was 414)
-│   │   │       │   ├── quickOrderHandlers.js     # Quick order (49 lines, was 410)
-│   │   │       │   └── modules/                  # UX modules
-│   │   │       │       ├── index.js              # Central export
-│   │   │       │       ├── dataService.js        # Data services (171 lines)
-│   │   │       │       ├── keyboardService.js    # Keyboard services (276 lines)
-│   │   │       │       ├── uiUtils.js            # UI utilities (60 lines)
-│   │   │       │       ├── quickOrderService.js  # Quick orders (154 lines)
-│   │   │       │       ├── quickAddService.js    # Quick add (124 lines)
-│   │   │       │       └── favoritesService.js   # Favorites (173 lines)
-│   │   │       ├── profile.js            # User profile management
-│   │   │       ├── loyalty/              # Loyalty program handlers
-│   │   │       └── tracking/             # Order tracking handlers
-│   │   ├── user/                 # User interface components
-│   │   │   ├── keyboards.js      # Telegram keyboards
-│   │   │   └── callbacks/        # Callback handlers
-│   │   └── courier/              # Courier interface components
-│   │       ├── keyboards.js      # Courier keyboards
-│   │       └── commands.js       # Courier commands
-│   ├── middlewares/              # ✅ CONSOLIDATED + FIXED: Unified middleware
-│   │   ├── apiAuth.js            # ✅ FIXED: JWT authentication with fallback + debug
-│   │   ├── requestLogger.js      # Request logging (conditional)
-│   │   ├── validation.js         # Request validation
-│   │   ├── validationSchemas.js  # Validation schemas
-│   │   ├── security.js           # ✅ OPTIMIZED: Security wrapper (83 lines, was 395)
-│   │   └── security/             # 🛡️ Security modules
-│   │       ├── index.js              # Central export
-│   │       ├── rateLimitService.js   # Rate limiting (112 lines)
-│   │       ├── validationService.js  # Validation service (172 lines)
-│   │       └── securityFeatures.js   # Security features (195 lines)
-│   ├── models/                   # MongoDB Models
-│   │   ├── User.js               # User model with loyalty fields + auth fields
-│   │   ├── Order.js              # Order model with status history
-│   │   ├── Product.js            # Product model
-│   │   ├── Category.js           # Category model
-│   │   ├── Branch.js             # Branch model
-│   │   └── index.js              # Models export
-│   ├── services/                 # Business Logic Services
-│   │   ├── orderStatusService.js # ✅ NEW: Centralized status management
-│   │   ├── loyaltyService.js     # Loyalty program logic
-│   │   ├── orderTrackingService.js # Real-time tracking
-│   │   ├── deliveryService.js    # Delivery calculations
-│   │   ├── cacheService.js       # ✅ OPTIMIZED: Memory caching with conditional logging
-│   │   ├── pdfService.js         # PDF generation
-│   │   ├── paymentService.js     # Payment processing
-│   │   ├── geoService.js         # Geolocation services
-│   │   ├── promoService.js       # Promotion management
-│   │   └── fileService.js        # File upload handling
-│   ├── utils/                    # ✅ REFACTORED: Modular utilities
-│   │   ├── InputValidator.js     # Main entry (80 lines, was 498)
-│   │   ├── validators/           # 🔍 Validation modules
-│   │   │   ├── index.js              # Central export
-│   │   │   ├── userValidator.js      # User data validation (162 lines)
-│   │   │   ├── productValidator.js   # Product validation (121 lines)
-│   │   │   ├── locationValidator.js  # Location validation (66 lines)
-│   │   │   ├── textValidator.js      # Text validation (91 lines)
-│   │   │   └── utils.js              # Validation utilities (66 lines)
-│   │   ├── BaseHandler.js        # Bot base handler utilities
-│   │   ├── ErrorHandler.js       # Error handling (443 lines - not refactored)
-│   │   ├── helpers.js            # General helper functions
-│   │   ├── logger.js             # Logging utilities
-│   │   ├── cache.js              # Caching utilities
-│   │   └── queryOptimizer.js     # Database query optimization
-│   ├── config/                   # Configuration files
-│   │   ├── database.js           # MongoDB connection
-│   │   ├── socketConfig.js       # Socket.IO configuration with auth
-│   │   └── localUploadConfig.js  # File upload config
-│   ├── scripts/                  # Helper scripts
-│   │   ├── createSuperAdmin.js   # Create superadmin user
-│   │   ├── createIndexes.js      # Database performance indexes
-│   │   ├── backup.js             # Database backup
-│   │   ├── seed.js               # Database seeding
-│   │   └── setWebhook.js         # Telegram webhook setup
-│   ├── tests/                    # ✅ PROFESSIONAL: Jest testing system
-│   │   ├── setup.js              # Test configuration with MongoDB Memory Server
-│   │   ├── helpers/              # Test utilities
-│   │   │   └── testHelpers.js    # Test data factories and utilities
-│   │   ├── api/                  # API endpoint tests
-│   │   │   └── health.test.js    # Health endpoint tests (working)
-│   │   ├── handlers/             # Bot handler tests
-│   │   ├── models/               # Model validation tests
-│   │   └── utils/                # Utility function tests
-│   ├── .env                      # Environment variables
-│   ├── .env.test                 # Test environment
-│   ├── jest.config.js            # Jest configuration
-│   └── index.js                  # ✅ OPTIMIZED: Main entry with performance improvements
-├── front_admin/                  # Admin Panel (React + TypeScript)
-│   ├── src/
-│   │   ├── components/           # Reusable components
-│   │   │   ├── Layout/           # Layout components
-│   │   │   │   └── MainLayout.tsx # ✅ FIXED: Proper logout handling
-│   │   │   ├── Common/           # Common components
-│   │   │   └── LazyComponents/   # Lazy-loaded components
-│   │   ├── pages/                # Page components
-│   │   │   ├── Login/            # Login page
-│   │   │   │   └── LoginPage.tsx # Login form with validation
-│   │   │   ├── Dashboard/        # Dashboard (SuperAdmin only)
-│   │   │   ├── Orders/           # Order management
-│   │   │   ├── Products/         # Product management
-│   │   │   ├── Categories/       # Category management
-│   │   │   ├── Users/            # User management
-│   │   │   ├── Couriers/         # Courier management
-│   │   │   └── Settings/         # System settings
-│   │   ├── services/             # API services
-│   │   │   └── api.ts            # ✅ FIXED: API service with auto token refresh
-│   │   ├── hooks/                # Custom hooks
-│   │   │   ├── useAuth.tsx       # ✅ FIXED: Authentication hook with complete logout
-│   │   │   ├── useSocket.ts      # ✅ FIXED: Socket.IO hook with auth error handling
-│   │   │   └── redux.ts          # Redux hooks
-│   │   ├── store/                # Redux Toolkit store
-│   │   │   ├── index.ts          # Store configuration
-│   │   │   └── slices/           # Redux slices
-│   │   │       └── ordersSlice.ts # Orders state management
-│   │   ├── utils/                # Utility functions
-│   │   │   ├── authUtils.ts      # ✅ NEW: Authentication utilities
-│   │   │   ├── constants.ts      # API constants
-│   │   │   ├── orderStatus.ts    # Status configurations
-│   │   │   └── sound.ts          # Notification sounds
-│   │   ├── types/                # TypeScript types
-│   │   │   └── index.ts          # Type definitions
-│   │   ├── router/               # Routing
-│   │   │   └── AppRouter.tsx     # Route configuration
-│   │   └── App.tsx               # Main app component
-│   ├── public/                   # Static files
-│   │   └── clearTokens.html      # ✅ NEW: Token cleanup utility (debug)
-│   ├── package.json              # Dependencies
-│   ├── vite.config.ts            # Vite configuration
-│   ├── tsconfig.json             # TypeScript configuration
-│   └── vercel.json               # Vercel deployment config
-├── userfront/                    # User WebApp (Telegram WebApp)
-│   └── src/                      # React + TypeScript user interface
-└── docs/                         # Documentation
-```
+#### **Buyurtma Berish Imkoniyatlari:**
+- **Delivery (Yetkazib berish)**:
+  - GPS lokatsiya yuborish yoki manzil kiritish
+  - Eng yaqin filialni avtomatik aniqlash
+  - Yetkazish vaqtini tanlash
+  - Manzil izohlarini qo'shish
+  - Yetkazish narxini ko'rish
+- **Pickup (Olib ketish)**:
+  - Filial tanlash
+  - Tayyorlash vaqtini ko'rish
+  - Olib ketish vaqtini belgilash
+- **Dine-in (Restoranda ovqatlanish)**:
+  - Stol raqamini kiritish
+  - Kelish vaqtini belgilash
+  - Restoranga kelganini tasdiqlash
+- **QR Table (QR kod orqali)**:
+  - Stol QR kodini skanerlash
+  - Avtomatik stol ma'lumotlari
+  - Darhol buyurtma boshlash
 
-## 🔧 Texnik Xususiyatlar (Enhanced)
+#### **Mahsulot va Katalog:**
+- **Kategoriyalar ko'rish**: Barcha kategoriyalar ro'yxati
+- **Mahsulot qidirish**: Nom bo'yicha qidirish
+- **Mahsulot tafsilotlari**: Rasm, tavsif, narx, tarkib
+- **Sevimlilar tizimi**: 
+  - Mahsulotni sevimlilarga qo'shish/olib tashlash
+  - Sevimli mahsulotlar ro'yxati
+  - Sevimlilardan tezkor buyurtma
+- **Promo ko'rish**: Chegirmalar va aksiyalarni ko'rish
 
-### Backend (Enhanced + Optimized)
-- **Database**: MongoDB Atlas + Mongoose (optimized queries with .lean())
-- **Real-time**: Socket.IO with room-based updates and JWT validation
-- **Bot Framework**: Telegraf with performance optimizations (user caching)
-- **Auth**: ✅ FIXED - JWT + RBAC + Auto-refresh + Fallback mechanism + Complete logout
+#### **Xarid Savati:**
+- **Mahsulot qo'shish**: Savatga qo'shish va miqdor tanlash
+- **Miqdor o'zgartirish**: + va - tugmalari bilan
+- **Mahsulot olib tashlash**: Savatdan individual olib tashlash
+- **Savat tozalash**: Barcha mahsulotlarni olib tashlash
+- **Jami summa**: Real-time hisoblash
+- **Savat ko'rish**: Tafsilotli savat ro'yxati
+
+#### **To'lov va Yakunlash:**
+- **To'lov usullari**: Naqd, karta, online to'lov
+- **Buyurtma tasdiqlash**: Final confirmation
+- **Kvitansiya olish**: PDF kvitansiya
+- **Tracking code**: Buyurtmani kuzatish uchun kod
+
+#### **Buyurtma Kuzatuvi:**
+- **Real-time status**: Buyurtma holatini jonli kuzatish
+- **Kuryer lokatsiyasi**: Kuryer qayerda ekanini ko'rish
+- **Vaqt baholash**: Taxminiy yetkazish vaqti
+- **Xabarlar**: SMS va bot orqali bildirishnomalar
+
+#### **Profil va Tarixi:**
+- **Shaxsiy ma'lumotlar**: Ism, telefon, manzillar
+- **Buyurtmalar tarixi**: Barcha o'tmish buyurtmalar
+- **Sevimli manzillar**: Tez-tez ishlatadigan manzillar
+- **Loyalty points**: Sadoqat balli tizimi (agar mavjud bo'lsa)
+
+### 👨‍💼 **Admin (Filial Administratori) - Web Panel orqali**
+
+#### **Buyurtmalar Boshqaruvi:**
+- **Buyurtmalar ro'yxati**: 
+  - Real-time yangilanuvchi ro'yxat
+  - Filtr va qidiruv (status, sana, mijoz)
+  - Pagination bilan ko'rish
+  - Export qilish (Excel, PDF)
+- **Buyurtma tafsilotlari**:
+  - To'liq buyurtma ma'lumotlari
+  - Mijoz kontakt ma'lumotlari
+  - Mahsulotlar ro'yxati va narxlar
+  - Yetkazish/pickup ma'lumotlari
+- **Status boshqaruvi**:
+  - Buyurtma holatini o'zgartirish
+  - Tayyorlash vaqtini belgilash
+  - Mijozga avtomatik xabar yuborish
+  - Status tarixi ko'rish
+- **Kuryer tayinlash**:
+  - Mavjud kuryerlar ro'yxati
+  - Avtomatik eng yaqin kuryer tanlash
+  - Manual kuryer tayinlash
+  - Kuryer performance ko'rish
+
+#### **Mahsulot Boshqaruvi:**
+- **Mahsulot CRUD**:
+  - Yangi mahsulot qo'shish
+  - Mavjud mahsulotlarni tahrirlash
+  - Mahsulot o'chirish
+  - Mahsulot holatini o'zgartirish (faol/nofaol)
+- **Rasm boshqaruvi**:
+  - Ko'p rasmli mahsulotlar
+  - Rasm yuklash va o'chirish
+  - Rasm tartibini o'zgartirish
+- **Narx boshqaruvi**:
+  - Narxlarni yangilash
+  - Bulk narx o'zgartirish
+  - Narx tarixi
+- **Inventory control**:
+  - Mahsulot mavjudligini boshqarish
+  - Zaxira miqdori (agar kerak bo'lsa)
+  - Low stock alerts
+
+#### **Promo va Aksiyalar:**
+- **Chegirma yaratish**:
+  - Foiz yoki summa chegirma
+  - Vaqt chegarasi belgilash
+  - Mahsulot yoki kategoriya bo'yicha
+- **Promo boshqaruvi**:
+  - Faol promolarni ko'rish
+  - Promo to'xtatish/boshlash
+  - Promo statistikasi
+- **Bulk promo**:
+  - Ko'p mahsulotga bir vaqtda promo
+  - Kategoriya bo'yicha promo
+
+#### **Kategoriya Boshqaruvi:**
+- **Kategoriya CRUD**: Yaratish, tahrirlash, o'chirish
+- **Tartib o'zgartirish**: Drag & drop bilan tartib
+- **Kategoriya holati**: Faol/nofaol qilish
+- **Mahsulotlar soni**: Har kategoriyada nechta mahsulot
+
+#### **Statistika va Analytics:**
+- **Kunlik statistika**: Bugungi buyurtmalar, daromad, mijozlar
+- **Haftalik/oylik hisobotlar**: Trend tahlili
+- **Eng mashhur mahsulotlar**: Top selling items
+- **Mijoz analytics**: Yangi vs qaytgan mijozlar
+- **Performance metrics**: Average order time, success rate
+
+### 👑 **SuperAdmin (Tizim Administratori) - Kengaytirilgan Imkoniyatlar**
+
+#### **Multi-branch Boshqaruvi:**
+- **Filiallar ro'yxati**: Barcha filiallarni ko'rish va boshqarish
+- **Filial yaratish/tahrirlash**: Yangi filial qo'shish, mavjudini o'zgartirish
+- **Filial statistikasi**: Har bir filial bo'yicha alohida hisobotlar
+- **Cross-branch analytics**: Filiallar orasida taqqoslash
+- **Global settings**: Barcha filiallarga ta'sir qiluvchi sozlamalar
+
+#### **User va Role Management:**
+- **Admin yaratish**: Yangi admin userlar qo'shish
+- **Role assignment**: Rollarni tayinlash va o'zgartirish
+- **Permission control**: Har bir rol uchun ruxsatlar
+- **User activity**: Foydalanuvchi faolligi monitoring
+- **Account management**: Account block/unblock, status control
+
+#### **Tizim Boshqaruvi:**
+- **Global promo**: Barcha filiallarga promo qo'llash
+- **System settings**: Umumiy tizim sozlamalari
+- **Database management**: Ma'lumotlar bazasi operatsiyalari
+- **Backup control**: Zaxira nusxalash boshqaruvi
+- **Performance monitoring**: Tizim performance ko'rish
+
+#### **Advanced Analytics:**
+- **Cross-branch reporting**: Barcha filiallar bo'yicha hisobotlar
+- **Revenue analytics**: Daromad tahlili va forecasting
+- **Customer behavior**: Mijoz xatti-harakatlari tahlili
+- **Operational efficiency**: Operatsion samaradorlik metrics
+- **Growth tracking**: O'sish ko'rsatkichlari
+
+### 🚚 **Courier (Kuryer) - Telegram Bot orqali**
+
+#### **Buyurtma Operatsiyalari:**
+- **Buyurtma qabul qilish**: Yangi buyurtmalarni ko'rish va qabul qilish
+- **Buyurtma tafsilotlari**: 
+  - Mijoz ma'lumotlari va telefon
+  - Yetkazish manzili va izohlar
+  - Mahsulotlar ro'yxati
+  - To'lov usuli va summa
+- **Status yangilash**:
+  - "Olib ketdim" - buyurtmani olganimda
+  - "Yo'lda" - yetkazish jarayonida
+  - "Yetkazdim" - muvaffaqiyatli yetkazganimda
+  - "Bekor qildim" - sabab ko'rsatish bilan
+
+#### **Lokatsiya va Navigation:**
+- **GPS tracking**: Real-time lokatsiya ulashish
+- **Route guidance**: Manzilga yo'l ko'rsatish
+- **Distance calculation**: Masofa hisoblash
+- **ETA updates**: Taxminiy yetish vaqti
+
+#### **Ish Vaqti Boshqaruvi:**
+- **Shift control**: Ish vaqtini boshlash/tugatish
+- **Online/Offline**: Mavjudlik holatini o'zgartirish
+- **Break management**: Tanaffus vaqtlari
+- **Schedule viewing**: Ish jadvali ko'rish
+
+#### **Daromad va Statistika:**
+- **Kunlik daromad**: Bugungi daromadni ko'rish
+- **Yetkazilgan buyurtmalar**: Muvaffaqiyatli buyurtmalar soni
+- **Performance rating**: Mijoz baholari va feedback
+- **Monthly earnings**: Oylik daromad hisoboti
+
+## 🛠️ Texnik Imkoniyatlar va Funksiyalar
+
+### 📊 **Database Operations (MongoDB Atlas)**
+- **User Management**: 
+  - User registration va authentication
+  - Profile management va preferences
+  - Role-based access control
+  - Activity logging va audit trail
+- **Order Processing**:
+  - Order lifecycle management
+  - Status history tracking
+  - Payment processing integration
+  - Delivery coordination
+- **Product Catalog**:
+  - Product information management
+  - Category hierarchy
+  - Inventory tracking
+  - Price management va promotions
+- **Analytics Data**:
+  - Sales metrics calculation
+  - Customer behavior analysis
+  - Performance tracking
+  - Business intelligence data
+
+### 🔄 **Real-time Features (Socket.IO)**
+- **Live Order Updates**: 
+  - Yangi buyurtma kelganda darhol notification
+  - Status o'zgarishi barcha interfeyslarda sinxron
+  - Mijozga avtomatik status xabarlari
+- **Courier Tracking**:
+  - GPS lokatsiya real-time yangilanishi
+  - Admin panelda kuryer harakati ko'rish
+  - Mijozga kuryer lokatsiyasi ulashish
+- **Admin Notifications**:
+  - Yangi buyurtma sound notification
+  - Critical alerts (payment issues, cancellations)
+  - System status updates
+- **Multi-device Sync**:
+  - Bir qurilmada qilingan o'zgarish boshqalarida ko'rinishi
+  - Session management across devices
+
+### 🔐 **Security va Authentication**
+- **JWT Token System**:
+  - 24 soatlik token expiry
+  - Automatic token refresh
+  - Secure token storage
+  - Token validation va cleanup
+- **Role-based Access Control (RBAC)**:
+  - User, Admin, SuperAdmin, Courier rollari
+  - Permission-based endpoint access
+  - Route protection
+- **API Security**:
+  - Rate limiting (different limits for different roles)
+  - Input validation va sanitization
+  - CORS protection
+  - XSS va injection prevention
+- **Data Protection**:
+  - Password hashing (bcrypt)
+  - Sensitive data encryption
+  - Secure file upload
+  - Data anonymization
+
+### 📱 **Mobile Optimization**
+- **Telegram WebApp Integration**:
+  - Native-like experience in Telegram
+  - Touch-optimized interface
+  - Responsive design
+- **Bot Interface Optimization**:
+  - Smart keyboard layouts
+  - Quick action buttons
+  - Context-aware responses
+  - Minimal tap navigation
+- **Performance Features**:
+  - Image optimization
+  - Lazy loading
+  - Caching strategies
+  - Offline capability (basic)
+
+## 🚀 Asosiy Funksional Modullar
+
+### 🛒 **Buyurtma Tizimi (Order Management)**
+- **Order Creation Flow**:
+  - Multi-step order wizard
+  - Validation at each step
+  - Order summary va confirmation
+  - Payment processing integration
+- **Order Processing**:
+  - Kitchen notification system
+  - Preparation time tracking
+  - Quality control checkpoints
+  - Customer communication
+- **Order Fulfillment**:
+  - Courier assignment algorithms
+  - Route optimization
+  - Delivery tracking
+  - Completion confirmation
+- **Order Analytics**:
+  - Order volume tracking
+  - Average order value
+  - Completion time metrics
+  - Customer satisfaction scores
+
+### 📦 **Mahsulot Boshqaruvi (Product Management)**
+- **Product Information System**:
+  - Detailed product descriptions
+  - Multi-image support
+  - Nutritional information
+  - Allergen warnings
+- **Inventory Management**:
+  - Stock level tracking
+  - Automatic low-stock alerts
+  - Supplier management integration
+  - Waste tracking
+- **Pricing Engine**:
+  - Dynamic pricing support
+  - Bulk pricing operations
+  - Promotional pricing
+  - Currency handling
+- **Category Management**:
+  - Hierarchical category structure
+  - Category-based permissions
+  - Seasonal category management
+  - Category analytics
+
+### 👥 **Foydalanuvchi Boshqaruvi (User Management)**
+- **Registration System**:
+  - Telegram-based registration
+  - Phone number verification
+  - Profile completion wizard
+  - Terms acceptance
+- **Profile Management**:
+  - Personal information updates
+  - Delivery address management
+  - Payment method storage
+  - Communication preferences
+- **Customer Support**:
+  - In-app messaging
+  - Issue reporting
+  - FAQ system
+  - Feedback collection
+- **Loyalty Program** (if implemented):
+  - Points accumulation
+  - Reward redemption
+  - Tier management
+  - Special offers
+
+### 🚚 **Yetkazib Berish Tizimi (Delivery System)**
+- **Delivery Zone Management**:
+  - Geographic zone definition
+  - Delivery fee calculation
+  - Zone-based courier assignment
+  - Coverage area optimization
+- **Route Optimization**:
+  - Multiple delivery batching
+  - Traffic-aware routing
+  - Time window management
+  - Fuel efficiency optimization
+- **Courier Coordination**:
+  - Automatic assignment algorithms
+  - Manual override capabilities
+  - Performance tracking
+  - Incentive management
+- **Customer Communication**:
+  - Delivery notifications
+  - ETA updates
+  - Delivery confirmation
+  - Feedback collection
+
+### 📊 **Analytics va Hisobotlar (Analytics & Reporting)**
+- **Sales Analytics**:
+  - Revenue tracking va trends
+  - Product performance analysis
+  - Category sales comparison
+  - Seasonal trend analysis
+- **Operational Metrics**:
+  - Order processing times
+  - Delivery performance
+  - Customer satisfaction scores
+  - Staff productivity metrics
+- **Customer Analytics**:
+  - Customer acquisition tracking
+  - Retention rate analysis
+  - Lifetime value calculation
+  - Behavior pattern analysis
+- **Business Intelligence**:
+  - Predictive analytics
+  - Demand forecasting
+  - Profitability analysis
+  - Market trend insights
+
+### 🔧 **Tizim Boshqaruvi (System Administration)**
+- **Configuration Management**:
+  - System-wide settings
+  - Feature toggles
+  - Environment configuration
+  - Integration settings
+- **Monitoring va Alerting**:
+  - System health monitoring
+  - Performance alerting
+  - Error tracking
+  - Uptime monitoring
+- **Backup va Recovery**:
+  - Automated backup systems
+  - Data recovery procedures
+  - Disaster recovery planning
+  - Data integrity checks
+- **Security Management**:
+  - Access log monitoring
+  - Security incident response
+  - Compliance reporting
+  - Audit trail maintenance
+
+## 🌐 **Integration Imkoniyatlari**
+
+### **Telegram Platform Integration**
+- **Bot API**: To'liq Telegram Bot API support
+- **WebApp API**: Telegram WebApp integration
+- **Payment API**: Telegram Payments (agar kerak bo'lsa)
+- **File API**: Media va document sharing
+
+### **External Service Integration**
+- **Payment Gateways**: Multiple payment provider support
+- **SMS Services**: SMS notification integration
+- **Email Services**: Email reporting va notifications
+- **Geolocation Services**: Maps va location services
+- **Cloud Storage**: File storage va CDN integration
+
+### **Business System Integration**
+- **POS Integration**: Point of sale system integration
+- **Accounting Software**: Financial system integration
+- **CRM Integration**: Customer relationship management
+- **Inventory Systems**: Stock management integration
+
+## 📈 **Scalability va Performance**
+
+### **Performance Optimization**
+- **Caching Strategies**:
+  - User data caching (5 minute TTL)
+  - Product catalog caching
+  - Query result caching
+  - Session caching
+- **Database Optimization**:
+  - Optimized queries with lean()
+  - Proper indexing strategy
+  - Connection pooling
+  - Query performance monitoring
+- **API Optimization**:
+  - Response compression
+  - Conditional logging
+  - Rate limiting optimization
+  - Payload optimization
+
+### **Monitoring va Alerting**
+- **Health Monitoring**:
+  - API endpoint health checks
+  - Database connection monitoring
+  - Bot response time tracking
+  - Error rate monitoring
+- **Performance Tracking**:
+  - Response time metrics
+  - Throughput measurement
+  - Resource utilization
+  - User experience metrics
+- **Business Monitoring**:
+  - Order volume tracking
+  - Revenue monitoring
+  - Customer satisfaction tracking
+  - Operational efficiency metrics
+
+## 🔧 Texnik Xususiyatlar
+
+### Backend (Enhanced)
+- **Database**: MongoDB Atlas + Mongoose (optimized queries)
+- **Real-time**: Socket.IO with room-based updates
+- **Bot Framework**: Telegraf with performance optimizations
+- **Auth**: JWT + RBAC + Auto-refresh + Fallback mechanism
 - **File upload**: Local storage with security validation
 - **CORS**: Dynamic origin support for Vercel deployments
-- **Performance**: User caching (5min), lean queries, conditional logging
+- **Performance**: User caching, lean queries, conditional logging
 - **Security**: Rate limiting, input validation, XSS protection
 - **Testing**: Jest + MongoDB Memory Server + Test helpers
 
-### Frontend (Enhanced + Auth Fixed)
+### Frontend (Enhanced)
 - **Admin**: React 18 + TypeScript + Ant Design + Redux Toolkit
 - **User WebApp**: React + TypeScript + Vite
 - **State**: Redux Toolkit + React Query + Socket.io integration
 - **Real-time**: Socket.io client with Redux integration
-- **Auth**: ✅ FIXED - Auto token refresh + Complete logout + Token validation + Malformed token cleanup
+- **Auth**: Auto token refresh + Complete logout + Token validation
 - **Styling**: CSS Modules + Ant Design
 - **Build**: Vite with optimization
 - **Performance**: Lazy loading, optimized API calls
@@ -284,10 +528,10 @@ OshxonaNew/
 - **Backend**: Render.com with MongoDB Atlas
 - **Frontend**: Vercel with environment-specific configs
 - **Database**: MongoDB Atlas with performance indexes
-- **Monitoring**: Request logging, error tracking, performance monitoring
+- **Monitoring**: Request logging, error tracking, performance metrics
 - **Security**: Rate limiting, CORS, helmet security headers
 
-## 📊 Ma'lumotlar Modeli (Enhanced)
+## 📊 Ma'lumotlar Modeli
 
 ### User (Enhanced)
 ```javascript
@@ -295,18 +539,23 @@ OshxonaNew/
   role: 'user' | 'admin' | 'superadmin' | 'courier',
   branch: ObjectId,        // Admin uchun majburiy
   telegramId: Number,      // Bot bilan bog'lash
-  email: String,           // ✅ NEW: Admin/SuperAdmin uchun (login)
-  password: String,        // ✅ NEW: Admin/SuperAdmin uchun (hashed)
-  firstName: String,       // ✅ ENHANCED: JWT da ishlatiladi
-  lastName: String,        // ✅ ENHANCED: JWT da ishlatiladi
-  isActive: Boolean,       // ✅ NEW: Account status
-  loyaltyPoints: Number,   // ✅ NEW: Loyalty system
-  loyaltyLevel: String,    // ✅ NEW: VIP levels
+  email: String,           // Admin/SuperAdmin uchun (login)
+  password: String,        // Admin/SuperAdmin uchun (hashed)
+  firstName: String,       // JWT da ishlatiladi
+  lastName: String,        // JWT da ishlatiladi
+  phone: String,           // Telefon raqam
+  isActive: Boolean,       // Account status
+  favorites: [ObjectId],   // Sevimli mahsulotlar
+  addresses: [{            // Saqlangan manzillar
+    name: String,
+    address: String,
+    location: { latitude: Number, longitude: Number }
+  }],
   courierInfo: {           // Courier uchun
     vehicleType: String,
     isOnline: Boolean,
     isAvailable: Boolean,
-    currentLocation: {     // ✅ NEW: Real-time location
+    currentLocation: {
       latitude: Number,
       longitude: Number,
       updatedAt: Date
@@ -318,33 +567,48 @@ OshxonaNew/
 ### Order (Enhanced)
 ```javascript
 {
+  orderId: String,         // Unique order identifier
+  orderNumber: String,     // Human-readable order number
   orderType: 'delivery' | 'pickup' | 'dine_in' | 'table',
   status: 'pending' | 'confirmed' | 'assigned' | 'preparing' | 'ready' | 'on_delivery' | 'delivered' | 'cancelled',
   branch: ObjectId,
   user: ObjectId,
-  items: [OrderItem],
+  items: [{
+    product: ObjectId,
+    quantity: Number,
+    price: Number,
+    total: Number,
+    notes: String         // Maxsus talablar
+  }],
   totalAmount: Number,
-  statusHistory: [{              // ✅ ENHANCED: Complete audit trail
+  statusHistory: [{
     status: String,
     message: String,
     timestamp: Date,
     updatedBy: ObjectId
   }],
+  customerInfo: {
+    name: String,
+    phone: String
+  },
   deliveryInfo: {
     address: String,
-    location: { latitude, longitude },
-    instructions: String,       // ✅ ENHANCED: Address notes
+    location: { latitude: Number, longitude: Number },
+    instructions: String,
     courier: ObjectId,
-    estimatedTime: Number       // ✅ NEW: Delivery estimation
+    estimatedTime: Number,
+    deliveryFee: Number
   },
-  dineInInfo: {                 // ✅ ENHANCED
+  dineInInfo: {
     tableNumber: String,
     arrivalTime: String,
-    customerArrived: Boolean    // ✅ NEW: Arrival status
+    customerArrived: Boolean,
+    specialRequests: String
   },
-  paymentInfo: {                // ✅ NEW: Payment tracking
+  paymentInfo: {
     method: String,
     status: String,
+    amount: Number,
     transactionId: String
   }
 }
@@ -354,114 +618,156 @@ OshxonaNew/
 ```javascript
 {
   name: String,
+  description: String,
   price: Number,
-  category: ObjectId,
+  categoryId: ObjectId,
   branch: ObjectId,
-  isActive: Boolean,        // Global holat
-  isAvailable: Boolean,     // ✅ NEW: Stock availability
-  images: [String]
+  isActive: Boolean,
+  isAvailable: Boolean,
+  images: [String],
+  ingredients: [String],    // Tarkib
+  allergens: [String],      // Allergenlar
+  nutritionInfo: {          // Ozuqa qiymati
+    calories: Number,
+    protein: Number,
+    carbs: Number,
+    fat: Number
+  },
+  preparationTime: Number,  // Tayyorlash vaqti (daqiqa)
+  tags: [String]           // Qidiruv uchun teglar
 }
 ```
 
-### BranchProduct (Inventory)
+### Branch (Enhanced)
 ```javascript
 {
-  product: ObjectId,
-  branch: ObjectId,
-  isAvailable: Boolean,     // Filial bo'yicha mavjudlik
-  priceOverride: Number,    // Ixtiyoriy narx override
-  // Promo maydonlari
-  discountType: 'percent' | 'amount',
-  discountValue: Number,
-  promoStart: Date,
-  promoEnd: Date,
-  isPromoActive: Boolean
+  name: String,
+  title: String,
+  address: {
+    street: String,
+    city: String,
+    district: String,
+    fullAddress: String
+  },
+  phone: String,
+  location: {
+    latitude: Number,
+    longitude: Number
+  },
+  workingHours: {
+    open: String,
+    close: String,
+    breaks: [{
+      start: String,
+      end: String
+    }]
+  },
+  deliveryZones: [{
+    name: String,
+    polygon: [[Number]],    // Coordinate pairs
+    deliveryFee: Number,
+    minOrder: Number
+  }],
+  isActive: Boolean,
+  settings: {
+    acceptsOrders: Boolean,
+    maxOrdersPerHour: Number,
+    averagePreparationTime: Number
+  }
 }
 ```
 
-## 🚀 API Endpoints (Current + Fixed)
+## 🚀 API Endpoints va Funksiyalar
 
-### Authentication (✅ COMPLETELY FIXED)
-- `POST /api/auth/login` - ✅ WORKING: Admin/SuperAdmin login (email + password)
-- `GET /api/auth/me` - ✅ FIXED: Current user info (works with JWT fallback, no more 404)
-- `POST /api/auth/refresh` - ✅ NEW: Token refresh (auto-refresh support, 24h expiry)
-- `POST /api/auth/logout` - ✅ FIXED: Logout with complete cleanup
+### Authentication
+- `POST /api/auth/login` - Admin/SuperAdmin kirish (email + password)
+- `GET /api/auth/me` - Hozirgi foydalanuvchi ma'lumotlari
+- `POST /api/auth/refresh` - Token yangilash
+- `POST /api/auth/logout` - Tizimdan chiqish
 
-### Public (User WebApp)
+### Public (User WebApp uchun)
 - `GET /api/public/branches` - Filiallar ro'yxati
 - `GET /api/public/categories` - Kategoriyalar
 - `GET /api/public/products` - Mahsulotlar (promo bilan)
 
-### Admin (Enhanced + Optimized)
-- `GET /api/admin/orders` - ✅ OPTIMIZED: Buyurtmalar ro'yxati (lean queries, 2x faster)
-- `PATCH /api/admin/orders/:id/status` - Status yangilash (OrderStatusService orqali)
+### Admin Operations
+- `GET /api/admin/orders` - Buyurtmalar ro'yxati (filter, search, pagination)
+- `PATCH /api/admin/orders/:id/status` - Buyurtma holatini yangilash
 - `PATCH /api/admin/orders/:id/assign-courier` - Kuryer tayinlash
 - `GET /api/admin/products` - Mahsulotlar boshqaruvi
-- `PATCH /api/admin/branches/:branchId/products/:productId/promo` - Promo qo'shish
-- `GET /api/admin/users` - User management
-- `GET /api/admin/dashboard` - Dashboard statistics
+- `POST /api/admin/products` - Yangi mahsulot qo'shish
+- `PUT /api/admin/products/:id` - Mahsulot yangilash
+- `DELETE /api/admin/products/:id` - Mahsulot o'chirish
+- `GET /api/admin/categories` - Kategoriyalar boshqaruvi
+- `POST /api/admin/categories` - Yangi kategoriya
+- `GET /api/admin/users` - Foydalanuvchilar ro'yxati
+- `GET /api/admin/dashboard` - Dashboard statistika
 
-### SuperAdmin
-- `POST /api/admin/products/:productId/promo-all-branches` - Barcha filiallarga promo
+### SuperAdmin Operations
 - `GET /api/superadmin/branches` - Filiallar boshqaruvi
-- `GET /api/dashboard/stats` - Umumiy statistikalar
-- `POST /api/superadmin/users` - User creation
+- `POST /api/superadmin/branches` - Yangi filial yaratish
+- `POST /api/superadmin/users` - Yangi admin yaratish
+- `GET /api/dashboard/stats` - Global statistikalar
+- `POST /api/admin/products/:id/promo-all-branches` - Global promo
 
-### Courier
-- `GET /api/couriers` - Courier list with real-time status
-- `POST /api/couriers/location/update` - Location update
-- `POST /api/couriers/locations/refresh` - Admin panel location refresh
+### Courier Operations
+- `GET /api/couriers` - Kuryerlar ro'yxati
+- `POST /api/couriers/location/update` - Lokatsiya yangilash
+- `GET /api/couriers/available/for-order` - Mavjud kuryerlar
 
-## 🔄 Real-time Events (Socket.IO Enhanced)
+## 🔄 Real-time Events (Socket.IO)
 
-### Order Management
-- `new-order` → `branch:<branchId>` xonasiga (OrderStatusService orqali)
-- `order-updated` → Buyurtma yangilanishi
-- `order-status-update` → Status o'zgarishi (centralized)
-- `courier-assigned` → Kuryer tayinlanishi
-- `customer-arrived` → ✅ NEW: Dine-in customer arrival
+### Order Events
+- `new-order` - Yangi buyurtma kelganda
+- `order-updated` - Buyurtma yangilanishi
+- `order-status-update` - Status o'zgarishi
+- `courier-assigned` - Kuryer tayinlanishi
+- `customer-arrived` - Mijoz kelganini tasdiqlash
 
-### Courier Tracking (Enhanced)
-- `courier:location` → `branch:<branchId>` xonasiga
-- Payload: `{ courierId, firstName, lastName, location, isOnline, isAvailable, isStale }`
-- Real-time location updates every 5 minutes
-- Stale courier detection and cleanup
+### Courier Events
+- `courier:location` - Kuryer lokatsiya yangilanishi
+- `courier:online` - Kuryer online bo'lishi
+- `courier:offline` - Kuryer offline bo'lishi
 
-### Admin Panel Integration (Enhanced + Auth Fixed)
-- `join-admin` → ✅ FIXED: Admin real-time room'ga qo'shilish (JWT validation)
-- `auth-error` → ✅ NEW: Authentication error handling
-- Redux store integration → Socket events → State updates
-- Real-time order list updates → UI yangilanishi
-- Auth error handling → Auto logout on token issues
+### Admin Events
+- `join-admin` - Admin real-time room'ga qo'shilish
+- `admin-notification` - Admin uchun xabarlar
+- `system-alert` - Tizim ogohlantirishlari
 
-## 🎨 UI Komponentlar (Enhanced)
+## 🎨 UI Komponentlar va Interfeys
 
-### Admin Panel (Professional + Auth Fixed)
-- **LoginPage**: ✅ WORKING: Email/password login with validation
-- **DashboardPage**: Statistikalar, grafiklar, filial filtri (SuperAdmin only)
-- **OrdersPage**: ✅ OPTIMIZED: Real-time buyurtmalar, Redux state, 2x faster loading
-- **ProductsPage**: Mahsulotlar boshqaruvi, promo modal
-- **CategoriesPage**: Kategoriya management with drag-drop
-- **CouriersPage**: Kuryerlar xaritasi, real-time lokatsiya
-- **UsersPage**: User management (SuperAdmin only)
-- **SettingsPage**: System settings
-- **MainLayout**: ✅ FIXED: Proper logout with complete cleanup
+### Admin Panel Components
+- **LoginPage**: Email/password bilan kirish
+- **DashboardPage**: Statistikalar va grafiklar (SuperAdmin)
+- **OrdersPage**: Buyurtmalar boshqaruvi va real-time updates
+- **ProductsPage**: Mahsulot CRUD va promo boshqaruvi
+- **CategoriesPage**: Kategoriya management
+- **CouriersPage**: Kuryer xaritasi va tracking
+- **UsersPage**: User management (SuperAdmin)
+- **SettingsPage**: Tizim sozlamalari
 
-### User WebApp
-- **App**: Kategoriyalar, mahsulotlar, savat
-- **Responsive**: Mobile-first design
-- **Telegram**: WebApp integratsiya
+### User WebApp Components
+- **CatalogView**: Mahsulotlar katalogi
+- **ProductDetail**: Mahsulot tafsilotlari
+- **CartView**: Xarid savati
+- **CheckoutFlow**: Buyurtma berish jarayoni
+- **OrderTracking**: Buyurtma kuzatuvi
 
-## 🚀 Ishga Tushirish (Updated)
+### Bot Interface Elements
+- **Main Menu**: Asosiy menyu tugmalari
+- **Category Navigation**: Kategoriya navigatsiya
+- **Product Cards**: Mahsulot kartalari
+- **Cart Summary**: Savat xulosasi
+- **Order Confirmation**: Buyurtma tasdiqlash
+
+## 🚀 Ishga Tushirish
 
 ### Local Development
 ```bash
 # Backend
 cd backend
 npm install
-npm run dev          # Full stack (bot + API)
-# yoki
-npm run api          # API only
+npm run dev          # Bot + API server
 
 # Admin Panel
 cd front_admin
@@ -474,19 +780,13 @@ npm install
 npm run dev
 ```
 
-### Environment Variables (Updated)
+### Environment Variables
 ```bash
 # Backend (.env)
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/oshxona
-JWT_SECRET=your_super_secret_jwt_key_here
+JWT_SECRET=your_super_secret_jwt_key
 TELEGRAM_BOT_TOKEN=your_bot_token
-COURIER_STALE_MS=300000
-COURIER_CHECK_INTERVAL_MS=300000
-
-# Performance Settings (NEW)
-BOT_DEBUG=false
-API_DEBUG=false
-CACHE_DEBUG=false
+PORT=5000
 
 # Admin Panel (.env)
 VITE_API_BASE_URL=http://localhost:5000/api
@@ -497,521 +797,29 @@ VITE_API_BASE_URL=http://localhost:5000/api
 VITE_APP_NAME=Oshxona
 ```
 
-## 🔧 Funksiyalar Xaritasi (Complete Functions Map)
+## 📞 Yordam va Qo'llab-quvvatlash
 
-### 🔐 **Authentication Module (✅ COMPLETELY FIXED)**
-**Files**: `api/routes/auth.js`, `middlewares/apiAuth.js`, `utils/authUtils.ts`
+### Development
+1. **API Documentation**: `/api/docs` endpoint orqali
+2. **Health Checks**: `/health` va `/api/health` endpoints
+3. **Database Status**: `/api/db/status` endpoint
+4. **Error Logging**: Console va file logging
 
-**Backend Functions**:
-- `login(email, password)` - ✅ WORKING: Admin/SuperAdmin authentication with email
-- `getCurrentUser(req, res)` - ✅ FIXED: User info from JWT with database fallback (no more 404)
-- `refreshToken(req, res)` - ✅ NEW: Automatic token refresh (24h expiry)
-- `logout(req, res)` - ✅ WORKING: Logout endpoint
-- `authenticateToken(req, res, next)` - ✅ FIXED: JWT middleware with fallback + debug logs
+### Production Deployment
+1. **Backend**: Render.com deployment ready
+2. **Frontend**: Vercel deployment configured
+3. **Database**: MongoDB Atlas production setup
+4. **Monitoring**: Health checks va error tracking
 
-**Frontend Functions**:
-- `login(email, password)` - ✅ WORKING: Login with token storage
-- `logout()` - ✅ FIXED: Complete auth state cleanup (no more 4-char token bug)
-- `getCurrentUser()` - ✅ FIXED: Fetch user with auto token refresh
-- `refreshToken()` - ✅ NEW: Token refresh with retry logic
+## 🎉 Loyiha Xulosa
 
-**Utility Functions** (NEW):
-- `isValidJWTFormat(token)` - ✅ NEW: Token format validation
-- `decodeJWTPayload(token)` - ✅ NEW: Safe JWT payload extraction
-- `isTokenExpired(token)` - ✅ NEW: Expiration checking
-- `clearCorruptedTokens()` - ✅ NEW: Auto cleanup malformed tokens
-- `resetAuthState()` - ✅ NEW: Complete auth state reset
-- `shouldRefreshToken(token)` - ✅ NEW: Smart refresh timing (5min before expiry)
+OshxonaNew - bu zamonaviy restaurant management platform bo'lib, to'liq funksional ecosystem taqdim etadi. Telegram bot, web admin panel, real-time tracking va comprehensive analytics bilan jihozlangan professional tizim.
 
-### 📦 **Orders Module Functions (Refactored + Optimized):**
-
-#### AdminController (298 lines):
-- `listOrders(req, res)` - ✅ OPTIMIZED: Buyurtmalar ro'yxati (pagination, filter, search, lean queries)
-- `getOrder(req, res)` - Bitta buyurtma ma'lumoti
-- `getOrderById(req, res)` - ID bo'yicha buyurtma
-
-#### StatusController (172 lines):
-- `updateStatus(req, res)` - Buyurtma holatini yangilash (OrderStatusService orqali)
-- `getStatusMessage(status)` - Status xabari
-- `getStatusEmoji(status)` - Status emoji
-- `getEstimatedTime(status, orderType)` - Taxminiy vaqt
-
-#### StatsController (49 lines):
-- `getStats(req, res)` - Buyurtma statistikalari
-
-#### Courier Controllers:
-**AssignmentController (218 lines)**:
-- `assignCourier(req, res)` - Kuryer tayinlash
-- `checkAvailability(branchId)` - Mavjud kuryerlar
-
-**DeliveryController (362 lines)**:
-- `courierAcceptOrder(req, res)` - Buyurtmani qabul qilish
-- `courierPickedUpOrder(req, res)` - Buyurtmani olib ketish
-- `courierOnWay(req, res)` - Yo'lda ekanini belgilash
-- `courierDeliveredOrder(req, res)` - Yetkazganini belgilash
-- `courierCancelledOrder(req, res)` - Buyurtmani bekor qilish
-
-**LocationController (141 lines)**:
-- `updateCourierLocation(req, res)` - Kuryer lokatsiyasini yangilash
-- `checkCourierDistance(req, res)` - Masofa tekshirish
-- `calculateDistance(lat1, lon1, lat2, lon2)` - Masofa hisoblash
-
-### 🚚 **Courier Bot Functions (Refactored):**
-
-#### AuthHandlers (103 lines):
-- `ensureCourierByTelegram(ctx)` - Kuryer autentifikatsiya
-- `start(ctx)` - Bot boshlash
-- `bindByPhone(ctx, phoneRaw)` - Telefon orqali bog'lash
-- `normalizePhone(phone)` - Telefon formatlash
-
-#### ShiftHandlers (175 lines):
-- `toggleShift(ctx)` - Ish vaqtini o'zgartirish
-- `startWork(ctx)` - Ishni boshlash
-- `stopWork(ctx)` - Ishni tugatish
-- `toggleAvailable(ctx)` - Mavjudlikni o'zgartirish
-
-#### ProfileHandlers (159 lines):
-- `activeOrders(ctx)` - Faol buyurtmalar
-- `earnings(ctx)` - Daromad ko'rsatish
-- `profile(ctx)` - Profil ma'lumotlari
-
-#### OrderHandlers (436 lines):
-- `acceptOrder(ctx)` - Buyurtmani qabul qilish
-- `onWay(ctx)` - Yo'lda ekanini belgilash
-- `delivered(ctx)` - Yetkazganini belgilash
-- `cancelOrder(ctx)` - Buyurtmani bekor qilish
-- `orderDetails(ctx)` - Buyurtma tafsilotlari
-
-### 📨 **Message Handlers Functions (Refactored):**
-
-#### ContactHandler (48 lines):
-- `handleContact(ctx)` - Kontakt xabarini qayta ishlash
-- `registerContactHandler(bot)` - Bot ga ulash
-
-#### LocationHandler (241 lines):
-- `handleLocation(ctx)` - Joylashuv xabarini qayta ishlash
-- `handleCourierLocation(ctx, user, lat, lon, live_period)` - Kuryer joylashuvi
-- `handleEditedMessage(ctx)` - Live location yangilanishi
-- `registerLocationHandlers(bot)` - Bot ga ulash
-
-#### TextHandler (357 lines):
-- `handleText(ctx)` - Asosiy matn handler
-- `handleTableNumber(ctx, user, text)` - Stol raqami
-- `handleDeliveryAddress(ctx, user, text)` - Yetkazish manzili
-- `handleFeedback(ctx, user, text)` - Izoh yozish
-- `handleWebAppData(ctx)` - WebApp ma'lumotlari
-- `registerTextHandlers(bot)` - Bot ga ulash
-
-### 🛍️ **Product Catalog Functions (Refactored):**
-
-#### ProductDisplay (379 lines):
-- `showCategoryProducts(ctx, categoryId, page)` - Kategoriya mahsulotlari
-- `showProductDetails(ctx, productId)` - Mahsulot tafsilotlari
-- `checkProductAvailability(productId)` - Mavjudlik tekshirish
-
-#### ProductCart (94 lines):
-- `addToCart(ctx, productId)` - Savatga qo'shish
-- `updateCartQuantity(ctx, productId, quantity)` - Miqdor yangilash
-- `removeFromCart(ctx, productId)` - Savatdan olib tashlash
-
-#### ProductSearch (82 lines):
-- `searchProducts(searchTerm)` - Mahsulot qidirish
-- `getPriceRange(categoryId)` - Narx oralig'i
-- `filterByPrice(products, minPrice, maxPrice)` - Narx bo'yicha filtrlash
-
-#### Utils (33 lines):
-- `buildAbsoluteImageUrl(img)` - Rasm URL yaratish
-- `formatPrice(price)` - Narx formatlash
-
-### 🛒 **User Order Functions (Refactored):**
-
-#### PhoneHandlers (34 lines):
-- `askForPhone(ctx)` - Telefon so'rash
-- `validatePhone(phone)` - Telefon validatsiya
-
-#### DineInHandlers (282 lines):
-- `handleArrivalTime(ctx)` - Kelish vaqti
-- `handleDineInTableInput(ctx)` - Stol raqami kiritish
-- `handleDineInArrived(ctx)` - Kelganini tasdiqlash
-- `selectTable(ctx, tableNumber)` - Stol tanlash
-- `confirmArrival(ctx)` - Kelishni tasdiqlash
-
-#### LocationHandlers (195 lines):
-- `processLocation(ctx, latitude, longitude)` - Joylashuvni qayta ishlash
-- `findNearestBranch(lat, lon)` - Eng yaqin filial
-- `calculateDistance(lat1, lon1, lat2, lon2)` - Masofa hisoblash
-- `deg2rad(deg)` - Utility funksiya
-- `validateDeliveryZone(lat, lon, branchId)` - Yetkazish zonasi tekshirish
-
-### 🔍 **Validation Functions (Refactored):**
-
-#### UserValidator (162 lines):
-- `validatePhone(phone)` - Telefon validatsiya
-- `validateName(name, minLength, maxLength)` - Ism validatsiya
-- `validateAddress(address)` - Manzil validatsiya
-- `validateEmail(email)` - Email validatsiya
-- `validateRole(role)` - Role validatsiya
-
-#### ProductValidator (121 lines):
-- `validateProductName(productName)` - Mahsulot nomi
-- `validatePrice(price)` - Narx validatsiya
-- `validateQuantity(quantity)` - Miqdor validatsiya
-- `validateCategory(categoryId)` - Kategoriya validatsiya
-
-#### LocationValidator (66 lines):
-- `validateCoordinates(latitude, longitude)` - Koordinatalar
-- `validateAddress(address)` - Manzil validatsiya
-
-#### TextValidator (91 lines):
-- `validateText(text, options)` - Umumiy matn
-- `sanitizeInput(input)` - Input tozalash
-- `validateLength(text, min, max)` - Uzunlik tekshirish
-
-#### ValidationUtils (66 lines):
-- `formatValidationError(result, fieldName)` - Error formatlash
-- `validateMultiple(inputs, rules)` - Ko'p validatsiya
-- `createValidationResult(isValid, message, formatted)` - Result yaratish
-
-### 👨‍💼 **Admin Controller Functions (Refactored):**
-
-#### DashboardController (73 lines):
-- `getDashboard(req, res)` - Dashboard statistika
-- `getBranchStats(branchId)` - Filial statistikasi
-- `getOverallStats()` - Umumiy statistika
-
-#### BranchController (47 lines):
-- `getBranches(req, res)` - Filiallar ro'yxati
-- `createBranch(req, res)` - Filial yaratish
-- `updateBranch(req, res)` - Filial yangilash
-
-#### ProductController (422 lines):
-- `getProducts(req, res)` - Mahsulotlar ro'yxati + promo
-- `toggleProductStatus(req, res)` - Mahsulot holati
-- `createProduct(req, res)` - Mahsulot yaratish
-- `deleteProduct(req, res)` - Mahsulot o'chirish
-- `updateProduct(req, res)` - Mahsulot yangilash
-- `uploadProductImage(req, res)` - Rasm yuklash
-- `managePromo(req, res)` - Promo boshqaruvi
-
-#### CategoryController (96 lines):
-- `getCategories(req, res)` - Kategoriyalar
-- `createCategory(req, res)` - Kategoriya yaratish
-- `updateCategory(req, res)` - Kategoriya yangilash
-- `deleteCategory(req, res)` - Kategoriya o'chirish
-- `reorderCategories(req, res)` - Kategoriya tartibini o'zgartirish
-
-#### OrderController (128 lines):
-- `getOrders(req, res)` - Buyurtmalar ro'yxati
-- `getOrdersStats(req, res)` - Buyurtma statistika
-- `exportOrders(req, res)` - Buyurtmalarni export qilish
-
-#### InventoryController (110 lines):
-- `updateInventory(req, res)` - Inventar yangilash
-- `getInventory(req, res)` - Inventar ma'lumotlari
-- `bulkUpdateInventory(req, res)` - Ko'p mahsulot yangilash
-
-#### SettingsController (43 lines):
-- `getSettings(req, res)` - Tizim sozlamalari
-- `updateSettings(req, res)` - Sozlamalarni yangilash
-
-### 📱 **Mobile UX Functions (Refactored):**
-
-#### DataService (171 lines):
-- `getRecentOrders(userId, limit)` - Oxirgi buyurtmalar
-- `getFavoriteProducts(userId, limit)` - Sevimli mahsulotlar
-- `getPopularProducts(limit)` - Mashhur mahsulotlar
-- `getFastProducts(limit)` - Tez tayyor mahsulotlar
-- `getOrderDisplayName(order)` - Buyurtma nomi
-- `getUserOrderHistory(userId)` - Buyurtma tarixi
-
-#### KeyboardService (276 lines):
-- `getQuickOrderKeyboard(telegramId)` - Tezkor buyurtma tugmalari
-- `getDefaultQuickOrderKeyboard()` - Standart tugmalar
-- `getMobileCategoriesKeyboard(categories)` - Mobil kategoriyalar
-- `getMobileProductKeyboard(product, categoryId, userId)` - Mobil mahsulot
-- `getMobileCartKeyboard(cart)` - Mobil savat
-- `getOrderNavigationKeyboard(currentPage, totalPages, baseCallback)` - Sahifa navigatsiya
-- `getConfirmationKeyboard(confirmCallback, cancelCallback, confirmText, cancelText)` - Tasdiqlash
-
-#### QuickOrderService (154 lines):
-- `showQuickOrder(ctx)` - Tezkor buyurtma menyusi
-- `showPopularProducts(ctx)` - Mashhur mahsulotlar
-- `showFastProducts(ctx)` - Tez tayyor mahsulotlar
-- `handleQuickReorder(ctx, orderId)` - Tezkor qayta buyurtma
-
-#### QuickAddService (124 lines):
-- `quickAddProduct(ctx)` - Mahsulotni tezkor qo'shish
-- `quickAddToCart(ctx, productId)` - Tezkor savatga qo'shish
-
-#### FavoritesService (173 lines):
-- `addToFavorites(ctx)` - Sevimlilarga qo'shish
-- `showFavorites(ctx)` - Sevimlilarni ko'rsatish
-- `removeFromFavorites(ctx)` - Sevimlilardan olib tashlash
-- `manageFavorites(ctx)` - Sevimlilar boshqaruvi
-
-#### UIUtils (60 lines):
-- `formatMobileText(text, maxLineLength)` - Matn formatlash
-- `getProgressIndicator(currentStep, totalSteps, labels)` - Progress ko'rsatkich
-- `createMobileLayout(content, keyboard)` - Mobil layout yaratish
-
-### 🛡️ **Security Functions (Consolidated):**
-
-#### RateLimitService (112 lines):
-- `createRateLimit(options)` - Umumiy rate limit
-- `getAPIRateLimit()` - API uchun rate limit (200 req/15min)
-- `getAuthRateLimit()` - Auth uchun rate limit (10 req/15min)
-- `getOrderRateLimit()` - Buyurtma uchun rate limit (200 req/min)
-- `getAdminRateLimit()` - Admin uchun rate limit (500 req/min)
-- `getFileUploadRateLimit()` - Fayl yuklash uchun rate limit (10 req/min)
-
-#### SecurityValidationService (172 lines):
-- `validateInput(data, rules)` - Input validatsiya
-- `sanitizeInput(data)` - Input tozalash
-- `validateFileUpload(file)` - Fayl validatsiya
-- `validateJWT(token)` - ✅ ENHANCED: JWT validatsiya with better error handling
-
-#### SecurityFeaturesService (195 lines):
-- `detectSuspiciousActivity(req, activityType)` - Shubhali faoliyat
-- `requestValidator(schema)` - So'rov validatori
-- `securityHeaders()` - Security headerlar
-- `mongoSanitization()` - MongoDB himoya
-- `ipWhitelist(allowedIPs)` - IP whitelist
-- `activityLogger()` - Faoliyat logi
-
-### 🎯 **Service Layer Functions:**
-
-#### OrderStatusService (NEW - 249 lines):
-- `updateStatus(orderId, newStatus, details)` - ✅ NEW: Centralized status management
-- `validateTransition(currentStatus, newStatus)` - Status o'tish validatsiya
-- `getStatusFlow()` - Status oqimi
-- `notifyStatusChange(order, newStatus)` - Status o'zgarishi notification
-
-#### LoyaltyService (316 lines):
-- `calculatePoints(orderAmount, userLevel)` - Loyalty points hisoblash
-- `updateUserLevel(userId)` - User level yangilash
-- `applyBonus(userId, bonusType)` - Bonus qo'llash
-- `getReferralBonus(referrerId, newUserId)` - Referral bonus
-
-#### OrderTrackingService (344 lines):
-- `trackOrder(orderId)` - Buyurtma kuzatuvi
-- `updateOrderLocation(orderId, location)` - Buyurtma lokatsiyasi
-- `estimateDeliveryTime(orderId)` - Yetkazish vaqti
-- `sendTrackingNotification(userId, orderData)` - Tracking notification
-
-#### CacheService (352 lines - OPTIMIZED):
-- `set(key, value, ttl)` - ✅ OPTIMIZED: Cache set with conditional logging
-- `get(key)` - Cache get
-- `delete(key)` - Cache delete
-- `clear()` - Cache tozalash
-- `getStats()` - Cache statistika
-
-### 🔧 **Performance Optimization Functions:**
-
-#### Bot Performance (NEW):
-- `cacheUser(telegramId, userData, ttl)` - ✅ NEW: User caching (5min TTL)
-- `getCachedUser(telegramId)` - ✅ NEW: Cache dan user olish
-- `clearExpiredCache()` - ✅ NEW: Cache cleanup
-
-#### Database Performance:
-- `createDatabaseIndexes()` - Performance indexes yaratish
-- `optimizeQuery(query)` - Query optimization
-- `useLeanQueries()` - ✅ APPLIED: Lean queries for read operations
-
-#### Logging Performance:
-- `conditionalLog(message, condition)` - ✅ NEW: Conditional logging
-- `debugLog(message)` - Debug logging (development only)
-- `performanceLog(operation, duration)` - Performance monitoring
-
-## 🏗️ Major Improvements Summary (August 2025)
-
-### ✅ **Authentication System (COMPLETELY FIXED)**
-- **Problem**: Login/logout issues, token expiration, 404 errors, malformed tokens
-- **Solution**: Complete auth overhaul with refresh tokens + JWT fallback + token validation
-- **Result**: ✅ Seamless authentication, no more login redirects, 100% working
-
-### ✅ **Performance Optimization (MAJOR BOOST)**
-- **Problem**: Slow bot response (100-200ms), heavy database queries (200-500ms)
-- **Solution**: User caching, lean queries, conditional logging, query optimization
-- **Result**: ✅ 3-5x faster bot, 2-3x faster admin panel, 90% less DB queries
-
-### ✅ **Code Architecture (PROFESSIONAL)**
-- **Problem**: Large monolithic files (852+ lines), difficult maintenance
-- **Solution**: Modular refactoring, 70+ specialized modules, single responsibility
-- **Result**: ✅ Professional codebase, easy maintenance, team development ready
-
-### ✅ **Real-time Features (ENHANCED)**
-- **Problem**: Inconsistent updates, missing notifications, auth errors in socket
-- **Solution**: Enhanced Socket.IO with Redux integration + JWT validation
-- **Result**: ✅ Synchronized real-time experience, proper auth handling
-
-### ✅ **Testing Infrastructure (PROFESSIONAL)**
-- **Problem**: No proper testing system, outdated tests
-- **Solution**: Jest + MongoDB Memory Server + Test helpers + Realistic thresholds
-- **Result**: ✅ Professional testing framework ready for CI/CD
-
-## 📈 Performance Metrics (Post-Optimization)
-
-### Bot Performance:
-```javascript
-// Avval:
-Har message: User.findOne() - 100-200ms
-Debug logging: 5-10ms overhead
-
-// Hozir:
-Cache hit: 1-2ms (98% improvement)
-No logging overhead in production
-```
-
-### Admin Panel Performance:
-```javascript
-// Avval:
-Heavy populate queries: 200-500ms
-No token refresh: Logout on expire
-
-// Hozir:
-Lean queries: 50-100ms (60% improvement)
-Auto token refresh: Seamless experience
-```
-
-### Database Performance:
-```javascript
-// Optimizations applied:
-- User caching: 90% less queries
-- Lean queries: 50% faster operations
-- Proper indexes: Optimized lookups
-- Connection pooling: Better resource usage
-```
-
-## 🔧 So'nggi O'zgarishlar (August 2025 - Auth Fixes)
-
-### ✅ Hal qilingan auth muammolari
-1. **404 /api/auth/me**: ✅ FIXED - JWT fallback mechanism, no more 404 errors
-2. **Token refresh**: ✅ NEW - Auto refresh endpoint, seamless token renewal
-3. **Logout issues**: ✅ FIXED - Complete token cleanup, no more 4-char token bug
-4. **JWT malformed**: ✅ FIXED - Token validation, auto cleanup corrupted tokens
-5. **Socket auth errors**: ✅ FIXED - Proper error handling, auto logout
-6. **Login redirects**: ✅ FIXED - No more refresh → login page issue
-
-### ✅ Performance yaxshilanishlar
-1. **Bot response time**: 3-5x faster with user caching
-2. **Admin panel loading**: 2-3x faster with lean queries
-3. **Database queries**: 90% reduction with smart caching
-4. **Memory usage**: Optimized with cleanup timers
-5. **Logging overhead**: Eliminated in production
-
-### 🎯 Yangi Xususiyatlar
-1. **Token refresh system**: Auto-refresh 5min before expiry
-2. **JWT fallback**: Works without database connection
-3. **Token validation**: Malformed token detection and cleanup
-4. **Complete logout**: Full auth state reset
-5. **Debug logging**: Detailed auth flow debugging
-6. **Performance monitoring**: Slow request detection
-
-## 🧪 Test Qilish (Enhanced)
-
-### Manual Testing
-1. **Telegram Bot**: `/start` → Buyurtma turi → Lokatsiya → Mahsulotlar → Savat
-2. **Admin Panel**: ✅ FIXED: Login → Dashboard → Orders → Status yangilash → Logout (smooth)
-3. **Auth Flow**: ✅ FIXED: Login → Refresh page → Stay logged in → Logout → Clean exit
-4. **Performance**: ✅ OPTIMIZED: Fast response times, real-time updates
-5. **Real-time**: Kuryer lokatsiya, buyurtma yangilanishi
-
-### API Testing
-```bash
-# Auth endpoints (ALL WORKING)
-curl -X POST http://localhost:5000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@gmail.com","password":"admin123"}'
-
-curl -H "Authorization: Bearer <TOKEN>" http://localhost:5000/api/auth/me
-
-curl -X POST -H "Authorization: Bearer <TOKEN>" http://localhost:5000/api/auth/refresh
-
-curl -X POST -H "Authorization: Bearer <TOKEN>" http://localhost:5000/api/auth/logout
-
-# Order management (OPTIMIZED)
-curl -X PATCH \
-  -H "Authorization: Bearer <TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{"status":"confirmed"}' \
-  http://localhost:5000/api/admin/orders/<ORDER_ID>/status
-```
-
-### Jest Testing System
-```bash
-# Test commands
-npm test                    # Run all tests
-npm test -- --coverage     # With coverage report
-npm test -- health         # Specific test suite
-npm run test:watch         # Watch mode
-
-# Test structure
-tests/
-├── api/health.test.js     # ✅ WORKING: API health tests
-├── helpers/testHelpers.js # ✅ READY: Test utilities and factories
-├── setup.js               # ✅ CONFIGURED: MongoDB Memory Server
-└── jest.config.js         # ✅ OPTIMIZED: Realistic thresholds
-```
-
-## 📞 Yordam
-
-### Debugging
-1. **Console logs**: ✅ ENHANCED - Detailed auth flow logging
-2. **Network**: API so'rovlarini tekshiring (auth endpoints working)
-3. **Database**: MongoDB Atlas connection (working)
-4. **Environment**: .env fayllarini tekshiring (JWT_SECRET configured)
-
-### Common Issues & Solutions
-1. **404 auth/me**: ✅ FIXED - JWT fallback mechanism
-2. **Token malformed**: ✅ FIXED - Auto validation and cleanup
-3. **Logout redirect**: ✅ FIXED - Complete state cleanup
-4. **Slow performance**: ✅ FIXED - Caching and optimization applied
-
-## 📋 Keyingi Ishlar
-
-### 🚀 Immediate (Completed)
-- ✅ **Auth system fixes**: All authentication issues resolved
-- ✅ **Performance optimizations**: 3-5x speed improvements applied
-- ✅ **Token management**: Complete refresh and validation system
-- ✅ **Code refactoring**: 70+ modular files, professional structure
-
-### 🔧 Short-term
-1. **Database indexes**: Run `node scripts/createIndexes.js` for optimal performance
-2. **Environment tuning**: Set debug flags to false in production
-3. **Monitoring setup**: Add error tracking and performance monitoring
-4. **Complete testing**: Expand Jest test coverage
-
-### 🎯 Long-term
-1. **Mobile app**: React Native app for couriers
-2. **Advanced analytics**: Business intelligence dashboard
-3. **Multi-tenant**: Support for multiple restaurant chains
-4. **AI features**: Demand prediction, route optimization
-
-## 🎉 Natija (Updated)
-
-OshxonaNew - bu **enterprise-level** professional restaurant management system bo'lib:
-
-- ✅ **Complete authentication system** with auto-refresh and fallback
-- ✅ **High-performance architecture** with 3-5x speed improvements
-- ✅ **Modular codebase** with 70+ specialized modules
-- ✅ **Real-time features** with Socket.IO + Redux integration
-- ✅ **Professional testing** with Jest + Memory Server
-- ✅ **Production deployment** ready for Render.com + Vercel
-
-Loyiha **production deployment** uchun to'liq tayyor va **professional development standards**ga javob beradi. 
-
-**Barcha authentication muammolari 100% hal qilingan:**
-- ❌ Login/logout issues → ✅ Seamless auth flow
-- ❌ Token refresh problems → ✅ Auto-refresh system
-- ❌ 404 auth errors → ✅ JWT fallback mechanism
-- ❌ Performance issues → ✅ 3-5x speed improvements
-- ❌ Malformed tokens → ✅ Auto validation and cleanup
-
-**Professional-grade restaurant platform ready for success!** 🚀
+**Loyiha production deployment uchun tayyor va professional development standards ga javob beradi.**
 
 ---
 
-**Hujjat Versiyasi**: 5.0  
-**Oxirgi Yangilanish**: 31 Avgust, 2025 - Complete Auth Fixes + Performance Optimization  
-**Status**: Production Ready ✅  
+**Hujjat Versiyasi**: 8.0  
+**Oxirgi Yangilanish**: 31 Avgust, 2025  
+**Maqsad**: Loyiha imkoniyatlari va funksiyalari  
 **Keyingi Ko'rib Chiqish**: 30 Sentabr, 2025
