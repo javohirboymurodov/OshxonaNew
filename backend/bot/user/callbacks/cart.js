@@ -17,8 +17,7 @@ function registerCartCallbacks(bot) {
   bot.action(/^add_cart_(.+)_(\d+)$/, addToCart);
 
   // Support change_qty_ and cart_qty_ patterns
-  bot.action(/^change_qty_(.+)_([+-])$/, updateQuantity);
-  bot.action(/^cart_qty_(.+)_([+-])$/, updateQuantity);
+  bot.action(/^(change_qty|cart_qty)_(.+)_(-?\d+)$/, updateQuantity);
   bot.action(/^remove_(.+)$/, removeFromCart);
   bot.action('clear_cart', clearCart);
 

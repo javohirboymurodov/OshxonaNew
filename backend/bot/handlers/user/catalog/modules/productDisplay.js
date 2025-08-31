@@ -293,6 +293,11 @@ class ProductDisplay extends BaseHandler {
         ]);
       }
       
+      // Add to favorites button
+      keyboard.inline_keyboard.push([
+        { text: '❤️ Sevimlilarga qo\'shish', callback_data: `add_favorite_${productId}` }
+      ]);
+      
       keyboard.inline_keyboard.push(
         [{ text: '🔙 Kategoriya', callback_data: `category_products_${product.categoryId._id}` }],
         [{ text: '🏠 Bosh sahifa', callback_data: 'back_to_main' }]
