@@ -132,8 +132,8 @@ bot.action(/^branch_.+$/, async (ctx) => {
   // 📦 PRODUCT HANDLING
   // ========================================
 
-  // Category products pagination: category_products_<categoryId>_<page> - MUST BE FIRST!
-  bot.action(/^category_products_(.+)_(\d+)$/, async (ctx) => {
+  // Category products pagination: category_products_<categoryId>_<page> OR category_products_<categoryId>
+  bot.action(/^category_products_(.+)$/, async (ctx) => {
     try {
       await CatalogHandlers.handleShowCategoryProducts(ctx);
     } catch (error) {
