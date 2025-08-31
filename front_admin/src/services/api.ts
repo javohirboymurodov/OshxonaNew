@@ -5,6 +5,16 @@ import { ApiResponse, LoginResponse } from '@/types';
 class ApiService {
   private api: AxiosInstance;
 
+  // Helper method to validate JWT format
+  private isValidJWTFormat(token: string): boolean {
+    try {
+      const parts = token.split('.');
+      return parts.length === 3 && parts.every(part => part.length > 0);
+    } catch {
+      return false;
+    }
+  }
+
   constructor() {
     // Development da proxy orqali /api ishlatamiz
     const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
@@ -16,26 +26,56 @@ class ApiService {
       },
     });
 
-    // Request interceptor - token qo'shish
+    // Request interceptor - token validation and addition
     this.api.interceptors.request.use(
       (config) => {
         const token = localStorage.getItem('token');
         if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
+          // Validate token format before sending
+          if (this.isValidJWTFormat(token)) {
+            config.headers.Authorization = `Bearer ${token}`;
+          } else {
+            console.warn('🔧 Malformed token detected, clearing...');
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+            return Promise.reject(new Error('Invalid token format'));
+          }
         }
         return config;
       },
       (error) => Promise.reject(error)
     );
 
-    // Response interceptor - error handling
+    // Response interceptor - error handling with token refresh
     this.api.interceptors.response.use(
       (response) => response,
-      (error) => {
+      async (error) => {
+        const originalRequest = error.config;
+        
+        if (error.response?.status === 401 && !originalRequest._retry) {
+          originalRequest._retry = true;
+          
+          try {
+            console.log('🔄 Token expired, attempting refresh...');
+            const newToken = await this.refreshToken();
+            localStorage.setItem('token', newToken);
+            
+            // Update the authorization header and retry
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            return this.api(originalRequest);
+          } catch (refreshError) {
+            console.error('❌ Token refresh failed:', refreshError);
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+            return Promise.reject(refreshError);
+          }
+        }
+        
         if (error.response?.status === 401) {
           localStorage.removeItem('token');
           window.location.href = '/login';
         }
+        
         return Promise.reject(error);
       }
     );
@@ -51,8 +91,18 @@ class ApiService {
   }
 
   async logout(): Promise<void> {
-    await this.api.post('/auth/logout');
-    localStorage.removeItem('token');
+    try {
+      await this.api.post('/auth/logout');
+    } catch (error) {
+      console.error('Logout API error:', error);
+    } finally {
+      localStorage.removeItem('token');
+    }
+  }
+
+  async refreshToken(): Promise<string> {
+    const response: AxiosResponse<ApiResponse<{ token: string }>> = await this.api.post('/auth/refresh');
+    return response.data.data!.token;
   }
 
   async getCurrentUser() {

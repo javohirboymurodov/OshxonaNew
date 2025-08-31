@@ -49,36 +49,47 @@ class SecurityFeaturesService {
   }
 
   /**
-   * So'rov validatsiya middleware
-   * @param {Object} schema - validatsiya sxemasi
+   * So'rov validatsiya middleware (Joi Schema)
+   * @param {Object} schema - Joi validatsiya sxemasi
    * @returns {Function} - middleware funksiya
    */
   static requestValidator(schema) {
-    const SecurityValidationService = require('./validationService');
-    
     return (req, res, next) => {
       try {
-        const validation = SecurityValidationService.validateInput(req.body, schema);
+        // Joi schema validation
+        const { error, value } = schema.validate(req.body, { 
+          abortEarly: false,
+          stripUnknown: true,
+          allowUnknown: false
+        });
         
-        if (!validation.isValid) {
+        if (error) {
+          // Log validation errors for debugging
+          console.log('❌ Validation failed:', {
+            body: req.body,
+            errors: error.details.map(d => d.message)
+          });
+          
           // Log suspicious activity for validation failures
           this.detectSuspiciousActivity(req, 'validation_failure');
           
+          const errors = error.details.map(detail => detail.message);
           return res.status(400).json({
             success: false,
             message: 'Ma\'lumotlar formati noto\'g\'ri',
-            errors: validation.errors
+            errors: errors
           });
         }
 
-        // Sanitize input data
-        req.body = SecurityValidationService.sanitizeInput(req.body);
+        // Use validated and sanitized data
+        req.body = value;
+        console.log('✅ Validation passed:', req.body);
         next();
       } catch (error) {
         console.error('Request validation error:', error);
         res.status(500).json({
           success: false,
-          message: 'Server xatosi'
+          message: 'Server xatosi!'
         });
       }
     };
@@ -90,6 +101,7 @@ class SecurityFeaturesService {
    */
   static securityHeaders() {
     const helmet = require('helmet');
+    
     return helmet({
       contentSecurityPolicy: {
         directives: {
@@ -102,46 +114,48 @@ class SecurityFeaturesService {
           objectSrc: ["'none'"],
           mediaSrc: ["'self'"],
           frameSrc: ["'none'"],
-        },
+          baseUri: ["'self'"],
+          formAction: ["'self'"],
+          frameAncestors: ["'self'"],
+          scriptSrcAttr: ["'none'"],
+          upgradeInsecureRequests: []
+        }
       },
-      crossOriginEmbedderPolicy: false
+      crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: { policy: "cross-origin" }
     });
   }
 
   /**
-   * MongoDB sanitization middleware
+   * MongoDB injection himoyasi
    * @returns {Function} - middleware funksiya
    */
   static mongoSanitization() {
     const mongoSanitize = require('express-mongo-sanitize');
+    
     return mongoSanitize({
       replaceWith: '_',
       onSanitize: ({ req, key }) => {
-        console.warn(`🚨 Potential NoSQL injection attempt: ${key} from ${req.ip}`);
-        this.detectSuspiciousActivity(req, 'nosql_injection');
+        console.warn(`🚨 MongoDB injection attempt blocked: ${key} from ${req.ip}`);
+        this.detectSuspiciousActivity(req, 'mongodb_injection');
       }
     });
   }
 
   /**
-   * IP whitelist middleware (admin endpointlar uchun)
-   * @param {Array} allowedIPs - ruxsat etilgan IP lar
+   * IP whitelist middleware
+   * @param {Array} allowedIPs - ruxsat etilgan IP manzillar
    * @returns {Function} - middleware funksiya
    */
   static ipWhitelist(allowedIPs = []) {
     return (req, res, next) => {
       const clientIP = req.ip || req.connection.remoteAddress;
       
-      // In development, allow all IPs
-      if (process.env.NODE_ENV === 'development') {
-        return next();
-      }
-
       if (allowedIPs.length === 0 || allowedIPs.includes(clientIP)) {
         return next();
       }
-
-      console.warn(`🚨 Unauthorized IP access attempt: ${clientIP}`);
+      
+      console.warn(`🚨 IP blocked: ${clientIP}`);
       res.status(403).json({
         success: false,
         message: 'Ruxsat etilmagan IP manzil'
@@ -150,44 +164,36 @@ class SecurityFeaturesService {
   }
 
   /**
-   * Foydalanuvchi faoliyat logi
+   * Faoliyat logger middleware
    * @returns {Function} - middleware funksiya
    */
   static activityLogger() {
     return (req, res, next) => {
       const startTime = Date.now();
       
-      res.on('finish', async () => {
+      res.on('finish', () => {
         const duration = Date.now() - startTime;
         const logData = {
           ip: req.ip,
           method: req.method,
-          url: req.originalUrl,
+          url: req.url,
           statusCode: res.statusCode,
           duration,
           userAgent: req.get('User-Agent'),
           timestamp: new Date()
         };
-
-        // Log suspicious patterns
-        if (res.statusCode >= 400 || duration > 5000) {
-          console.warn('🔍 Suspicious request:', logData);
+        
+        // Log suspicious requests
+        if (res.statusCode >= 400) {
+          console.log('🔍 Suspicious request:', logData);
         }
-
-        // In production, save to database or monitoring service
-        if (process.env.NODE_ENV === 'production' && req.user) {
-          try {
-            // Update user's last activity
-            await User.findByIdAndUpdate(req.user.id, {
-              lastActivity: new Date(),
-              lastIP: req.ip
-            });
-          } catch (error) {
-            console.error('Activity logging error:', error);
-          }
+        
+        // Log slow requests
+        if (duration > 1000) {
+          console.warn('🐌 Slow request:', logData);
         }
       });
-
+      
       next();
     };
   }

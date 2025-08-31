@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Auth Tokens</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .button { padding: 10px 20px; margin: 10px; background: #1890ff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .success { color: green; }
+        .warning { color: orange; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Auth Token Cleanup</h1>
+        <p>Bu sahifa corrupted tokenlarni tozalash uchun.</p>
+        
+        <div id="status"></div>
+        
+        <button class="button" onclick="clearTokens()">Clear All Tokens</button>
+        <button class="button" onclick="checkTokens()">Check Token Status</button>
+        <button class="button" onclick="goToLogin()">Go to Login</button>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = type;
+            div.innerHTML = message;
+            results.appendChild(div);
+        }
+
+        function clearTokens() {
+            try {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                localStorage.removeItem('lastLoginTime');
+                sessionStorage.clear();
+                
+                log('✅ All tokens cleared successfully', 'success');
+                log('✅ localStorage cleared', 'success');
+                log('✅ sessionStorage cleared', 'success');
+                
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 2000);
+            } catch (error) {
+                log('❌ Error clearing tokens: ' + error.message, 'error');
+            }
+        }
+
+        function checkTokens() {
+            const results = document.getElementById('results');
+            results.innerHTML = '';
+            
+            const token = localStorage.getItem('token');
+            
+            if (!token) {
+                log('✅ No token found in localStorage', 'success');
+                return;
+            }
+            
+            log('🔍 Token found, checking format...', 'info');
+            
+            // Check JWT format
+            const parts = token.split('.');
+            if (parts.length !== 3) {
+                log('❌ Malformed JWT token (wrong parts count: ' + parts.length + ')', 'error');
+                return;
+            }
+            
+            try {
+                const payload = JSON.parse(atob(parts[1]));
+                log('✅ JWT format valid', 'success');
+                log('👤 User ID: ' + (payload.userId || payload.id), 'info');
+                log('🔐 Role: ' + payload.role, 'info');
+                
+                if (payload.exp) {
+                    const expDate = new Date(payload.exp * 1000);
+                    const now = new Date();
+                    
+                    if (expDate < now) {
+                        log('❌ Token expired at: ' + expDate.toLocaleString(), 'error');
+                    } else {
+                        log('✅ Token valid until: ' + expDate.toLocaleString(), 'success');
+                    }
+                }
+            } catch (error) {
+                log('❌ Cannot decode JWT payload: ' + error.message, 'error');
+            }
+        }
+
+        function goToLogin() {
+            window.location.href = '/login';
+        }
+
+        // Auto-check on page load
+        window.onload = function() {
+            checkTokens();
+        };
+    </script>
+</body>
+</html>

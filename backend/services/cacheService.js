@@ -8,7 +8,9 @@ class MemoryCache {
     // Avtomatik tozalash
     this.startCleanupTimer();
     
-    console.log(`💾 Memory Cache initialized (max: ${this.maxSize} items, TTL: ${this.defaultTTL}ms)`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`💾 Memory Cache initialized (max: ${this.maxSize} items, TTL: ${this.defaultTTL}ms)`);
+    }
   }
   
   // Ma'lumot saqlash
@@ -17,7 +19,9 @@ class MemoryCache {
     if (this.cache.size >= this.maxSize) {
       const firstKey = this.cache.keys().next().value;
       this.cache.delete(firstKey);
-      console.log(`🗑️ Cache cleaned: removed ${firstKey}`);
+      if (process.env.CACHE_DEBUG === 'true') {
+        console.log(`🗑️ Cache cleaned: removed ${firstKey}`);
+      }
     }
     
     const ttl = customTTL || this.defaultTTL;
@@ -30,7 +34,9 @@ class MemoryCache {
       accessCount: 0
     });
     
-    console.log(`💾 Cache set: ${key} (TTL: ${ttl}ms)`);
+    if (process.env.CACHE_DEBUG === 'true') {
+      console.log(`💾 Cache set: ${key} (TTL: ${ttl}ms)`);
+    }
     return true;
   }
   
@@ -45,7 +51,9 @@ class MemoryCache {
     // Vaqti o'tgan bo'lsa o'chirish
     if (Date.now() > item.expireAt) {
       this.cache.delete(key);
-      console.log(`⏰ Cache expired: ${key}`);
+      if (process.env.CACHE_DEBUG === 'true') {
+        console.log(`⏰ Cache expired: ${key}`);
+      }
       return null;
     }
     

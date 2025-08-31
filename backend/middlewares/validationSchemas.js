@@ -24,7 +24,8 @@ const baseSchemas = {
 
 // Auth schemas
 const login = Joi.object({
-  phone: baseSchemas.phone.required(),
+  // phone: baseSchemas.phone.required(),
+  email: baseSchemas.email.required(),
   password: baseSchemas.password.required()
 });
 

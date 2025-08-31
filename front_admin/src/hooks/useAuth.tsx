@@ -1,7 +1,8 @@
-// src/hooks/useAuth.ts
+// src/hooks/useAuth.ts - FIXED LOGOUT
 import React, { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { User } from '@/types';
 import apiService from '@/services/api';
+import AuthUtils from '@/utils/authUtils';
 
 interface AuthContextType {
   user: User | null;
@@ -29,6 +30,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Clear any corrupted tokens first
+    AuthUtils.clearCorruptedTokens();
+    
     const token = localStorage.getItem('token');
     if (token) {
       fetchUser();
@@ -44,7 +48,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(userData);
     } catch (error) {
       console.error('Fetch user error:', error);
-      localStorage.removeItem('token');
+      // FIXED: Complete token cleanup on fetch error
+      localStorage.clear();
+      sessionStorage.clear();
     } finally {
       setLoading(false);
     }
@@ -61,9 +67,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    setUser(null);
+  const logout = async () => {
+    console.log('🔍 useAuth logout called');
+    try {
+      await apiService.logout();
+    } catch (error) {
+      console.error('Logout API error:', error);
+    } finally {
+      // COMPLETE cleanup - FIXED!
+      console.log('🧹 Clearing all auth data...');
+      
+      // Clear all storage
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Double-check specific items
+      ['token', 'user', 'lastLoginTime', 'authState'].forEach(key => {
+        localStorage.removeItem(key);
+        sessionStorage.removeItem(key);
+      });
+      
+      setUser(null);
+      console.log('✅ Auth cleanup completed');
+      
+      // Force reload to ensure clean state
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 100);
+    }
   };
 
   const contextValue: AuthContextType = {

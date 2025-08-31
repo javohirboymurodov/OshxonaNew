@@ -130,10 +130,12 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     }
   };
 
+  const { logout } = useAuth();
+  
   const handleUserMenuClick = ({ key }: { key: string }) => {
     if (key === 'logout') {
-      // Logout logic
-      localStorage.removeItem('token');
+      // Use proper logout from auth context
+      logout();
       navigate('/login');
     } else {
       navigate(`/${key}`);

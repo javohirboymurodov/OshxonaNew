@@ -39,13 +39,15 @@ async function listOrders(req, res) {
 
     let orders = await Order.find(query)
       .populate('user', 'firstName lastName phone')
-      .populate('deliveryInfo.courier', 'firstName lastName phone courierInfo')
+      .populate('deliveryInfo.courier', 'firstName lastName phone')
       .populate('items.product', 'name price')
-      .populate('branch', 'name title address')
+      .populate('branch', 'name title')
+      .lean() // Use lean() for better performance
       .limit(limit)
       .skip(skip)
       .sort({ createdAt: -1 });
 
+    // Apply courier filter before main query for better performance
     if (courier === 'assigned') query['deliveryInfo.courier'] = { $ne: null };
     else if (courier === 'unassigned') query['deliveryInfo.courier'] = { $in: [null, undefined] };
 

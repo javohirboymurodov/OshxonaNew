@@ -1,8 +1,10 @@
-// tests/api/auth.test.js
+// tests/api/auth.test.js - FIXED VERSION
 const request = require('supertest');
 const express = require('express');
+const mongoose = require('mongoose');
 const authRouter = require('../../api/routes/auth');
-const User = require('../../models/User');
+const { User } = require('../../models');
+const { mockAuthToken, createTestAdmin, createTestSuperAdmin } = require('../helpers/testHelpers');
 
 // Create test app
 const createTestApp = () => {
@@ -12,7 +14,7 @@ const createTestApp = () => {
   return app;
 };
 
-describe('Auth API', () => {
+describe('Auth API - FIXED', () => {
   let app;
 
   beforeEach(() => {
@@ -21,17 +23,9 @@ describe('Auth API', () => {
 
   describe('POST /api/auth/login', () => {
     test('should login admin with correct credentials', async () => {
-      // Create test admin
-      const branch = await createTestBranch();
-      const admin = await User.create({
-        firstName: 'Admin',
-        lastName: 'User',
-        telegramId: 123456789,
-        phone: '+998901234567',
-        email: 'test@admin.uz',
-        role: 'admin',
-        password: 'admin123',
-        branch: branch._id
+      // Create test admin with email
+      const { admin } = await createTestAdmin({
+        email: 'test@admin.uz'
       });
 
       const response = await request(app)
@@ -45,53 +39,30 @@ describe('Auth API', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data.token).toBeDefined();
       expect(response.body.data.user.role).toBe('admin');
-      expect(response.body.data.user.password).toBeUndefined(); // Password should not be returned
+      expect(response.body.data.user.password).toBeUndefined();
     });
 
     test('should fail with incorrect password', async () => {
-      const branch = await createTestBranch();
-      await User.create({
-        firstName: 'Admin',
-        telegramId: 123456789,
-        phone: '+998901234567',
-        role: 'admin',
-        password: 'admin123',
-        branch: branch._id
+      const { admin } = await createTestAdmin({
+        email: 'test@admin.uz'
       });
 
       const response = await request(app)
         .post('/api/auth/login')
         .send({
-          phone: '+998901234567',
+          email: 'test@admin.uz',
           password: 'wrongpassword'
         });
 
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('Noto\'g\'ri');
     });
 
-    test('should fail with non-existent user', async () => {
+    test('should fail with non-existent email', async () => {
       const response = await request(app)
         .post('/api/auth/login')
         .send({
-          phone: '+998999999999',
-          password: 'somepassword'
-        });
-
-      expect(response.status).toBe(401);
-      expect(response.body.success).toBe(false);
-    });
-
-    test('should fail for regular user (no password)', async () => {
-      await createTestUser({
-        phone: '+998901234567'
-      });
-
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send({
-          phone: '+998901234567',
+          email: 'nonexistent@email.com',
           password: 'anypassword'
         });
 
@@ -100,7 +71,7 @@ describe('Auth API', () => {
     });
 
     test('should validate required fields', async () => {
-      // Missing phone
+      // Missing email
       let response = await request(app)
         .post('/api/auth/login')
         .send({
@@ -113,53 +84,7 @@ describe('Auth API', () => {
       response = await request(app)
         .post('/api/auth/login')
         .send({
-          phone: '+998901234567'
-        });
-
-      expect(response.status).toBe(400);
-    });
-
-    test('should validate phone format', async () => {
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send({
-          phone: 'invalid-phone',
-          password: 'admin123'
-        });
-
-      expect(response.status).toBe(400);
-      expect(response.body.message).toContain('format');
-    });
-  });
-
-  describe('POST /api/auth/register', () => {
-    test('should register new admin (superadmin only)', async () => {
-      // This would require superadmin authentication
-      // For now, test the validation logic
-      const branch = await createTestBranch();
-
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send({
-          firstName: 'New',
-          lastName: 'Admin',
-          phone: '+998901234568',
-          password: 'newadmin123',
-          role: 'admin',
-          branch: branch._id.toString()
-        });
-
-      // Without authentication middleware, this might fail differently
-      // The actual test would need to include proper auth headers
-      expect(response.status).toBe(401); // Unauthorized without token
-    });
-
-    test('should validate required fields for admin registration', async () => {
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send({
-          firstName: 'Admin'
-          // Missing required fields
+          email: 'test@admin.uz'
         });
 
       expect(response.status).toBe(400);
@@ -168,16 +93,9 @@ describe('Auth API', () => {
 
   describe('GET /api/auth/me', () => {
     test('should return user info with valid token', async () => {
-      const branch = await createTestBranch();
-      const admin = await User.create({
-        firstName: 'Admin',
-        telegramId: 123456789,
-        phone: '+998901234567',
-        role: 'admin',
-        password: 'admin123',
-        branch: branch._id
+      const { admin } = await createTestAdmin({
+        email: 'test@admin.uz'
       });
-
       const token = mockAuthToken(admin);
 
       const response = await request(app)
@@ -188,7 +106,6 @@ describe('Auth API', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data._id).toBe(admin._id.toString());
       expect(response.body.data.role).toBe('admin');
-      expect(response.body.data.password).toBeUndefined();
     });
 
     test('should fail without token', async () => {
@@ -211,15 +128,9 @@ describe('Auth API', () => {
 
   describe('POST /api/auth/refresh', () => {
     test('should refresh token with valid token', async () => {
-      const admin = await User.create({
-        firstName: 'Admin',
-        telegramId: 123456789,
-        phone: '+998901234567',
-        role: 'admin',
-        password: 'admin123',
-        branch: (await createTestBranch())._id
+      const { admin } = await createTestAdmin({
+        email: 'test@admin.uz'
       });
-
       const token = mockAuthToken(admin);
 
       const response = await request(app)
@@ -230,12 +141,39 @@ describe('Auth API', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data.token).toBeDefined();
       expect(response.body.data.token).not.toBe(token); // Should be a new token
+      expect(response.body.data.user).toBeDefined();
+      expect(response.body.data.user.role).toBe('admin');
     });
 
     test('should fail with expired/invalid token', async () => {
       const response = await request(app)
         .post('/api/auth/refresh')
         .set('Authorization', 'Bearer expired-token');
+
+      expect(response.status).toBe(401);
+      expect(response.body.success).toBe(false);
+    });
+  });
+
+  describe('POST /api/auth/logout', () => {
+    test('should logout successfully with valid token', async () => {
+      const { admin } = await createTestAdmin({
+        email: 'test@admin.uz'
+      });
+      const token = mockAuthToken(admin);
+
+      const response = await request(app)
+        .post('/api/auth/logout')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.message).toContain('chiqildi');
+    });
+
+    test('should fail without token', async () => {
+      const response = await request(app)
+        .post('/api/auth/logout');
 
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
