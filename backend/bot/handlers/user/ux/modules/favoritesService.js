@@ -139,34 +139,69 @@ class FavoritesService {
    */
   static async removeFromFavorites(ctx) {
     try {
+      console.log('🔍 FAVORITES SERVICE: removeFromFavorites called:', {
+        callbackData: ctx.callbackQuery?.data,
+        userId: ctx.from.id
+      });
+  
       const callbackData = ctx.callbackQuery?.data || '';
       const productIdMatch = callbackData.match(/^remove_favorite_(.+)$/);
       
       if (!productIdMatch) {
+        console.log('❌ Invalid callback pattern:', callbackData);
         return ctx.answerCbQuery('❌ Mahsulot ID topilmadi');
       }
-
+  
       const productId = productIdMatch[1];
       const telegramId = ctx.from.id;
       
+      console.log('🔍 Removing product from favorites:', { productId, telegramId });
+      
       const user = await User.findOne({ telegramId });
       if (!user) {
+        console.log('❌ User not found:', telegramId);
         return ctx.answerCbQuery('❌ Foydalanuvchi topilmadi');
       }
-
-      await Favorite.findOneAndDelete({
-        user: user._id,
-        product: productId
-      });
-
-      await ctx.answerCbQuery('🗑️ Sevimlilardan o\'chirildi');
-      
-      // Refresh favorites list
-      await this.showFavorites(ctx);
-
+  
+      // ENHANCED: Support both storage methods
+      let removed = false;
+  
+      // Method 1: Favorite model (separate collection)
+      try {
+        const deletedFavorite = await Favorite.findOneAndDelete({
+          user: user._id,
+          product: productId
+        });
+        if (deletedFavorite) {
+          removed = true;
+          console.log('✅ Removed from Favorite model');
+        }
+      } catch (favoriteModelError) {
+        console.log('⚠️ Favorite model error:', favoriteModelError.message);
+      }
+  
+      // Method 2: user.favorites array (embedded)
+      if (!removed && user.favorites && user.favorites.includes(productId)) {
+        user.favorites = user.favorites.filter(id => id.toString() !== productId);
+        await user.save();
+        removed = true;
+        console.log('✅ Removed from user.favorites array');
+      }
+  
+      if (removed) {
+        await ctx.answerCbQuery('💔 Sevimlilardan olib tashlandi!');
+        console.log('✅ Product successfully removed from favorites');
+        
+        // Refresh favorites list
+        await this.showFavorites(ctx);
+      } else {
+        console.log('⚠️ Product not found in favorites');
+        await ctx.answerCbQuery('⚠️ Mahsulot sevimlilardan topilmadi');
+      }
+  
     } catch (error) {
-      console.error('Remove from favorites error:', error);
-      ctx.answerCbQuery('❌ Xatolik yuz berdi');
+      console.error('❌ Remove from favorites error:', error);
+      await ctx.answerCbQuery('❌ Xatolik yuz berdi');
     }
   }
 }

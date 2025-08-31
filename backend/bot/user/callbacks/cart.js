@@ -18,10 +18,15 @@ function registerCartCallbacks(bot) {
 
   // Support change_qty_ and cart_qty_ patterns
   bot.action(/^(change_qty|cart_qty)_(.+)_(-?\d+)$/, updateQuantity);
-  bot.action(/^remove_(.+)$/, removeFromCart);
+  
+  // FIXED: More specific patterns to avoid hijacking remove_favorite_*
+  bot.action(/^remove_cart_(.+)$/, removeFromCart);
+  bot.action(/^remove_from_cart_(.+)$/, removeFromCart);
+  // REMOVED: bot.action(/^remove_(.+)$/, removeFromCart); // ❌ BU HIJACK QILARDI
+  
   bot.action('clear_cart', clearCart);
 
-  console.log('✅ Cart callbacks registered');
+  console.log('✅ Cart callbacks registered (fixed patterns)');
 }
 
 module.exports = { registerCartCallbacks };
