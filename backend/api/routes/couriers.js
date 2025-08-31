@@ -1,8 +1,8 @@
 const express = require('express');
-const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const { authenticateToken, requireAdmin } = require('../../middlewares/apiAuth');
 const CouriersController = require('../controllers/couriersController');
-const SecurityService = require('../../middleware/security');
-const validationSchemas = require('../../middleware/validationSchemas');
+const SecurityService = require('../../middlewares/security');
+const validationSchemas = require('../../middlewares/validationSchemas');
 
 const router = express.Router();
 

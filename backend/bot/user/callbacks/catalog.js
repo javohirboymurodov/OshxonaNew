@@ -7,8 +7,31 @@ function registerCatalogCallbacks(bot) {
   // 📂 CATALOG & CATEGORIES
   // ========================================
 
-  bot.action('show_categories', async (ctx) => { await CatalogHandlers.showCategories(ctx); });
-  bot.action('show_catalog', async (ctx) => { await CatalogHandlers.showCategories(ctx); });
+  // Categories: Bot ichida kategoriyalar ro'yxati
+  bot.action('show_categories', async (ctx) => { 
+    await CatalogHandlers.showCategories(ctx); 
+  });
+
+  // Catalog: WebApp va bot kategoriyalar o'rtasida tanlov
+  bot.action('show_catalog', async (ctx) => {
+    try {
+      const webAppUrl = `${process.env.WEBAPP_URL}?telegramId=${ctx.from.id}`;
+      
+      await ctx.reply('🛍️ Katalog turini tanlang:', {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '🌐 To\'liq katalog (WebApp)', web_app: { url: webAppUrl } }],
+            [{ text: '📂 Oddiy kategoriyalar', callback_data: 'show_categories' }],
+            [{ text: '🔙 Orqaga', callback_data: 'back_to_main' }]
+          ]
+        }
+      });
+    } catch (error) {
+      console.error('❌ show_catalog error:', error);
+      // Fallback to categories if WebApp fails
+      await CatalogHandlers.showCategories(ctx);
+    }
+  });
 
   // Cart
   bot.action('show_cart', async (ctx) => {
