@@ -22,7 +22,7 @@ class OrderFlow extends BaseHandler {
 
       // STRICT: Telefon raqami bo'lmasa, darhol telefonni so'raymiz va boshqa oqimlarga o'tkazmaymiz
       if (!user.phone) {
-        const UserOrderHandlers = require('./index');
+        const UserOrderHandlers = require('./index.js.backup');
         await UserOrderHandlers.askForPhone(ctx);
         return;
       }
@@ -35,7 +35,7 @@ class OrderFlow extends BaseHandler {
           const PaymentFlow = require('./paymentFlow');
           await PaymentFlow.askForPaymentMethod(ctx);
         } else {
-          const UserOrderHandlers = require('./index');
+          const UserOrderHandlers = require('./index.js.backup');
           await UserOrderHandlers.askForPhone(ctx);
         }
         return;

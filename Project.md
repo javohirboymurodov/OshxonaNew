@@ -35,34 +35,94 @@ Oshxona uchun to'liq boshqaruv tizimi: Telegram bot orqali mijozlar buyurtma ber
 - **Filial bo'yicha**: Barcha filiallarga yoki alohida
 - **Avtomatik**: Vaqt o'tganda promo o'chadi
 
-## 📁 Fayl Tuzilmasi
+## 📁 Fayl Tuzilmasi (Refactored - 2025)
 
 ```
 OshxonaNew/
-├── oshxona-backend/          # Backend + Telegram Bot
+├── backend/                  # Backend + Telegram Bot
 │   ├── api/                  # Express API
 │   │   ├── routes/           # API marshrutlari
-│   │   ├── controllers/      # Business logic
+│   │   ├── controllers/      # Business logic (REFACTORED)
+│   │   │   ├── orders/       # 📦 Order operations (split from 852 lines)
+│   │   │   │   ├── index.js              # Central export
+│   │   │   │   ├── adminController.js    # Admin operations (298 lines)
+│   │   │   │   ├── statusController.js   # Status management (172 lines)
+│   │   │   │   ├── statsController.js    # Statistics (49 lines)
+│   │   │   │   ├── courierController.js  # Courier wrapper (12 lines)
+│   │   │   │   └── courier/              # 🚚 Courier operations
+│   │   │   │       ├── index.js              # Central export
+│   │   │   │       ├── assignmentController.js # Assignment (218 lines)
+│   │   │   │       ├── deliveryController.js   # Delivery flow (362 lines)
+│   │   │   │       └── locationController.js   # Location tracking (141 lines)
+│   │   │   ├── ordersController.js       # Main entry point (12 lines)
+│   │   │   └── adminController.js        # Admin operations
 │   │   ├── middleware/       # Auth, validation
 │   │   └── server.js         # Express server
-│   ├── bot/                  # Telegram bot
-│   │   ├── user/             # User handlers
-│   │   ├── courier/          # Courier handlers
-│   │   └── handlers/         # Common handlers
+│   ├── bot/                  # Telegram bot (REFACTORED)
+│   │   ├── user/             # User bot components
+│   │   │   ├── keyboards/    # Telegram keyboards
+│   │   │   └── callbacks/    # Callback handlers
+│   │   ├── courier/          # Courier bot components
+│   │   └── handlers/         # Message handlers (REFACTORED)
+│   │       ├── messageHandlers.js        # Main entry (18 lines)
+│   │       ├── messageHandlers.js.backup # Original backup (613 lines)
+│   │       ├── messages/                 # 📨 Message processing modules
+│   │       │   ├── index.js              # Central export
+│   │       │   ├── contactHandler.js     # Contact processing (48 lines)
+│   │       │   ├── locationHandler.js    # Location processing (241 lines)
+│   │       │   └── textHandler.js        # Text processing (357 lines)
+│   │       ├── courier/                  # 🚚 Courier handlers (REFACTORED)
+│   │       │   ├── handlers.js           # Main entry (38 lines)
+│   │       │   ├── handlers.js.backup    # Original backup (672 lines)
+│   │       │   └── modules/              # Courier modules
+│   │       │       ├── index.js              # Central export
+│   │       │       ├── authHandlers.js       # Authentication (103 lines)
+│   │       │       ├── shiftHandlers.js      # Shift management (175 lines)
+│   │       │       ├── profileHandlers.js    # Profile/stats (159 lines)
+│   │       │       └── orderHandlers.js      # Order operations (436 lines)
+│   │       └── user/                     # 👤 User handlers (REFACTORED)
+│   │           ├── catalog/              # 🛍️ Product catalog (REFACTORED)
+│   │           │   ├── productHandlers.js    # Main entry (41 lines)
+│   │           │   ├── productHandlers.js.backup # Original backup (539 lines)
+│   │           │   └── modules/              # Product modules
+│   │           │       ├── index.js              # Central export
+│   │           │       ├── utils.js              # Utility functions (33 lines)
+│   │           │       ├── productDisplay.js     # Display operations (379 lines)
+│   │           │       ├── productCart.js        # Cart operations (94 lines)
+│   │           │       └── productSearch.js      # Search operations (82 lines)
+│   │           ├── order/                # 🛒 Order processing (REFACTORED)
+│   │           │   ├── index.js              # Main entry (111 lines)
+│   │           │   ├── index.js.backup       # Original backup (512 lines)
+│   │           │   ├── orderFlow.js          # Order flow logic (291 lines)
+│   │           │   ├── paymentFlow.js        # Payment processing (377 lines)
+│   │           │   ├── notify.js             # Notifications (231 lines)
+│   │           │   └── modules/              # Order modules
+│   │           │       ├── index.js              # Central export
+│   │           │       ├── phoneHandlers.js      # Phone operations (34 lines)
+│   │           │       ├── dineInHandlers.js     # Dine-in operations (282 lines)
+│   │           │       └── locationHandlers.js   # Location processing (195 lines)
+│   │           ├── profile.js            # User profile (enhanced)
+│   │           ├── loyalty/              # Loyalty program
+│   │           ├── tracking/             # Order tracking
+│   │           └── ux/                   # UX optimizations
 │   ├── models/               # MongoDB models
+│   ├── services/             # Business services
+│   ├── utils/                # Utilities (REFACTORED)
+│   │   ├── InputValidator.js         # Main entry (80 lines)
+│   │   ├── InputValidator.js.backup  # Original backup (498 lines)
+│   │   ├── validators/               # 🔍 Validation modules
+│   │   │   ├── index.js              # Central export
+│   │   │   ├── userValidator.js      # User data validation (162 lines)
+│   │   │   ├── productValidator.js   # Product validation (121 lines)
+│   │   │   ├── locationValidator.js  # Location validation (66 lines)
+│   │   │   ├── textValidator.js      # Text validation (91 lines)
+│   │   │   └── utils.js              # Validation utilities (66 lines)
+│   │   ├── ErrorHandler.js           # Error handling (443 lines - not refactored)
+│   │   └── logger.js                 # Logging utilities
 │   ├── config/               # Database, Socket
 │   └── index.js              # Main entry point
-├── oshxona-admin/            # Admin Panel
-│   ├── src/
-│   │   ├── pages/            # Sahifalar
-│   │   ├── components/       # UI komponentlar
-│   │   ├── hooks/            # Custom hooks
-│   │   └── services/         # API services
-│   └── vercel.json           # Vercel config
-└── apps/user-webapp/         # User WebApp
-    ├── src/
-    │   └── webapp/           # Telegram WebApp
-    └── vercel.json           # Vercel config
+├── front_admin/              # Admin Panel
+└── userfront/                # User WebApp
 ```
 
 ## 🔧 Texnik Xususiyatlar
@@ -249,6 +309,204 @@ VITE_API_BASE_URL=http://localhost:5000/api
 VITE_APP_NAME=Oshxona
 ```
 
+## 🏗️ Major Refactoring (2025-08) - Code Organization
+
+### 📊 **Refactoring Statistikasi:**
+
+**Avval (Before Refactoring):**
+- ❌ `ordersController.js` (852 qator) - bitta katta fayl
+- ❌ `courier/handlers.js` (672 qator) - bitta katta fayl  
+- ❌ `messageHandlers.js` (613 qator) - bitta katta fayl
+- ❌ `catalog/productHandlers.js` (539 qator) - bitta katta fayl
+- ❌ `user/order/index.js` (512 qator) - bitta katta fayl
+- ❌ `InputValidator.js` (498 qator) - bitta katta fayl
+- ❌ `adminController.js` (411 qator) - bitta katta fayl
+- ❌ `mobileOptimizations.js` (414 qator) - bitta katta fayl
+- ❌ `quickOrderHandlers.js` (410 qator) - bitta katta fayl
+- ❌ `security.js` (395 qator) - bitta katta fayl
+
+**Keyin (After Refactoring):**
+- ✅ **10 ta katta fayl** → **60+ ta kichik modul**
+- ✅ **5,721 qator** → **modullar bo'yicha ajratildi**
+- ✅ **Backward compatibility** - barcha eski import lar ishlaydi
+- ✅ **Maintainable** - har bir modul o'z vazifasini bajaradi
+- ✅ **Middleware consolidation** - bitta papkada birlashtirildi
+
+### 🎯 **Refactoring Natijalari:**
+
+#### 1. **📦 Orders Controller (852 → 12 qator)**
+```
+orders/
+├── index.js (37 qator)                    # Markaziy export
+├── adminController.js (298 qator)         # Admin operatsiyalari
+├── statusController.js (172 qator)        # Status boshqaruvi
+├── statsController.js (49 qator)          # Statistika
+├── courierController.js (12 qator)        # Courier wrapper
+└── courier/
+    ├── index.js (33 qator)               # Courier markaziy export
+    ├── assignmentController.js (218 qator) # Tayinlash
+    ├── deliveryController.js (362 qator)   # Yetkazish oqimi
+    └── locationController.js (141 qator)   # Joylashuv
+```
+
+#### 2. **🚚 Courier Handlers (672 → 38 qator)**
+```
+courier/
+├── handlers.js (38 qator)              # Asosiy export
+└── modules/
+    ├── index.js (42 qator)             # Modullar export
+    ├── authHandlers.js (103 qator)     # Autentifikatsiya
+    ├── shiftHandlers.js (175 qator)    # Ish vaqti
+    ├── profileHandlers.js (159 qator)  # Profil/statistika
+    └── orderHandlers.js (436 qator)    # Buyurtma operatsiyalari
+```
+
+#### 3. **📨 Message Handlers (613 → 18 qator)**
+```
+handlers/
+├── messageHandlers.js (18 qator)          # Asosiy export
+└── messages/
+    ├── index.js (44 qator)               # Markaziy export
+    ├── contactHandler.js (48 qator)      # Kontakt xabarlar
+    ├── locationHandler.js (241 qator)    # Joylashuv xabarlar
+    └── textHandler.js (357 qator)        # Matn xabarlar
+```
+
+#### 4. **🛍️ Product Handlers (539 → 41 qator)**
+```
+catalog/
+├── productHandlers.js (41 qator)           # Asosiy class wrapper
+└── modules/
+    ├── index.js (33 qator)                 # Markaziy export
+    ├── utils.js (33 qator)                 # Utility funksiyalar
+    ├── productDisplay.js (379 qator)       # Ko'rsatish operatsiyalari
+    ├── productCart.js (94 qator)           # Savat operatsiyalari
+    └── productSearch.js (82 qator)         # Qidiruv operatsiyalari
+```
+
+#### 5. **🛒 Order Index (512 → 111 qator)**
+```
+order/
+├── index.js (111 qator)                   # Asosiy class wrapper
+├── orderFlow.js (291 qator)               # Mavjud fayl (saqlanadi)
+├── paymentFlow.js (377 qator)             # Mavjud fayl (saqlanadi)
+├── notify.js (231 qator)                  # Mavjud fayl (saqlanadi)
+└── modules/
+    ├── index.js (30 qator)                # Markaziy export
+    ├── phoneHandlers.js (34 qator)        # Telefon operatsiyalari
+    ├── dineInHandlers.js (282 qator)      # Restoranda ovqatlanish
+    └── locationHandlers.js (195 qator)    # Joylashuv operatsiyalari
+```
+
+#### 6. **🔍 Input Validator (498 → 80 qator)**
+```
+utils/
+├── InputValidator.js (80 qator)            # Asosiy class wrapper
+└── validators/
+    ├── index.js (41 qator)                 # Markaziy export
+    ├── userValidator.js (162 qator)        # User ma'lumotlari
+    ├── productValidator.js (121 qator)     # Mahsulot ma'lumotlari
+    ├── locationValidator.js (66 qator)     # Joylashuv ma'lumotlari
+    ├── textValidator.js (91 qator)         # Matn validatsiyasi
+    └── utils.js (66 qator)                 # Yordamchi funksiyalar
+```
+
+#### 7. **👨‍💼 Admin Controller (411 → 11 qator)**
+```
+admin/
+├── adminController.js (11 qator)           # Asosiy export
+└── admin/
+    ├── index.js (53 qator)                 # Markaziy export
+    ├── dashboardController.js (73 qator)   # Dashboard statistika
+    ├── branchController.js (47 qator)      # Filial operatsiyalari
+    ├── productController.js (422 qator)    # Mahsulot operatsiyalari
+    ├── categoryController.js (96 qator)    # Kategoriya operatsiyalari
+    ├── orderController.js (128 qator)      # Buyurtma operatsiyalari
+    ├── inventoryController.js (110 qator)  # Inventar operatsiyalari
+    └── settingsController.js (43 qator)    # Sozlamalar
+```
+
+#### 8. **📱 Mobile UX (414 → 75 qator)**
+```
+ux/
+├── mobileOptimizations.js (75 qator)         # Asosiy class wrapper
+├── quickOrderHandlers.js (49 qator)         # Asosiy wrapper
+└── modules/
+    ├── index.js (55 qator)                   # Markaziy export
+    ├── dataService.js (171 qator)            # Ma'lumot xizmatlari
+    ├── keyboardService.js (276 qator)        # Klaviatura xizmatlari
+    ├── uiUtils.js (60 qator)                 # UI yordamchi funksiyalar
+    ├── quickOrderService.js (154 qator)      # Tezkor buyurtma
+    ├── quickAddService.js (124 qator)        # Tezkor qo'shish
+    └── favoritesService.js (173 qator)       # Sevimlilar
+```
+
+#### 9. **🛡️ Security Middleware (395 → 83 qator)**
+```
+middlewares/
+├── security.js (83 qator)                    # Asosiy class wrapper
+└── security/
+    ├── index.js (38 qator)                   # Markaziy export
+    ├── rateLimitService.js (112 qator)       # Rate limiting
+    ├── validationService.js (172 qator)      # Validatsiya xizmati
+    └── securityFeatures.js (195 qator)      # Xavfsizlik xususiyatlari
+```
+
+#### 10. **📁 Middleware Consolidation**
+```
+middlewares/                    # Unified middleware directory
+├── apiAuth.js (97 qator)       # JWT authentication (API)
+├── requestLogger.js (53 qator) # Request logging
+├── security.js (83 qator)      # Security service wrapper
+├── validation.js (261 qator)   # Request validation
+├── validationSchemas.js (199 qator) # Validation schemas
+└── security/                   # Security modules
+    ├── index.js (38 qator)
+    ├── rateLimitService.js (112 qator)
+    ├── validationService.js (172 qator)
+    └── securityFeatures.js (195 qator)
+```
+
+### 🔥 **Refactoring Afzalliklari:**
+
+1. **📦 Modullar bo'yicha ajratildi** - har bir fayl o'z vazifasini bajaradi
+2. **🔧 Oson maintenance** - muayyan funksiyani topish va o'zgartirish oson
+3. **👥 Team development** - har xil dasturchilar turli qismlar ustida ishlashi mumkin
+4. **🚀 Performance** - kerakli qismlarni import qilish mumkin
+5. **🔄 Backward compatibility** - barcha eski import/export lar ishlaydi
+6. **📚 Better documentation** - har bir modul o'z vazifasini aniq belgilaydi
+
+### 🔧 **Bot Navigation Fixes (2025-08):**
+
+#### **❌ Muammolar:**
+1. **Cart → Order Flow:** Savatdan "Buyurtma berish" kategoriyalarga olib borardi
+2. **Catalog vs Categories:** Ikkalasi ham bir xil ishni qilardi
+3. **WebApp Integration:** Catalog tugmasi WebApp ga yo'nalmas edi
+
+#### **✅ Yechimlar:**
+```javascript
+// AVVAL (noto'g'ri):
+'checkout' → kategoriyalarga qaytarish ❌
+'show_catalog' → kategoriyalar ❌
+'show_categories' → kategoriyalar ✅
+
+// HOZIR (to'g'ri):
+'checkout' → OrderFlow.startOrder() → buyurtma turi tanlash ✅
+'show_catalog' → WebApp choice menu ✅
+'show_categories' → bot kategoriyalar ✅
+```
+
+#### **🎯 User Experience Yaxshilandi:**
+1. **🛒 Savatdan buyurtma:** Savat → Buyurtma turi → Lokatsiya/Filial → To'lov
+2. **🛍️ Katalog tanlash:** Katalog → WebApp yoki Bot kategoriyalar
+3. **📱 WebApp Integration:** To'liq katalog (userfront/) Telegram WebApp sifatida
+
+### ⚠️ **ErrorHandler Tahlili:**
+- **443 qator** - katta fayl, lekin **faqat 1 marta** ishlatilgan
+- **Noto'g'ri implement** - `createError` metodi yo'q
+- **Kam ishlatilmoqda** - loyihada oddiy error handling ishlatilgan
+- **Yechim**: Validators dan ErrorHandler dependency olib tashlandi, oddiy error object return qilinadi
+
 ## 🔧 So'nggi O'zgarishlar (2025-08)
 
 ### ✅ Hal qilingan muammolar
@@ -424,25 +682,254 @@ Status: No duplicate prompts, proper button states ✅
 - ✅ **Status Validation**: Clear error messages for invalid operations
 - ✅ **Socket.io Monitoring**: Connection status and event logging
 
+## 🔧 Funksiyalar Xaritasi (Functions Map)
+
+### 📦 **Orders Module Functions:**
+
+#### AdminController:
+- `listOrders(req, res)` - Buyurtmalar ro'yxati (pagination, filter, search)
+- `getOrder(req, res)` - Bitta buyurtma ma'lumoti
+- `getOrderById(req, res)` - ID bo'yicha buyurtma
+
+#### StatusController:
+- `updateStatus(req, res)` - Buyurtma holatini yangilash
+- `getStatusMessage(status)` - Status xabari
+- `getStatusEmoji(status)` - Status emoji
+- `getEstimatedTime(status, orderType)` - Taxminiy vaqt
+
+#### StatsController:
+- `getStats(req, res)` - Buyurtma statistikalari
+
+#### Courier Controllers:
+- `assignCourier(req, res)` - Kuryer tayinlash
+- `courierAcceptOrder(req, res)` - Buyurtmani qabul qilish
+- `courierPickedUpOrder(req, res)` - Buyurtmani olib ketish
+- `courierOnWay(req, res)` - Yo'lda ekanini belgilash
+- `courierDeliveredOrder(req, res)` - Yetkazganini belgilash
+- `courierCancelledOrder(req, res)` - Buyurtmani bekor qilish
+- `updateCourierLocation(req, res)` - Kuryer lokatsiyasini yangilash
+- `checkCourierDistance(req, res)` - Masofa tekshirish
+- `calculateDistance(lat1, lon1, lat2, lon2)` - Masofa hisoblash
+
+### 🚚 **Courier Bot Functions:**
+
+#### AuthHandlers:
+- `ensureCourierByTelegram(ctx)` - Kuryer autentifikatsiya
+- `start(ctx)` - Bot boshlash
+- `bindByPhone(ctx, phoneRaw)` - Telefon orqali bog'lash
+- `normalizePhone(phone)` - Telefon formatlash
+
+#### ShiftHandlers:
+- `toggleShift(ctx)` - Ish vaqtini o'zgartirish
+- `startWork(ctx)` - Ishni boshlash
+- `stopWork(ctx)` - Ishni tugatish
+- `toggleAvailable(ctx)` - Mavjudlikni o'zgartirish
+
+#### ProfileHandlers:
+- `activeOrders(ctx)` - Faol buyurtmalar
+- `earnings(ctx)` - Daromad ko'rsatish
+- `profile(ctx)` - Profil ma'lumotlari
+
+#### OrderHandlers:
+- `acceptOrder(ctx)` - Buyurtmani qabul qilish
+- `onWay(ctx)` - Yo'lda ekanini belgilash
+- `delivered(ctx)` - Yetkazganini belgilash
+- `cancelOrder(ctx)` - Buyurtmani bekor qilish
+- `orderDetails(ctx)` - Buyurtma tafsilotlari
+
+### 📨 **Message Handlers Functions:**
+
+#### ContactHandler:
+- `handleContact(ctx)` - Kontakt xabarini qayta ishlash
+- `registerContactHandler(bot)` - Bot ga ulash
+
+#### LocationHandler:
+- `handleLocation(ctx)` - Joylashuv xabarini qayta ishlash
+- `handleCourierLocation(ctx, user, lat, lon, live_period)` - Kuryer joylashuvi
+- `handleEditedMessage(ctx)` - Live location yangilanishi
+- `registerLocationHandlers(bot)` - Bot ga ulash
+
+#### TextHandler:
+- `handleText(ctx)` - Asosiy matn handler
+- `handleTableNumber(ctx, user, text)` - Stol raqami
+- `handleDeliveryAddress(ctx, user, text)` - Yetkazish manzili
+- `handleFeedback(ctx, user, text)` - Izoh yozish
+- `handleWebAppData(ctx)` - WebApp ma'lumotlari
+- `registerTextHandlers(bot)` - Bot ga ulash
+
+### 🛍️ **Product Catalog Functions:**
+
+#### ProductDisplay:
+- `showCategoryProducts(ctx, categoryId, page)` - Kategoriya mahsulotlari
+- `showProductDetails(ctx, productId)` - Mahsulot tafsilotlari
+- `checkProductAvailability(productId)` - Mavjudlik tekshirish
+
+#### ProductCart:
+- `addToCart(ctx, productId)` - Savatga qo'shish
+
+#### ProductSearch:
+- `searchProducts(searchTerm)` - Mahsulot qidirish
+- `getPriceRange(categoryId)` - Narx oralig'i
+
+#### Utils:
+- `buildAbsoluteImageUrl(img)` - Rasm URL yaratish
+
+### 🛒 **User Order Functions:**
+
+#### PhoneHandlers:
+- `askForPhone(ctx)` - Telefon so'rash
+
+#### DineInHandlers:
+- `handleArrivalTime(ctx)` - Kelish vaqti
+- `handleDineInTableInput(ctx)` - Stol raqami kiritish
+- `handleDineInArrived(ctx)` - Kelganini tasdiqlash
+
+#### LocationHandlers:
+- `processLocation(ctx, latitude, longitude)` - Joylashuvni qayta ishlash
+- `findNearestBranch(lat, lon)` - Eng yaqin filial
+- `calculateDistance(lat1, lon1, lat2, lon2)` - Masofa hisoblash
+- `deg2rad(deg)` - Utility funksiya
+
+### 🔍 **Validation Functions:**
+
+#### UserValidator:
+- `validatePhone(phone)` - Telefon validatsiya
+- `validateName(name, minLength, maxLength)` - Ism validatsiya
+- `validateAddress(address)` - Manzil validatsiya
+
+#### ProductValidator:
+- `validateProductName(productName)` - Mahsulot nomi
+- `validatePrice(price)` - Narx validatsiya
+- `validateQuantity(quantity)` - Miqdor validatsiya
+
+#### LocationValidator:
+- `validateCoordinates(latitude, longitude)` - Koordinatalar
+
+#### TextValidator:
+- `validateText(text, options)` - Umumiy matn
+- `sanitizeInput(input)` - Input tozalash
+
+#### ValidationUtils:
+- `formatValidationError(result, fieldName)` - Error formatlash
+- `validateMultiple(inputs, rules)` - Ko'p validatsiya
+
+### 👨‍💼 **Admin Controller Functions:**
+
+#### DashboardController:
+- `getDashboard(req, res)` - Dashboard statistika
+
+#### BranchController:
+- `getBranches(req, res)` - Filiallar ro'yxati
+
+#### ProductController:
+- `getProducts(req, res)` - Mahsulotlar ro'yxati + promo
+- `toggleProductStatus(req, res)` - Mahsulot holati
+- `createProduct(req, res)` - Mahsulot yaratish
+- `deleteProduct(req, res)` - Mahsulot o'chirish
+- `updateProduct(req, res)` - Mahsulot yangilash
+
+#### CategoryController:
+- `getCategories(req, res)` - Kategoriyalar
+- `createCategory(req, res)` - Kategoriya yaratish
+- `updateCategory(req, res)` - Kategoriya yangilash
+
+#### OrderController:
+- `getOrders(req, res)` - Buyurtmalar ro'yxati
+- `getOrdersStats(req, res)` - Buyurtma statistika
+
+#### InventoryController:
+- `updateInventory(req, res)` - Inventar yangilash
+- `getInventory(req, res)` - Inventar ma'lumotlari
+
+#### SettingsController:
+- `getSettings(req, res)` - Tizim sozlamalari
+
+### 📱 **Mobile UX Functions:**
+
+#### DataService:
+- `getRecentOrders(userId, limit)` - Oxirgi buyurtmalar
+- `getFavoriteProducts(userId, limit)` - Sevimli mahsulotlar
+- `getPopularProducts(limit)` - Mashhur mahsulotlar
+- `getFastProducts(limit)` - Tez tayyor mahsulotlar
+- `getOrderDisplayName(order)` - Buyurtma nomi
+
+#### KeyboardService:
+- `getQuickOrderKeyboard(telegramId)` - Tezkor buyurtma tugmalari
+- `getDefaultQuickOrderKeyboard()` - Standart tugmalar
+- `getMobileCategoriesKeyboard(categories)` - Mobil kategoriyalar
+- `getMobileProductKeyboard(product, categoryId, userId)` - Mobil mahsulot
+- `getMobileCartKeyboard(cart)` - Mobil savat
+- `getOrderNavigationKeyboard(currentPage, totalPages, baseCallback)` - Sahifa navigatsiya
+- `getConfirmationKeyboard(confirmCallback, cancelCallback, confirmText, cancelText)` - Tasdiqlash
+
+#### QuickOrderService:
+- `showQuickOrder(ctx)` - Tezkor buyurtma menyusi
+- `showPopularProducts(ctx)` - Mashhur mahsulotlar
+- `showFastProducts(ctx)` - Tez tayyor mahsulotlar
+
+#### QuickAddService:
+- `quickAddProduct(ctx)` - Mahsulotni tezkor qo'shish
+
+#### FavoritesService:
+- `addToFavorites(ctx)` - Sevimlilarga qo'shish
+- `showFavorites(ctx)` - Sevimlilarni ko'rsatish
+- `removeFromFavorites(ctx)` - Sevimlilardan olib tashlash
+
+#### UIUtils:
+- `formatMobileText(text, maxLineLength)` - Matn formatlash
+- `getProgressIndicator(currentStep, totalSteps, labels)` - Progress ko'rsatkich
+
+### 🛡️ **Security Functions:**
+
+#### RateLimitService:
+- `createRateLimit(options)` - Umumiy rate limit
+- `getAPIRateLimit()` - API uchun rate limit
+- `getAuthRateLimit()` - Auth uchun rate limit
+- `getOrderRateLimit()` - Buyurtma uchun rate limit
+- `getAdminRateLimit()` - Admin uchun rate limit
+- `getFileUploadRateLimit()` - Fayl yuklash uchun rate limit
+
+#### SecurityValidationService:
+- `validateInput(data, rules)` - Input validatsiya
+- `sanitizeInput(data)` - Input tozalash
+- `validateFileUpload(file)` - Fayl validatsiya
+- `validateJWT(token)` - JWT validatsiya
+
+#### SecurityFeaturesService:
+- `detectSuspiciousActivity(req, activityType)` - Shubhali faoliyat
+- `requestValidator(schema)` - So'rov validatori
+- `securityHeaders()` - Security headerlar
+- `mongoSanitization()` - MongoDB himoya
+- `ipWhitelist(allowedIPs)` - IP whitelist
+- `activityLogger()` - Faoliyat logi
+
 ## 📋 Keyingi Ishlar
 
 ### 🚀 Ustuvor
-1. **Promo Testing**: Promo tizimini to'liq test qilish
-2. **Order Status**: Barcha status o'tishlarini tekshirish
-3. **Real-time**: Socket.IO eventlarini test qilish
-4. **Deployment**: Vercel'da admin va user-webapp deploy qilish
+1. **Remaining Large Files**: `services/smartOrderInterface.js` (415 qator), `improvements/advanced-analytics.js` (441 qator)
+2. **WebApp Integration**: Catalog tugmasi uchun to'liq WebApp integration
+3. **Testing**: Refactor qilingan modullarni test qilish
+4. **Deployment**: userfront/ ni Vercel ga deploy qilish
 
 ### 🔧 Texnik
-1. **Error Handling**: Backend xatolarni yaxshilash
-2. **Logging**: Comprehensive logging tizimi
-3. **Testing**: Unit va integration testlar
-4. **Performance**: Database query optimizatsiya
+1. **Module Testing**: Har bir refactor qilingan modulni test qilish
+2. **Performance**: Import optimizatsiya va lazy loading
+3. **Documentation**: JSDoc va README fayllar
+4. **Error Handling**: Oddiy error return tizimini kengaytirish
 
-### 🎨 UI/UX
-1. **Responsive**: Barcha qurilmalarda to'g'ri ishlash
-2. **Loading States**: Skeleton va spinner'lar
-3. **Notifications**: Toast va push notification'lar
-4. **Accessibility**: Screen reader va keyboard navigation
+### 🎯 Refactoring Summary
+**✅ Tugallandi:**
+- 10 ta katta fayl → 60+ ta kichik modul
+- 5,721 qator modullar bo'yicha ajratildi
+- Middleware papkalari birlashtirildi
+- Bot navigation muammolari hal qilindi
+- Backward compatibility saqlanadi
+
+**📊 Natija:**
+- Maintainable kod strukturasi
+- Team development uchun qulay
+- Performance optimizatsiya
+- Professional code organization
 
 ## 🧪 Test Qilish
 

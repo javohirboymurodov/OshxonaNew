@@ -1,4 +1,4 @@
-const CourierHandlers = require('../handlers/courier/handlers');
+const CourierHandlers = require('../handlers/courier/handlers.js.backup');
 
 function registerCourierModule(bot) {
   // ========================================

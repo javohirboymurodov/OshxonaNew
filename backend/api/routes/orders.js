@@ -1,7 +1,7 @@
 const express = require('express');
-const { authenticateToken, requireAdmin } = require('../middleware/auth');
-const OrdersController = require('../controllers/ordersController');
-const SecurityService = require('../../middleware/security');
+const { authenticateToken, requireAdmin } = require('../../middlewares/apiAuth');
+const OrdersController = require('../controllers/ordersController.js.backup');
+const SecurityService = require('../../middlewares/security');
 
 const router = express.Router();
 

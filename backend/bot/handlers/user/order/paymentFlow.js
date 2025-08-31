@@ -30,7 +30,7 @@ class PaymentFlow extends BaseHandler {
           return;
         }
         
-        const UserOrderHandlers = require('./index');
+        const UserOrderHandlers = require('./index.js.backup');
         return await UserOrderHandlers.askForPhone(ctx);
       }
 

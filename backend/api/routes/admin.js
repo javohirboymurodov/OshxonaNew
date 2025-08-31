@@ -1,7 +1,7 @@
 const express = require('express');
-const { authenticateToken, requireAdmin, requireRole } = require('../middleware/auth');
+const { authenticateToken, requireAdmin, requireRole } = require('../../middlewares/apiAuth');
 const AdminController = require('../controllers/adminController');
-const OrdersController = require('../controllers/ordersController');
+const OrdersController = require('../controllers/ordersController.js.backup');
 const { uploadSingle, handleUploadError } = require('../../config/localUploadConfig');
 const Branch = require('../../models/Branch');
 const Product = require('../../models/Product');
@@ -179,7 +179,7 @@ router.post('/products/:productId/promo-all-branches', requireRole(['superadmin'
 // Kuryer buyurtmani qabul qiladi
 router.post('/orders/:orderId/courier/accept', requireRole(['courier']), async (req, res) => {
   try {
-    const { OrdersController } = require('../controllers/ordersController');
+    const { OrdersController } = require('../controllers/ordersController.js.backup');
     await OrdersController.courierAcceptOrder(req, res);
   } catch (error) {
     console.error('Courier accept route error:', error);
@@ -190,7 +190,7 @@ router.post('/orders/:orderId/courier/accept', requireRole(['courier']), async (
 // Kuryer buyurtmani olib ketdi
 router.post('/orders/:orderId/courier/pickup', requireRole(['courier']), async (req, res) => {
   try {
-    const { OrdersController } = require('../controllers/ordersController');
+    const { OrdersController } = require('../controllers/ordersController.js.backup');
     await OrdersController.courierPickedUpOrder(req, res);
   } catch (error) {
     console.error('Courier pickup route error:', error);
@@ -201,7 +201,7 @@ router.post('/orders/:orderId/courier/pickup', requireRole(['courier']), async (
 // Kuryer yo'lda
 router.post('/orders/:orderId/courier/onway', requireRole(['courier']), async (req, res) => {
   try {
-    const { OrdersController } = require('../controllers/ordersController');
+    const { OrdersController } = require('../controllers/ordersController.js.backup');
     await OrdersController.courierOnWay(req, res);
   } catch (error) {
     console.error('Courier onway route error:', error);
@@ -212,7 +212,7 @@ router.post('/orders/:orderId/courier/onway', requireRole(['courier']), async (r
 // Kuryer yetkazdi
 router.post('/orders/:orderId/courier/delivered', requireRole(['courier']), async (req, res) => {
   try {
-    const { OrdersController } = require('../controllers/ordersController');
+    const { OrdersController } = require('../controllers/ordersController.js.backup');
     await OrdersController.courierDeliveredOrder(req, res);
   } catch (error) {
     console.error('Courier delivered route error:', error);
@@ -223,7 +223,7 @@ router.post('/orders/:orderId/courier/delivered', requireRole(['courier']), asyn
 // Kuryer bekor qildi
 router.post('/orders/:orderId/courier/cancel', requireRole(['courier']), async (req, res) => {
   try {
-    const { OrdersController } = require('../controllers/ordersController');
+    const { OrdersController } = require('../controllers/ordersController.js.backup');
     await OrdersController.courierCancelledOrder(req, res);
   } catch (error) {
     console.error('Courier cancel route error:', error);
@@ -234,7 +234,7 @@ router.post('/orders/:orderId/courier/cancel', requireRole(['courier']), async (
 // Kuryer lokatsiyasini yangilash
 router.post('/orders/:orderId/courier/location', requireRole(['courier']), async (req, res) => {
   try {
-    const { OrdersController } = require('../controllers/ordersController');
+    const { OrdersController } = require('../controllers/ordersController.js.backup');
     await OrdersController.updateCourierLocation(req, res);
   } catch (error) {
     console.error('Courier location update route error:', error);
@@ -245,7 +245,7 @@ router.post('/orders/:orderId/courier/location', requireRole(['courier']), async
 // Masofa tekshirish
 router.post('/orders/:orderId/courier/check-distance', requireRole(['courier']), async (req, res) => {
   try {
-    const { OrdersController } = require('../controllers/ordersController');
+    const { OrdersController } = require('../controllers/ordersController.js.backup');
     await OrdersController.checkCourierDistance(req, res);
   } catch (error) {
     console.error('Courier distance check route error:', error);

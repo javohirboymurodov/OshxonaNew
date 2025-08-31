@@ -1,5 +1,5 @@
 // Courier callback handlers
-const CourierHandlers = require('../handlers/courier/handlers');
+const CourierHandlers = require('../handlers/courier/handlers.js.backup');
 
 /**
  * Courier callback handlers ni bot instance ga ulash

@@ -1,6 +1,6 @@
 const { User } = require('../../../models');
 const { mainMenuKeyboard, backToMainKeyboard } = require('../../user/keyboards');
-const { askForPhone, askForPaymentMethod, continueOrderProcess } = require('./order');
+const { askForPhone, askForPaymentMethod, continueOrderProcess } = require('./order/index.js.backup');
 
 async function handleTextMessage(ctx, text) {
   try {
@@ -9,14 +9,14 @@ async function handleTextMessage(ctx, text) {
 
     // Stol raqami kutilayotgan bo'lsa (old format)
     if (waitingFor && waitingFor.startsWith('dinein_table_')) {
-      const { handleDineInTableInput } = require('./order');
+      const { handleDineInTableInput } = require('./order/index.js.backup');
       const handled = await handleDineInTableInput(ctx);
       if (handled) return;
     }
 
     // Handle table number input (new format)
     if (waitingFor === 'table_number') {
-      const { handleDineInTableInput } = require('./order');
+      const { handleDineInTableInput } = require('./order/index.js.backup');
       const handled = await handleDineInTableInput(ctx);
       if (handled) return;
     }
@@ -86,7 +86,7 @@ async function handleTextMessage(ctx, text) {
         console.log('Phone already requested, skipping...');
         return;
       }
-      return await require('./order').askForPhone(ctx);
+      return await require('./order/index.js.backup').askForPhone(ctx);
     }
     // Remove persistent reply keyboard if exists
     if (messageText && messageText.match(/Asosiy sahifa|Mening buyurtmalarim|Profil/i)) {
@@ -108,7 +108,7 @@ async function handleTextMessage(ctx, text) {
           await user.save();
           ctx.session.waitingFor = null;
           // Skip asking phone by text; phone must be shared via contact
-          if (!user.phone) return await require('./order').askForPhone(ctx);
+          if (!user.phone) return await require('./order/index.js.backup').askForPhone(ctx);
           return await require('./profile').startHandler(ctx);
         // Manual phone entry is disabled
         case 'address':

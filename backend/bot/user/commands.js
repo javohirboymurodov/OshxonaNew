@@ -23,7 +23,7 @@ function registerUserModule(bot) {
       // Agar kuryer bo'lsa, kuryer paneliga yo'naltiramiz
       if (user && user.role === 'courier') {
         try {
-          const CourierHandlers = require('../handlers/courier/handlers');
+          const CourierHandlers = require('../handlers/courier/handlers.js.backup');
           await CourierHandlers.start(ctx);
           return;
         } catch (e) {

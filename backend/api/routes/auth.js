@@ -2,9 +2,9 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { User } = require('../../models');
-const { authenticateToken } = require('../middleware/auth');
-const SecurityService = require('../../middleware/security');
-const validationSchemas = require('../../middleware/validationSchemas');
+const { authenticateToken } = require('../../middlewares/apiAuth');
+const SecurityService = require('../../middlewares/security');
+const validationSchemas = require('../../middlewares/validationSchemas');
 
 const router = express.Router();
 

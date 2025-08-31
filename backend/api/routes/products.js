@@ -1,9 +1,9 @@
 // api/routes/products.js
 const express = require('express');
-const { authenticateToken, requireRole, requireAdmin } = require('../middleware/auth');
+const { authenticateToken, requireRole, requireAdmin } = require('../../middlewares/apiAuth');
 const ProductsController = require('../controllers/productsController');
-const SecurityService = require('../../middleware/security');
-const validationSchemas = require('../../middleware/validationSchemas');
+const SecurityService = require('../../middlewares/security');
+const validationSchemas = require('../../middlewares/validationSchemas');
 
 // Local upload config'dan import qilish
 const { 

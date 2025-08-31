@@ -9,9 +9,8 @@ const SocketManager = require('../config/socketConfig');
 const Database = require('../config/database');
 const { specs, swaggerUi } = require('../docs/swagger');
 const logger = require('../utils/logger');
-const { ErrorHandler} = require('../utils/ErrorHandler');
-const requestLogger = require('../middleware/requestLogger');
-const SecurityService = require('../middleware/security');
+const requestLogger = require('../middlewares/requestLogger');
+const SecurityService = require('../middlewares/security');
 
 // Express app yaratish
 const app = express();

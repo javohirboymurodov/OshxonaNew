@@ -3,7 +3,7 @@ const router = express.Router();
 const QRCode = require('qrcode');
 const PDFService = require('../../services/pdfService');
 
-const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const { authenticateToken, requireAdmin } = require('../../middlewares/apiAuth');
 const { Table } = require('../../models');
 
 // Allow token via query (?token=...) for direct PDF link downloads
