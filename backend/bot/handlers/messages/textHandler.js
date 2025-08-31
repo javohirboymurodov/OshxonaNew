@@ -110,7 +110,7 @@ async function handleTableNumber(ctx, user, text) {
     
     // Send to admin panel via socket
     try {
-      const SocketManager = require('../../../services/socketManager');
+      const SocketManager = require('../../../config/socketConfig');
       if (SocketManager.io) {
         SocketManager.io.emit('customer_arrived', {
           customer: {
