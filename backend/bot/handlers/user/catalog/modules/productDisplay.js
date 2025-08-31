@@ -298,47 +298,26 @@ class ProductDisplay extends BaseHandler {
         [{ text: '🏠 Bosh sahifa', callback_data: 'back_to_main' }]
       );
 
-      // Send with image if available
-      const imageUrl = buildAbsoluteImageUrl(product.image);
-      
-      if (imageUrl) {
+      // Send text message (image functionality temporarily disabled)
+      if (ctx.callbackQuery) {
         try {
-          if (ctx.callbackQuery) {
-            await ctx.deleteMessage();
-          }
-          await ctx.replyWithPhoto(imageUrl, {
-            caption: message,
-            parse_mode: 'Markdown',
-            reply_markup: keyboard
-          });
-        } catch (photoError) {
-          console.error('❌ Photo send error:', photoError);
-          // Fallback to text message
-          if (ctx.callbackQuery) {
-            await ctx.editMessageText(message, {
-              parse_mode: 'Markdown',
-              reply_markup: keyboard
-            });
-          } else {
-            await ctx.reply(message, {
-              parse_mode: 'Markdown',
-              reply_markup: keyboard
-            });
-          }
-        }
-      } else {
-        // No image, send text only
-        if (ctx.callbackQuery) {
           await ctx.editMessageText(message, {
             parse_mode: 'Markdown',
             reply_markup: keyboard
           });
-        } else {
+        } catch (editError) {
+          console.error('❌ Edit message error:', editError);
+          // Fallback to new message
           await ctx.reply(message, {
             parse_mode: 'Markdown',
             reply_markup: keyboard
           });
         }
+      } else {
+        await ctx.reply(message, {
+          parse_mode: 'Markdown',
+          reply_markup: keyboard
+        });
       }
     }, ctx, '❌ Mahsulot tafsilotlarini ko\'rsatishda xatolik!');
   }
