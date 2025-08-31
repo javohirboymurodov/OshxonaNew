@@ -12,7 +12,6 @@ function buildAbsoluteImageUrl(img) {
   try {
     if (!img) return null;
     
-    // Check if file exists first
     const fs = require('fs');
     const path = require('path');
     
@@ -26,15 +25,17 @@ function buildAbsoluteImageUrl(img) {
       return null;
     }
     
-    // Check if file exists
-    const fullPath = path.join(__dirname, '../../../../../uploads', imagePath.replace('uploads/', ''));
-    if (!fs.existsSync(fullPath)) {
-      console.log('❌ Image file not found:', fullPath);
-      return null; // Return null if file doesn't exist
-    }
+    // Build file path
+    const fileName = imagePath.replace('uploads/', '');
+    const fullPath = path.join(__dirname, '../../../../../uploads', fileName);
     
-    const base = process.env.SERVER_URL || `http://localhost:${process.env.PORT || 5000}`;
-    return `${base}/${imagePath}`;
+    // Return file stream if exists, null if not
+    if (fs.existsSync(fullPath)) {
+      return { source: fs.createReadStream(fullPath) }; // Return stream object
+    } else {
+      console.log('❌ Image file not found:', fullPath);
+      return null;
+    }
   } catch (error) { 
     console.error('❌ buildAbsoluteImageUrl error:', error);
     return null; 

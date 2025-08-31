@@ -299,14 +299,14 @@ class ProductDisplay extends BaseHandler {
       );
 
       // Send with image if available
-      const imageUrl = buildAbsoluteImageUrl(product.image);
+      const imageSource = buildAbsoluteImageUrl(product.image);
       
-      if (imageUrl) {
+      if (imageSource) {
         try {
           if (ctx.callbackQuery) {
             await ctx.deleteMessage();
           }
-          await ctx.replyWithPhoto(imageUrl, {
+          await ctx.replyWithPhoto(imageSource, {
             caption: message,
             parse_mode: 'Markdown',
             reply_markup: keyboard

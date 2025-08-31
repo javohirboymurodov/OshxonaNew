@@ -74,8 +74,8 @@ function registerOrderCallbacks(bot) {
   // Arrival time handlers
   bot.action(/^arrival_time_(.+)$/, async (ctx) => {
     try {
-      const orderHandlers = require('../../handlers/user/order/orderFlow');
-      await orderHandlers.handleArrivalTime(ctx);
+      const UserOrderHandlers = require('../../handlers/user/order/index');
+      await UserOrderHandlers.handleArrivalTime(ctx);
     } catch (error) {
       console.error('❌ arrival_time error:', error);
       if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
