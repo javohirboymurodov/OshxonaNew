@@ -100,8 +100,9 @@ function registerOrderCallbacks(bot) {
   // Payment method handlers
   bot.action(/^payment_(.+)$/, async (ctx) => {
     try {
+      const method = ctx.match[1]; // Extract payment method from callback_data
       const paymentHandlers = require('../../handlers/user/order/paymentFlow');
-      await paymentHandlers.handlePaymentMethod(ctx);
+      await paymentHandlers.handlePaymentMethod(ctx, method);
     } catch (error) {
       console.error('❌ payment error:', error);
       if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
