@@ -88,8 +88,9 @@ async function handleTableNumber(ctx, user, text) {
     ctx.session.waitingFor = null;
     
     // Find the user's latest dine-in order and update table number
+    let latestOrder = null;
     try {
-      const latestOrder = await Order.findOne({ 
+      latestOrder = await Order.findOne({ 
         user: user._id, 
         orderType: 'dine_in',
         status: { $in: ['pending', 'confirmed', 'preparing', 'ready'] }
