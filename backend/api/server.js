@@ -70,12 +70,14 @@ app.use('/api', SecurityService.getAPIRateLimit());
 app.use('/api/auth', SecurityService.getAuthRateLimit());
 app.use('/api/orders', SecurityService.getOrderRateLimit());
 
-// Request logging middleware
-app.use((req, res, next) => {
-  const timestamp = new Date().toISOString();
-  console.log(`[${timestamp}] ${req.method} ${req.url}`);
-  next();
-});
+// Optimized request logging - only in development
+if (process.env.NODE_ENV === 'development' || process.env.API_DEBUG === 'true') {
+  app.use((req, res, next) => {
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}] ${req.method} ${req.url}`);
+    next();
+  });
+}
 
 // 📂 STATIC FILES - CORS headers bilan
 app.use('/uploads', (req, res, next) => {

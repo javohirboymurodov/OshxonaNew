@@ -152,6 +152,9 @@ export const useSocket = () => {
     // Listen for authentication errors
     socket.on('auth-error', (error: any) => {
       console.error('Socket auth error:', error);
+      // Token expire bo'lsa logout qilish
+      localStorage.removeItem('token');
+      window.location.href = '/login';
     });
 
     // Listen for successful admin join

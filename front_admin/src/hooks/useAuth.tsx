@@ -2,6 +2,7 @@
 import React, { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { User } from '@/types';
 import apiService from '@/services/api';
+import AuthUtils from '@/utils/authUtils';
 
 interface AuthContextType {
   user: User | null;
@@ -29,6 +30,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Clear any corrupted tokens first
+    AuthUtils.clearCorruptedTokens();
+    
     const token = localStorage.getItem('token');
     if (token) {
       fetchUser();
@@ -61,9 +65,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    setUser(null);
+  const logout = async () => {
+    try {
+      await apiService.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      // Use AuthUtils for complete cleanup
+      AuthUtils.resetAuthState();
+      setUser(null);
+    }
   };
 
   const contextValue: AuthContextType = {

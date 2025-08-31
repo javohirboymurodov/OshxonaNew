@@ -118,6 +118,49 @@ router.get('/me', authenticateToken, async (req, res) => {
   }
 });
 
+// Refresh token
+router.post('/refresh', authenticateToken, async (req, res) => {
+  try {
+    const user = req.user;
+    
+    // Yangi token yaratish
+    const newToken = jwt.sign(
+      { 
+        userId: user._id, 
+        id: user._id,
+        role: user.role,
+        email: user.email,
+        branch: user.branch || null
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.json({
+      success: true,
+      message: 'Token yangilandi!',
+      data: { 
+        token: newToken,
+        user: {
+          _id: user._id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          role: user.role,
+          branch: user.branch || null,
+          isActive: user.isActive
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Token refresh error:', error);
+    res.status(401).json({
+      success: false,
+      message: 'Token yangilab bo\'lmadi!'
+    });
+  }
+});
+
 // Logout (token blacklist - keyinchalik qo'shamiz)
 router.post('/logout', authenticateToken, async (req, res) => {
   try {

@@ -5,6 +5,22 @@ require('dotenv').config({ path: '.env.test' });
 process.env.NODE_ENV = 'test';
 process.env.MONGODB_URI = process.env.MONGODB_URI_TEST || 'mongodb://localhost:27017/oshxona_test';
 
+// Import test helpers
+const testHelpers = require('./helpers/testHelpers');
+
+// Make test helpers globally available
+global.testHelpers = testHelpers;
+global.createTestBranch = testHelpers.createTestBranch;
+global.createTestUser = testHelpers.createTestUser;
+global.createTestAdmin = testHelpers.createTestAdmin;
+global.createTestSuperAdmin = testHelpers.createTestSuperAdmin;
+global.createTestCategory = testHelpers.createTestCategory;
+global.createTestProduct = testHelpers.createTestProduct;
+global.createTestOrder = testHelpers.createTestOrder;
+global.mockAuthToken = testHelpers.mockAuthToken;
+global.mockExpiredToken = testHelpers.mockExpiredToken;
+global.createMockTelegramCtx = testHelpers.createMockTelegramCtx;
+
 // Mock external services during tests
 jest.mock('../services/deliveryService', () => ({
   calculateDeliveryFee: jest.fn().mockResolvedValue(5000),
@@ -107,7 +123,10 @@ const originalConsoleLog = console.log;
 const originalConsoleError = console.error;
 const originalConsoleWarn = console.warn;
 
-beforeAll(() => {
+beforeAll(async () => {
+  // Setup test database
+  await testHelpers.setupTestDatabase();
+  
   // Suppress console output during tests unless VERBOSE=true
   if (!process.env.VERBOSE) {
     console.log = jest.fn();
@@ -116,7 +135,10 @@ beforeAll(() => {
   }
 });
 
-afterAll(() => {
+afterAll(async () => {
+  // Cleanup test database
+  await testHelpers.cleanupTestDatabase();
+  
   // Restore console output
   console.log = originalConsoleLog;
   console.error = originalConsoleError;
@@ -124,6 +146,8 @@ afterAll(() => {
 });
 
 // Clean up after each test
-afterEach(() => {
+afterEach(async () => {
   jest.clearAllMocks();
+  // Clear test data but keep connection
+  await testHelpers.clearTestData();
 });

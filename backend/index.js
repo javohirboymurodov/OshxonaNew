@@ -53,15 +53,37 @@ const initializeApp = async () => {
       })
     }));
 
-    // Hydrate session.user from DB for every update
+    // Optimized user hydration with caching
+    const userCache = new Map();
+    const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
+    
     bot.use(async (ctx, next) => {
       try {
         if (!ctx.from) return next();
-        const { User } = require('./models');
+        
         ctx.session = ctx.session || {};
+        const telegramId = ctx.from.id;
+        const cacheKey = `user_${telegramId}`;
+        const cached = userCache.get(cacheKey);
+        
+        // Check cache first
+        if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
+          ctx.session.user = cached.user;
+          return next();
+        }
+        
+        // Only query DB if not in session and not in cache
         if (!ctx.session.user) {
-          const user = await User.findOne({ telegramId: ctx.from.id });
-          if (user) ctx.session.user = user;
+          const { User } = require('./models');
+          const user = await User.findOne({ telegramId }).lean(); // Use lean() for better performance
+          if (user) {
+            ctx.session.user = user;
+            // Cache the user
+            userCache.set(cacheKey, {
+              user,
+              timestamp: Date.now()
+            });
+          }
         }
       } catch (e) {
         console.error('hydrateUser middleware error:', e.message);
@@ -69,17 +91,19 @@ const initializeApp = async () => {
       return next();
     });
     
-    // Debug middleware - Bot javob bermaslik muammosini tracking qilish uchun
-    bot.use((ctx, next) => {
-      console.log('📥 Bot update received:', {
-        type: ctx.updateType,
-        from: ctx.from?.first_name,
-        userId: ctx.from?.id,
-        text: ctx.message?.text || ctx.callbackQuery?.data,
-        chatId: ctx.chat?.id
+    // Optimized debug middleware - only in development or when needed
+    if (process.env.NODE_ENV === 'development' || process.env.BOT_DEBUG === 'true') {
+      bot.use((ctx, next) => {
+        console.log('📥 Bot update received:', {
+          type: ctx.updateType,
+          from: ctx.from?.first_name,
+          userId: ctx.from?.id,
+          text: ctx.message?.text || ctx.callbackQuery?.data,
+          chatId: ctx.chat?.id
+        });
+        return next();
       });
-      return next();
-    });
+    }
     
     // ========================================
     // 🔧 BOT SETUP
