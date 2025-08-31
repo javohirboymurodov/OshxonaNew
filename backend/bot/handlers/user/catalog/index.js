@@ -142,14 +142,14 @@ class UserCatalogHandlers extends BaseHandler {
       let categoryId, page = 1;
       
       // Handle both category_<id> and category_products_<id>_<page> patterns
-      const categoryMatch = callbackData.match(/^category_(.+)$/);
       const categoryProductsMatch = callbackData.match(/^category_products_(.+)_(\d+)$/);
+      const simpleCategoryMatch = callbackData.match(/^category_([^_]+)$/); // Only simple category_<id>, not category_products_
       
       if (categoryProductsMatch) {
         categoryId = categoryProductsMatch[1];
         page = parseInt(categoryProductsMatch[2]) || 1;
-      } else if (categoryMatch) {
-        categoryId = categoryMatch[1];
+      } else if (simpleCategoryMatch) {
+        categoryId = simpleCategoryMatch[1];
         page = 1;
       } else {
         return await ctx.answerCbQuery('❌ Kategoriya ma\'lumoti noto\'g\'ri!');
