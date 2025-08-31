@@ -13,7 +13,7 @@ class DineInHandlers extends BaseHandler {
    * @param {Object} ctx - Telegraf context
    */
   static async handleArrivalTime(ctx) {
-    return this.safeExecute(async () => {
+    return BaseHandler.safeExecute(async () => {
       const callbackData = ctx.callbackQuery.data;
       const timeMatch = callbackData.match(/^arrival_time_(.+)$/);
       
@@ -102,7 +102,7 @@ class DineInHandlers extends BaseHandler {
    * @param {Object} ctx - Telegraf context
    */
   static async handleDineInTableInput(ctx) {
-    return this.safeExecute(async () => {
+    return BaseHandler.safeExecute(async () => {
       console.log('=== handleDineInTableInput started ===');
       console.log('User ID:', ctx.from.id);
       console.log('Text:', ctx.message.text);
@@ -217,10 +217,10 @@ Buyurtma №: ${order.orderId}`;
    * @param {Object} ctx - Telegraf context
    */
   static async handleDineInArrived(ctx) {
-    return this.safeExecute(async () => {
+    return BaseHandler.safeExecute(async () => {
       const orderId = ctx.callbackQuery.data.replace('dinein_arrived_', '');
       
-      if (!this.isValidObjectId(orderId)) {
+      if (!BaseHandler.isValidObjectId(orderId)) {
         return await ctx.answerCbQuery('❌ Buyurtma ID noto\'g\'ri!');
       }
 

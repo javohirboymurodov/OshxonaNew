@@ -12,7 +12,7 @@ class PhoneHandlers extends BaseHandler {
    * @param {Object} ctx - Telegraf context
    */
   static async askForPhone(ctx) {
-    return this.safeExecute(async () => {
+    return BaseHandler.safeExecute(async () => {
       // Agar telefon raqam allaqachon so'ralgan bo'lsa va bu profil orqali emas, qayta so'ramaymiz
       if (ctx.session.phoneRequested && ctx.session.waitingFor !== 'phone') {
         console.log('Phone already requested, skipping...');
