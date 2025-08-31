@@ -139,14 +139,23 @@ class UserCatalogHandlers extends BaseHandler {
   static async handleShowCategoryProducts(ctx) {
     return this.safeExecute(async () => {
       const callbackData = ctx.callbackQuery.data;
-      const categoryMatch = callbackData.match(/^category_(.+)$/);
+      let categoryId, page = 1;
       
-      if (!categoryMatch) {
+      // Handle both category_<id> and category_products_<id>_<page> patterns
+      const categoryMatch = callbackData.match(/^category_(.+)$/);
+      const categoryProductsMatch = callbackData.match(/^category_products_(.+)_(\d+)$/);
+      
+      if (categoryProductsMatch) {
+        categoryId = categoryProductsMatch[1];
+        page = parseInt(categoryProductsMatch[2]) || 1;
+      } else if (categoryMatch) {
+        categoryId = categoryMatch[1];
+        page = 1;
+      } else {
         return await ctx.answerCbQuery('❌ Kategoriya ma\'lumoti noto\'g\'ri!');
       }
 
-      const categoryId = categoryMatch[1];
-      await ProductHandlers.showCategoryProducts(ctx, categoryId);
+      await ProductHandlers.showCategoryProducts(ctx, categoryId, page);
     }, ctx, '❌ Kategoriya mahsulotlarini ko\'rsatishda xatolik!');
   }
 
