@@ -65,8 +65,23 @@ async function handleTableNumber(ctx, user, text) {
   try {
     console.log('🎯 Processing table number:', text);
     const tableNumber = text.trim();
+    
+    // Validation
     if (!tableNumber) {
       await ctx.reply('❌ Stol raqamini kiriting');
+      return;
+    }
+    
+    // Check if it's a valid number or alphanumeric (A1, B5, etc.)
+    if (!/^[A-Za-z]?\d+[A-Za-z]?$/.test(tableNumber)) {
+      await ctx.reply('❌ Stol raqami noto\'g\'ri formatda!\n\nMisol: 15, A5, 23B, 101');
+      return;
+    }
+    
+    // Check reasonable range (1-999)
+    const numericPart = tableNumber.replace(/[A-Za-z]/g, '');
+    if (parseInt(numericPart) > 999 || parseInt(numericPart) < 1) {
+      await ctx.reply('❌ Stol raqami 1 dan 999 gacha bo\'lishi kerak!');
       return;
     }
     
