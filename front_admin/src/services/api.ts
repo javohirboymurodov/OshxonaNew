@@ -28,14 +28,36 @@ class ApiService {
       (error) => Promise.reject(error)
     );
 
-    // Response interceptor - error handling
+    // Response interceptor - error handling with token refresh
     this.api.interceptors.response.use(
       (response) => response,
-      (error) => {
+      async (error) => {
+        const originalRequest = error.config;
+        
+        if (error.response?.status === 401 && !originalRequest._retry) {
+          originalRequest._retry = true;
+          
+          try {
+            console.log('🔄 Token expired, attempting refresh...');
+            const newToken = await this.refreshToken();
+            localStorage.setItem('token', newToken);
+            
+            // Update the authorization header and retry
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            return this.api(originalRequest);
+          } catch (refreshError) {
+            console.error('❌ Token refresh failed:', refreshError);
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+            return Promise.reject(refreshError);
+          }
+        }
+        
         if (error.response?.status === 401) {
           localStorage.removeItem('token');
           window.location.href = '/login';
         }
+        
         return Promise.reject(error);
       }
     );
@@ -51,8 +73,18 @@ class ApiService {
   }
 
   async logout(): Promise<void> {
-    await this.api.post('/auth/logout');
-    localStorage.removeItem('token');
+    try {
+      await this.api.post('/auth/logout');
+    } catch (error) {
+      console.error('Logout API error:', error);
+    } finally {
+      localStorage.removeItem('token');
+    }
+  }
+
+  async refreshToken(): Promise<string> {
+    const response: AxiosResponse<ApiResponse<{ token: string }>> = await this.api.post('/auth/refresh');
+    return response.data.data!.token;
   }
 
   async getCurrentUser() {
