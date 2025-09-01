@@ -9,6 +9,7 @@ type Category = { _id: string; name: string };
 type Branch = { _id: string; name: string; title?: string };
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_TIMEOUT = 10000; // 10 seconds timeout
 
 function useInitData() {
   const [telegramId, setTelegramId] = React.useState<string | null>(null);
