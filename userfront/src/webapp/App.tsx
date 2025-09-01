@@ -1,4 +1,9 @@
-import React from 'react'
+import React from 'react';
+import ProductCard from '../components/ProductCard';
+import CategoryFilter from '../components/CategoryFilter';
+import CartModal from '../components/CartModal';
+import BottomBar from '../components/BottomBar';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 declare global {
   interface Window { Telegram?: any }
@@ -9,7 +14,6 @@ type Category = { _id: string; name: string };
 type Branch = { _id: string; name: string; title?: string };
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://oshxonanew.onrender.com/api';
-const API_TIMEOUT = 5000; // 5 seconds timeout
 
 // Mock data for testing when backend is not available
 const MOCK_CATEGORIES: Category[] = [
@@ -66,9 +70,13 @@ export default function App() {
   const [products, setProducts] = React.useState<Product[]>([]);
   const [cart, setCart] = React.useState<Record<string, number>>({});
   const [branch, setBranch] = React.useState<string>('');
+  const [loading, setLoading] = React.useState(true);
+  const [cartModalOpen, setCartModalOpen] = React.useState(false);
 
+  // Load categories
   React.useEffect(() => {
     if (!telegramId) return;
+    setLoading(true);
     fetch(`${API_BASE}/public/categories?telegramId=${telegramId}`)
       .then(r=>r.json())
       .then(r=>{
@@ -76,12 +84,13 @@ export default function App() {
         setCategories(list);
       })
       .catch(()=>{
-        // Fallback to mock data when API fails
         console.log('🔄 API unavailable, using mock categories');
         setCategories(MOCK_CATEGORIES);
-      });
+      })
+      .finally(() => setLoading(false));
   }, [telegramId]);
 
+  // Load branches
   React.useEffect(() => {
     if (!telegramId) return;
     fetch(`${API_BASE}/public/branches?telegramId=${telegramId}`)
@@ -94,7 +103,6 @@ export default function App() {
         }
       })
       .catch(()=>{
-        // Fallback to mock data when API fails
         console.log('🔄 API unavailable, using mock branches');
         setBranches(MOCK_BRANCHES);
         if (!branch) {
@@ -103,6 +111,7 @@ export default function App() {
       });
   }, [telegramId, branch]);
 
+  // Load products
   React.useEffect(() => {
     if (!telegramId) return;
     const qp: string[] = [];
@@ -120,7 +129,6 @@ export default function App() {
         setProducts(filteredProducts);
       })
       .catch(()=>{
-        // Fallback to mock data when API fails
         console.log('🔄 API unavailable, using mock products');
         let filteredProducts = MOCK_PRODUCTS;
         if (activeCat !== 'all') {
@@ -130,68 +138,133 @@ export default function App() {
       });
   }, [activeCat, telegramId]);
 
+  // Calculate totals
   const total = Object.entries(cart).reduce((sum,[pid,qty])=>{
     const p = products.find(x=>x._id===pid); return sum + (p? p.price*qty:0)
   },0);
 
-  const sendToBot = () => {
+  const itemCount = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
+
+  // Cart functions
+  const updateCartQuantity = (productId: string, quantity: number) => {
+    setCart(prev => ({
+      ...prev,
+      [productId]: Math.max(0, quantity)
+    }));
+  };
+
+  const incrementProduct = (productId: string) => {
+    updateCartQuantity(productId, (cart[productId] || 0) + 1);
+  };
+
+  const decrementProduct = (productId: string) => {
+    updateCartQuantity(productId, (cart[productId] || 0) - 1);
+  };
+
+  // Order placement
+  const placeOrder = () => {
     if (Object.keys(cart).length === 0) {
       alert('Savat bo\'sh!');
       return;
     }
+
     // Use selected branch or first available branch
     const selectedBranch = branch || (branches.length > 0 ? branches[0]._id : null);
     const payload = { 
       telegramId, 
       branch: selectedBranch, 
-      items: Object.entries(cart).map(([productId, quantity])=>({ productId, quantity })) 
+      items: Object.entries(cart)
+        .filter(([_, quantity]) => quantity > 0)
+        .map(([productId, quantity]) => ({ productId, quantity }))
     };
+
     try {
-      const tg = window.Telegram?.WebApp; 
-      tg?.sendData?.(JSON.stringify(payload));
-      tg?.close?.(); // Close WebApp after sending data
-    } catch {}
+      const tg = window.Telegram?.WebApp;
+      if (tg?.sendData) {
+        console.log('📤 Sending data to bot:', payload);
+        tg.sendData(JSON.stringify(payload));
+        // Close cart modal first, then WebApp
+        setCartModalOpen(false);
+        setTimeout(() => {
+          tg?.close?.();
+        }, 100);
+      } else {
+        // Fallback for testing outside Telegram
+        console.log('📤 Would send to bot:', payload);
+        alert('Buyurtma ma\'lumotlari bot\'ga yuborildi!\n\n' + JSON.stringify(payload, null, 2));
+      }
+    } catch (error) {
+      console.error('❌ Error sending data:', error);
+      alert('Xatolik yuz berdi. Qaytadan urinib ko\'ring.');
+    }
   };
 
+  if (loading) {
+    return (
+      <div style={{ fontFamily:'system-ui, sans-serif', padding:12 }}>
+        <h3>🍽️ Katalog</h3>
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
   return (
-    <div style={{ fontFamily:'system-ui, sans-serif', padding:12 }}>
+    <div style={{ fontFamily:'system-ui, sans-serif', padding:12, paddingBottom: itemCount > 0 ? 80 : 12 }}>
       <h3>🍽️ Katalog</h3>
       
-      {/* Branch info - hidden but auto-selected */}
+      {/* Branch info */}
       {branch && branches.length > 0 && (
         <div style={{ marginBottom: 12, padding: 8, backgroundColor: '#f0f8ff', borderRadius: 8, fontSize: 14 }}>
           🏪 <strong>{branches.find(b => b._id === branch)?.name || branches.find(b => b._id === branch)?.title}</strong>
         </div>
       )}
 
-      {/* Categories */}
-      <div style={{ display:'flex', gap:8, overflowX:'auto', marginBottom:12 }}>
-        <button onClick={()=>setActiveCat('all')} style={{ padding:'6px 10px', borderRadius:8, border:'1px solid #ddd', background: activeCat==='all'?'#1677ff':'#fff', color:activeCat==='all'?'#fff':'#000' }}>Barchasi</button>
-        {categories.map(c=> (
-          <button key={c._id} onClick={()=>setActiveCat(c._id)} style={{ padding:'6px 10px', borderRadius:8, border:'1px solid #ddd', background: activeCat===c._id?'#1677ff':'#fff', color:activeCat===c._id?'#fff':'#000' }}>{c.name}</button>
-        ))}
-      </div>
+      {/* Category Filter */}
+      <CategoryFilter 
+        categories={categories}
+        activeCategory={activeCat}
+        onCategoryChange={setActiveCat}
+      />
 
       {/* Products grid */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))', gap:10 }}>
-        {products.map(p=> (
-          <div key={p._id} style={{ border:'1px solid #eee', borderRadius:10, padding:10 }}>
-            <div style={{ fontWeight:600 }}>{p.name}</div>
-            <div style={{ color:'#666', margin:'4px 0' }}>{p.price.toLocaleString()} so'm</div>
-            <div style={{ display:'flex', gap:6, alignItems:'center', justifyContent:'center' }}>
-              <button onClick={()=> setCart(prev=> ({ ...prev, [p._id]: Math.max((prev[p._id]||0)-1,0) }))} style={{ width: 30, height: 30, borderRadius: '50%', border: '1px solid #ddd', background: '#fff' }}>−</button>
-              <div style={{ minWidth: 20, textAlign: 'center' }}>{cart[p._id]||0}</div>
-              <button onClick={()=> setCart(prev=> ({ ...prev, [p._id]: (prev[p._id]||0)+1 }))} style={{ width: 30, height: 30, borderRadius: '50%', border: '1px solid #ddd', background: '#fff' }}>+</button>
-            </div>
-          </div>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))', gap:12 }}>
+        {products.map(product => (
+          <ProductCard
+            key={product._id}
+            product={product}
+            quantity={cart[product._id] || 0}
+            onIncrement={() => incrementProduct(product._id)}
+            onDecrement={() => decrementProduct(product._id)}
+          />
         ))}
       </div>
 
-      {/* Fixed bottom bar */}
-      <div style={{ position:'fixed', left:0, right:0, bottom:0, padding:12, background:'#fff', borderTop:'1px solid #eee', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-        <div>🧺 Jami: <b>{total.toLocaleString()} so'm</b></div>
-        <button onClick={sendToBot} style={{ background:'#52c41a', color:'#fff', padding:'10px 14px', border:'none', borderRadius:8 }}>Buyurtma berish</button>
-      </div>
+      {/* Empty state */}
+      {products.length === 0 && (
+        <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>🔍</div>
+          <div>Mahsulotlar topilmadi</div>
+        </div>
+      )}
+
+      {/* Bottom Bar */}
+      <BottomBar
+        total={total}
+        itemCount={itemCount}
+        onOpenCart={() => setCartModalOpen(true)}
+        onPlaceOrder={placeOrder}
+      />
+
+      {/* Cart Modal */}
+      <CartModal
+        isOpen={cartModalOpen}
+        onClose={() => setCartModalOpen(false)}
+        cart={cart}
+        products={products}
+        onUpdateQuantity={updateCartQuantity}
+        onPlaceOrder={placeOrder}
+        total={total}
+      />
     </div>
-  )
+  );
 }
