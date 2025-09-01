@@ -104,15 +104,20 @@ export default function App() {
   }, [telegramId, branch]);
 
   React.useEffect(() => {
-    if (!branch || !telegramId) return;
+    if (!telegramId) return;
     const qp: string[] = [];
     if (activeCat !== 'all') qp.push(`category=${encodeURIComponent(activeCat)}`);
-    const url = `${API_BASE}/public/products?telegramId=${telegramId}&branch=${encodeURIComponent(branch)}${qp.length?`&${qp.join('&')}`:''}`;
+    const url = `${API_BASE}/public/products?telegramId=${telegramId}${qp.length?`&${qp.join('&')}`:''}`;
     fetch(url)
       .then(r=>r.json())
       .then(r=>{
         const items: Product[] = r?.data?.items || r?.data || [];
-        setProducts(items);
+        // Filter by category if selected
+        let filteredProducts = items;
+        if (activeCat !== 'all') {
+          filteredProducts = items.filter(p => p.categoryId?._id === activeCat);
+        }
+        setProducts(filteredProducts);
       })
       .catch(()=>{
         // Fallback to mock data when API fails
@@ -123,7 +128,7 @@ export default function App() {
         }
         setProducts(filteredProducts);
       });
-  }, [activeCat, branch, telegramId]);
+  }, [activeCat, telegramId]);
 
   const total = Object.entries(cart).reduce((sum,[pid,qty])=>{
     const p = products.find(x=>x._id===pid); return sum + (p? p.price*qty:0)
