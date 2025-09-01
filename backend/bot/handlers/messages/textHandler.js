@@ -255,12 +255,16 @@ async function handleFeedback(ctx, user, text) {
  */
 async function handleWebAppData(ctx) {
   try {
+    console.log('🎯 WebApp data handler called!');
+    console.log('📱 Full context:', JSON.stringify(ctx.message, null, 2));
+    
     const webAppData = ctx.message.web_app_data;
     console.log('📱 WebApp data received:', webAppData);
     
     let cartData;
     try {
       cartData = JSON.parse(webAppData.data);
+      console.log('📦 Parsed cart data:', cartData);
     } catch (e) {
       console.error('❌ Failed to parse WebApp data:', e);
       return ctx.reply('❌ WebApp ma\'lumotini o\'qishda xatolik!');
@@ -300,11 +304,18 @@ async function handleWebAppData(ctx) {
       return ctx.reply('❌ Hech qanday mavjud mahsulot topilmadi!');
     }
     
+
+    // User'ni topish
+    const user = await User.findOne({ telegramId: ctx.from.id });
+    if (!user) {
+      return ctx.reply('❌ Foydalanuvchi topilmadi! /start buyrug\'ini yuboring.');
+    }
+    
     // Savatni yaratish yoki yangilash (branch'siz)
-    let cart = await Cart.findOne({ user: ctx.from.id });
+    let cart = await Cart.findOne({ user: user._id });
     if (!cart) {
       cart = new Cart({
-        user: ctx.from.id,
+        user: user._id,
         items: cartItems,
         total: totalAmount
       });
