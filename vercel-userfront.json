@@ -1,0 +1,23 @@
+{
+  "version": 2,
+  "name": "oshxona-userfront",
+  "builds": [
+    {
+      "src": "userfront/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "userfront/dist"
+      }
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "framework": "vite",
+  "buildCommand": "cd userfront && npm run build",
+  "outputDirectory": "userfront/dist",
+  "installCommand": "cd userfront && npm install"
+}
