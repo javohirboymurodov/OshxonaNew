@@ -11,6 +11,28 @@ type Branch = { _id: string; name: string; title?: string };
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 const API_TIMEOUT = 10000; // 10 seconds timeout
 
+// Mock data for testing when backend is not available
+const MOCK_CATEGORIES: Category[] = [
+  { _id: '1', name: '🍛 Milliy taomlar' },
+  { _id: '2', name: '🍔 Fast food' },
+  { _id: '3', name: '🥤 Ichimliklar' },
+  { _id: '4', name: '🍰 Shirinliklar' }
+];
+
+const MOCK_BRANCHES: Branch[] = [
+  { _id: 'branch1', name: 'Oshxona - Chilonzor', title: 'Chilonzor filiali' },
+  { _id: 'branch2', name: 'Oshxona - Yunusobod', title: 'Yunusobod filiali' }
+];
+
+const MOCK_PRODUCTS: Product[] = [
+  { _id: 'p1', name: 'Osh', price: 25000, categoryId: { _id: '1', name: 'Milliy taomlar' } },
+  { _id: 'p2', name: 'Manti', price: 18000, categoryId: { _id: '1', name: 'Milliy taomlar' } },
+  { _id: 'p3', name: 'Burger', price: 35000, categoryId: { _id: '2', name: 'Fast food' } },
+  { _id: 'p4', name: 'Lavash', price: 22000, categoryId: { _id: '2', name: 'Fast food' } },
+  { _id: 'p5', name: 'Coca Cola', price: 8000, categoryId: { _id: '3', name: 'Ichimliklar' } },
+  { _id: 'p6', name: 'Tort', price: 45000, categoryId: { _id: '4', name: 'Shirinliklar' } }
+];
+
 function useInitData() {
   const [telegramId, setTelegramId] = React.useState<string | null>(null);
   React.useEffect(() => {
@@ -22,13 +44,15 @@ function useInitData() {
       // Fallback: allow testing via query param if not inside Telegram
       const url = new URL(window.location.href);
       const qpId = url.searchParams.get('telegramId') || url.searchParams.get('tgId');
-      setTelegramId(id || qpId);
+      setTelegramId(id || qpId || 'test_user_123'); // Test fallback for development
     } catch {
       try {
         const url = new URL(window.location.href);
         const qpId = url.searchParams.get('telegramId') || url.searchParams.get('tgId');
-        setTelegramId(qpId);
-      } catch {}
+        setTelegramId(qpId || 'test_user_123'); // Test fallback for development
+      } catch {
+        setTelegramId('test_user_123'); // Final fallback
+      }
     }
   }, []);
   return telegramId;
@@ -45,21 +69,38 @@ export default function App() {
 
   React.useEffect(() => {
     if (!telegramId) return;
-    fetch(`${API_BASE}/public/categories?telegramId=${telegramId}`).then(r=>r.json()).then(r=>{
-      const list: Category[] = (Array.isArray(r?.data) ? r.data : r?.data?.items) || [];
-      setCategories(list);
-    }).catch(()=>{});
+    fetch(`${API_BASE}/public/categories?telegramId=${telegramId}`)
+      .then(r=>r.json())
+      .then(r=>{
+        const list: Category[] = (Array.isArray(r?.data) ? r.data : r?.data?.items) || [];
+        setCategories(list);
+      })
+      .catch(()=>{
+        // Fallback to mock data when API fails
+        console.log('🔄 API unavailable, using mock categories');
+        setCategories(MOCK_CATEGORIES);
+      });
   }, [telegramId]);
 
   React.useEffect(() => {
     if (!telegramId) return;
-    fetch(`${API_BASE}/public/branches?telegramId=${telegramId}`).then(r=>r.json()).then(r=>{
-      const list: Branch[] = (Array.isArray(r?.data) ? r.data : r?.data?.items) || [];
-      setBranches(list);
-      if (list.length > 0 && !branch) {
-        setBranch(list[0]._id);
-      }
-    }).catch(()=>{});
+    fetch(`${API_BASE}/public/branches?telegramId=${telegramId}`)
+      .then(r=>r.json())
+      .then(r=>{
+        const list: Branch[] = (Array.isArray(r?.data) ? r.data : r?.data?.items) || [];
+        setBranches(list);
+        if (list.length > 0 && !branch) {
+          setBranch(list[0]._id);
+        }
+      })
+      .catch(()=>{
+        // Fallback to mock data when API fails
+        console.log('🔄 API unavailable, using mock branches');
+        setBranches(MOCK_BRANCHES);
+        if (!branch) {
+          setBranch(MOCK_BRANCHES[0]._id);
+        }
+      });
   }, [telegramId, branch]);
 
   React.useEffect(() => {
@@ -67,10 +108,21 @@ export default function App() {
     const qp: string[] = [];
     if (activeCat !== 'all') qp.push(`category=${encodeURIComponent(activeCat)}`);
     const url = `${API_BASE}/public/products?telegramId=${telegramId}&branch=${encodeURIComponent(branch)}${qp.length?`&${qp.join('&')}`:''}`;
-    fetch(url).then(r=>r.json()).then(r=>{
-      const items: Product[] = r?.data?.items || r?.data || [];
-      setProducts(items);
-    }).catch(()=>{});
+    fetch(url)
+      .then(r=>r.json())
+      .then(r=>{
+        const items: Product[] = r?.data?.items || r?.data || [];
+        setProducts(items);
+      })
+      .catch(()=>{
+        // Fallback to mock data when API fails
+        console.log('🔄 API unavailable, using mock products');
+        let filteredProducts = MOCK_PRODUCTS;
+        if (activeCat !== 'all') {
+          filteredProducts = MOCK_PRODUCTS.filter(p => p.categoryId._id === activeCat);
+        }
+        setProducts(filteredProducts);
+      });
   }, [activeCat, branch, telegramId]);
 
   const total = Object.entries(cart).reduce((sum,[pid,qty])=>{
