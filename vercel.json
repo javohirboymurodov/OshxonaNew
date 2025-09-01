@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "front_admin/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "front_admin/dist"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/front_admin/dist/$1"
+    }
+  ],
+  "framework": "vite",
+  "buildCommand": "cd front_admin && npm run build",
+  "outputDirectory": "front_admin/dist",
+  "installCommand": "cd front_admin && npm install"
+}
