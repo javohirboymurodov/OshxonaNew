@@ -33,30 +33,6 @@ const MOCK_PRODUCTS: Product[] = [
   { _id: 'p6', name: 'Tort', price: 45000, categoryId: { _id: '4', name: 'Shirinliklar' } }
 ];
 
-const API_TIMEOUT = 10000; // 10 seconds timeout
-
-// Mock data for testing when backend is not available
-const MOCK_CATEGORIES: Category[] = [
-  { _id: '1', name: '🍛 Milliy taomlar' },
-  { _id: '2', name: '🍔 Fast food' },
-  { _id: '3', name: '🥤 Ichimliklar' },
-  { _id: '4', name: '🍰 Shirinliklar' }
-];
-
-const MOCK_BRANCHES: Branch[] = [
-  { _id: 'branch1', name: 'Oshxona - Chilonzor', title: 'Chilonzor filiali' },
-  { _id: 'branch2', name: 'Oshxona - Yunusobod', title: 'Yunusobod filiali' }
-];
-
-const MOCK_PRODUCTS: Product[] = [
-  { _id: 'p1', name: 'Osh', price: 25000, categoryId: { _id: '1', name: 'Milliy taomlar' } },
-  { _id: 'p2', name: 'Manti', price: 18000, categoryId: { _id: '1', name: 'Milliy taomlar' } },
-  { _id: 'p3', name: 'Burger', price: 35000, categoryId: { _id: '2', name: 'Fast food' } },
-  { _id: 'p4', name: 'Lavash', price: 22000, categoryId: { _id: '2', name: 'Fast food' } },
-  { _id: 'p5', name: 'Coca Cola', price: 8000, categoryId: { _id: '3', name: 'Ichimliklar' } },
-  { _id: 'p6', name: 'Tort', price: 45000, categoryId: { _id: '4', name: 'Shirinliklar' } }
-];
-
 function useInitData() {
   const [telegramId, setTelegramId] = React.useState<string | null>(null);
   React.useEffect(() => {
