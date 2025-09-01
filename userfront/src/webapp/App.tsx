@@ -168,11 +168,9 @@ export default function App() {
       return;
     }
 
-    // Use selected branch or first available branch
-    const selectedBranch = branch || (branches.length > 0 ? branches[0]._id : null);
+    // Don't send branch - let bot handle branch selection based on order type
     const payload = { 
       telegramId, 
-      branch: selectedBranch, 
       items: Object.entries(cart)
         .filter(([_, quantity]) => quantity > 0)
         .map(([productId, quantity]) => ({ productId, quantity }))
