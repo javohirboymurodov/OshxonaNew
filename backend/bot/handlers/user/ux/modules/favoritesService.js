@@ -76,6 +76,7 @@ class FavoritesService {
         .sort({ createdAt: -1 });
 
       if (favorites.length === 0) {
+        const webAppUrl = `${process.env.WEBAPP_URL}?telegramId=${telegramId}`;
         return ctx.editMessageText(
           '😔 <b>Sevimli mahsulotlaringiz yo\'q</b>\n\n' +
           'Mahsulotlarni ko\'rib, ❤️ tugmasini bosing!',
@@ -83,7 +84,8 @@ class FavoritesService {
             parse_mode: 'HTML',
             reply_markup: {
               inline_keyboard: [
-                [{ text: '🛍️ Katalog', callback_data: 'show_categories' }],
+                [{ text: '🌐 To\'liq katalog (WebApp)', web_app: { url: webAppUrl } }],
+                [{ text: '📂 Kategoriyalar', callback_data: 'show_categories' }],
                 [{ text: '🔙 Asosiy menyu', callback_data: 'back_to_main' }]
               ]
             }
@@ -115,8 +117,12 @@ class FavoritesService {
         }
       });
 
+      const webAppUrl = `${process.env.WEBAPP_URL}?telegramId=${telegramId}`;
       keyboard.inline_keyboard.push([
-        { text: '🛍️ Katalog', callback_data: 'show_categories' }
+        { text: '🌐 To\'liq katalog (WebApp)', web_app: { url: webAppUrl } }
+      ]);
+      keyboard.inline_keyboard.push([
+        { text: '📂 Kategoriyalar', callback_data: 'show_categories' }
       ]);
       keyboard.inline_keyboard.push([
         { text: '🔙 Asosiy menyu', callback_data: 'back_to_main' }

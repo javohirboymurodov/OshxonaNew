@@ -9,6 +9,29 @@ type Category = { _id: string; name: string };
 type Branch = { _id: string; name: string; title?: string };
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_TIMEOUT = 10000; // 10 seconds timeout
+
+// Mock data for testing when backend is not available
+const MOCK_CATEGORIES: Category[] = [
+  { _id: '1', name: '🍛 Milliy taomlar' },
+  { _id: '2', name: '🍔 Fast food' },
+  { _id: '3', name: '🥤 Ichimliklar' },
+  { _id: '4', name: '🍰 Shirinliklar' }
+];
+
+const MOCK_BRANCHES: Branch[] = [
+  { _id: 'branch1', name: 'Oshxona - Chilonzor', title: 'Chilonzor filiali' },
+  { _id: 'branch2', name: 'Oshxona - Yunusobod', title: 'Yunusobod filiali' }
+];
+
+const MOCK_PRODUCTS: Product[] = [
+  { _id: 'p1', name: 'Osh', price: 25000, categoryId: { _id: '1', name: 'Milliy taomlar' } },
+  { _id: 'p2', name: 'Manti', price: 18000, categoryId: { _id: '1', name: 'Milliy taomlar' } },
+  { _id: 'p3', name: 'Burger', price: 35000, categoryId: { _id: '2', name: 'Fast food' } },
+  { _id: 'p4', name: 'Lavash', price: 22000, categoryId: { _id: '2', name: 'Fast food' } },
+  { _id: 'p5', name: 'Coca Cola', price: 8000, categoryId: { _id: '3', name: 'Ichimliklar' } },
+  { _id: 'p6', name: 'Tort', price: 45000, categoryId: { _id: '4', name: 'Shirinliklar' } }
+];
 
 const API_TIMEOUT = 10000; // 10 seconds timeout
 
@@ -131,17 +154,21 @@ export default function App() {
   },0);
 
   const sendToBot = () => {
-    if (!branch) {
-      alert('Iltimos, filialni tanlang!');
-      return;
-    }
     if (Object.keys(cart).length === 0) {
       alert('Savat bo\'sh!');
       return;
     }
-    const payload = { telegramId, branch, items: Object.entries(cart).map(([productId, quantity])=>({ productId, quantity })) };
+    // Use selected branch or first available branch
+    const selectedBranch = branch || (branches.length > 0 ? branches[0]._id : null);
+    const payload = { 
+      telegramId, 
+      branch: selectedBranch, 
+      items: Object.entries(cart).map(([productId, quantity])=>({ productId, quantity })) 
+    };
     try {
-      const tg = window.Telegram?.WebApp; tg?.sendData?.(JSON.stringify(payload));
+      const tg = window.Telegram?.WebApp; 
+      tg?.sendData?.(JSON.stringify(payload));
+      tg?.close?.(); // Close WebApp after sending data
     } catch {}
   };
 
@@ -149,20 +176,12 @@ export default function App() {
     <div style={{ fontFamily:'system-ui, sans-serif', padding:12 }}>
       <h3>🍽️ Katalog</h3>
       
-      {/* Branch selection */}
-      <div style={{ marginBottom: 16 }}>
-        <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>🏪 Filial:</label>
-        <select 
-          value={branch} 
-          onChange={(e) => setBranch(e.target.value)}
-          style={{ width: '100%', padding: '8px', borderRadius: 8, border: '1px solid #ddd' }}
-        >
-          <option value="">Filialni tanlang</option>
-          {branches.map(b => (
-            <option key={b._id} value={b._id}>{b.name || b.title}</option>
-          ))}
-        </select>
-      </div>
+      {/* Branch info - hidden but auto-selected */}
+      {branch && branches.length > 0 && (
+        <div style={{ marginBottom: 12, padding: 8, backgroundColor: '#f0f8ff', borderRadius: 8, fontSize: 14 }}>
+          🏪 <strong>{branches.find(b => b._id === branch)?.name || branches.find(b => b._id === branch)?.title}</strong>
+        </div>
+      )}
 
       {/* Categories */}
       <div style={{ display:'flex', gap:8, overflowX:'auto', marginBottom:12 }}>
