@@ -8,7 +8,7 @@ type Product = { _id: string; name: string; price: number; image?: string; categ
 type Category = { _id: string; name: string };
 type Branch = { _id: string; name: string; title?: string };
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://oshxonanew.onrender.com/api';
 const API_TIMEOUT = 5000; // 5 seconds timeout
 
 // Mock data for testing when backend is not available
