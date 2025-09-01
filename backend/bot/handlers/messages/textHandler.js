@@ -266,40 +266,24 @@ async function handleWebAppData(ctx) {
       return ctx.reply('❌ WebApp ma\'lumotini o\'qishda xatolik!');
     }
     
-    const { telegramId, branch, items } = cartData;
+    const { telegramId, items } = cartData;
     
     if (!items || !Array.isArray(items) || items.length === 0) {
       return ctx.reply('🛒 Savat bo\'sh! Iltimos, mahsulot tanlang.');
     }
     
-    if (!branch) {
-      return ctx.reply('🏪 Filial tanlanmagan! Iltimos, filialni tanlang.');
-    }
-    
-    // Branch ma'lumotini olish
-    const branchDoc = await Branch.findById(branch);
-    if (!branchDoc) {
-      return ctx.reply('❌ Filial topilmadi!');
-    }
-    
-    // Mahsulotlarni olish va savatga qo'shish
+    // Mahsulotlarni olish va savatga qo'shish (branch'siz)
     let totalAmount = 0;
     const cartItems = [];
     
     for (const item of items) {
       const product = await Product.findById(item.productId);
-      if (!product) continue;
-      
-      // BranchProduct orqali narx va mavjudlikni tekshirish
-      const BranchProduct = require('../../../models/BranchProduct');
-      const bp = await BranchProduct.findOne({ branch, product: product._id });
-      
-      if (!bp || !bp.isAvailable) {
-        await ctx.reply(`⚠️ ${product.name} - ${branchDoc.name} filialida mavjud emas`);
+      if (!product || !product.isActive || !product.isAvailable) {
+        console.log(`⚠️ Product ${item.productId} not available`);
         continue;
       }
       
-      const price = bp.priceOverride !== null ? bp.priceOverride : product.price;
+      const price = product.price;
       const itemTotal = price * item.quantity;
       totalAmount += itemTotal;
       
@@ -316,35 +300,35 @@ async function handleWebAppData(ctx) {
       return ctx.reply('❌ Hech qanday mavjud mahsulot topilmadi!');
     }
     
-    // Savatni yaratish yoki yangilash
-    let cart = await Cart.findOne({ user: ctx.from.id, branch });
+    // Savatni yaratish yoki yangilash (branch'siz)
+    let cart = await Cart.findOne({ user: ctx.from.id });
     if (!cart) {
       cart = new Cart({
         user: ctx.from.id,
-        branch,
         items: cartItems,
-        totalAmount
+        total: totalAmount
       });
     } else {
       cart.items = cartItems;
-      cart.totalAmount = totalAmount;
+      cart.total = totalAmount;
     }
     
     await cart.save();
     
-    // Savat ma'lumotini ko'rsatish
-    const cartMessage = `🛒 Savatga qo'shildi!\n\n` +
-      `🏪 Filial: ${branchDoc.name}\n` +
+    // Buyurtma turini tanlash
+    const orderTypeMessage = `🛒 <b>Savat yangilandi!</b>\n\n` +
       `📦 Mahsulotlar: ${cartItems.length} ta\n` +
       `💰 Jami: ${totalAmount.toLocaleString()} so'm\n\n` +
-      `Buyurtma berish uchun "🍽️ Tezkor buyurtma" tugmasini bosing!`;
+      `🎯 <b>Buyurtma turini tanlang:</b>`;
     
-    await ctx.reply(cartMessage, {
+    await ctx.reply(orderTypeMessage, {
+      parse_mode: 'HTML',
       reply_markup: {
         inline_keyboard: [
-          [{ text: '🍽️ Tezkor buyurtma', callback_data: 'quick_order' }],
-          [{ text: '🛒 Savatni ko\'rish', callback_data: 'show_cart' }],
-          [{ text: '🏠 Asosiy sahifa', callback_data: 'main_menu' }]
+          [{ text: '🚚 Yetkazib berish', callback_data: 'start_delivery' }],
+          [{ text: '🏃 Olib ketish', callback_data: 'start_pickup' }],
+          [{ text: '🍽️ Restoranda ovqatlanish', callback_data: 'start_dine_in' }],
+          [{ text: '🛒 Savatni ko\'rish', callback_data: 'show_cart' }]
         ]
       }
     });
@@ -371,4 +355,4 @@ module.exports = {
   handleFeedback,
   handleWebAppData,
   registerTextHandlers
-};
+};git 
