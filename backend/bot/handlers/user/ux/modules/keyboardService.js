@@ -65,8 +65,12 @@ class MobileKeyboardService {
       }
 
       // Navigation buttons
+      const webAppUrl = `${process.env.WEBAPP_URL}?telegramId=${telegramId}`;
       keyboard.inline_keyboard.push([
-        { text: '🛍️ To\'liq katalog', callback_data: 'show_categories' }
+        { text: '🌐 To\'liq katalog (WebApp)', web_app: { url: webAppUrl } }
+      ]);
+      keyboard.inline_keyboard.push([
+        { text: '📂 Kategoriyalar', callback_data: 'show_categories' }
       ]);
       keyboard.inline_keyboard.push([
         { text: '🔙 Asosiy menyu', callback_data: 'back_to_main' }
@@ -84,13 +88,15 @@ class MobileKeyboardService {
    * @returns {Object} - klaviatura obyekti
    */
   static getDefaultQuickOrderKeyboard() {
+    const webAppUrl = `${process.env.WEBAPP_URL}?telegramId=default`;
     return {
       inline_keyboard: [
         [
           { text: '🔥 Eng mashhur', callback_data: 'quick_popular' },
           { text: '⚡ Tez tayyor', callback_data: 'quick_fast' }
         ],
-        [{ text: '🛍️ To\'liq katalog', callback_data: 'show_categories' }],
+        [{ text: '🌐 To\'liq katalog (WebApp)', web_app: { url: webAppUrl } }],
+        [{ text: '📂 Kategoriyalar', callback_data: 'show_categories' }],
         [{ text: '🔙 Asosiy menyu', callback_data: 'back_to_main' }]
       ]
     };
