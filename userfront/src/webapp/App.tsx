@@ -20,7 +20,8 @@ const MOCK_CATEGORIES: Category[] = [
   { _id: '1', name: '🍛 Milliy taomlar' },
   { _id: '2', name: '🍔 Fast food' },
   { _id: '3', name: '🥤 Ichimliklar' },
-  { _id: '4', name: '🍰 Shirinliklar' }
+  { _id: '4', name: '🍰 Shirinliklar' },
+  { _id: 'promo', name: '🎉 Aksiyalar' }
 ];
 
 const MOCK_BRANCHES: Branch[] = [
@@ -34,7 +35,9 @@ const MOCK_PRODUCTS: Product[] = [
   { _id: 'p3', name: 'Burger', price: 35000, categoryId: { _id: '2', name: 'Fast food' } },
   { _id: 'p4', name: 'Lavash', price: 22000, categoryId: { _id: '2', name: 'Fast food' } },
   { _id: 'p5', name: 'Coca Cola', price: 8000, categoryId: { _id: '3', name: 'Ichimliklar' } },
-  { _id: 'p6', name: 'Tort', price: 45000, categoryId: { _id: '4', name: 'Shirinliklar' } }
+  { _id: 'p6', name: 'Tort', price: 45000, categoryId: { _id: '4', name: 'Shirinliklar' } },
+  { _id: 'p7', name: 'Osh (Aksiya)', price: 20000, originalPrice: 25000, categoryId: { _id: 'promo', name: 'Aksiyalar' } },
+  { _id: 'p8', name: 'Burger (Aksiya)', price: 28000, originalPrice: 35000, categoryId: { _id: 'promo', name: 'Aksiyalar' } }
 ];
 
 function useInitData() {
@@ -72,6 +75,7 @@ export default function App() {
   const [branch, setBranch] = React.useState<string>('');
   const [loading, setLoading] = React.useState(true);
   const [cartModalOpen, setCartModalOpen] = React.useState(false);
+  const [searchQuery, setSearchQuery] = React.useState<string>('');
 
   // Load categories
   React.useEffect(() => {
@@ -116,6 +120,7 @@ export default function App() {
     if (!telegramId) return;
     const qp: string[] = [];
     if (activeCat !== 'all') qp.push(`category=${encodeURIComponent(activeCat)}`);
+    if (searchQuery) qp.push(`search=${encodeURIComponent(searchQuery)}`);
     const url = `${API_BASE}/public/products?telegramId=${telegramId}${qp.length?`&${qp.join('&')}`:''}`;
     fetch(url)
       .then(r=>r.json())
@@ -126,6 +131,12 @@ export default function App() {
         if (activeCat !== 'all') {
           filteredProducts = items.filter(p => p.categoryId?._id === activeCat);
         }
+        // Filter by search query
+        if (searchQuery) {
+          filteredProducts = filteredProducts.filter(p => 
+            p.name.toLowerCase().includes(searchQuery.toLowerCase())
+          );
+        }
         setProducts(filteredProducts);
       })
       .catch(()=>{
@@ -134,9 +145,15 @@ export default function App() {
         if (activeCat !== 'all') {
           filteredProducts = MOCK_PRODUCTS.filter(p => p.categoryId?._id === activeCat);
         }
+        // Filter by search query
+        if (searchQuery) {
+          filteredProducts = filteredProducts.filter(p => 
+            p.name.toLowerCase().includes(searchQuery.toLowerCase())
+          );
+        }
         setProducts(filteredProducts);
       });
-  }, [activeCat, telegramId]);
+  }, [activeCat, searchQuery, telegramId]);
 
   // Calculate totals
   const total = Object.entries(cart).reduce((sum,[pid,qty])=>{
@@ -154,7 +171,13 @@ export default function App() {
   };
 
   const incrementProduct = (productId: string) => {
-    updateCartQuantity(productId, (cart[productId] || 0) + 1);
+    const newQuantity = (cart[productId] || 0) + 1;
+    updateCartQuantity(productId, newQuantity);
+    
+    // Agar mahsulot qo'shilganda korzinka modalini ochish
+    if (newQuantity === 1) {
+      setCartModalOpen(true);
+    }
   };
 
   const decrementProduct = (productId: string) => {
@@ -184,7 +207,11 @@ export default function App() {
         // Close cart modal first, then WebApp
         setCartModalOpen(false);
         setTimeout(() => {
-          tg?.close?.();
+          if (tg?.close) {
+            tg.close();
+          } else if (tg?.MainButton?.hide) {
+            tg.MainButton.hide();
+          }
         }, 100);
       } else {
         // Fallback for testing outside Telegram
@@ -217,12 +244,39 @@ export default function App() {
         </div>
       )}
 
-      {/* Category Filter */}
-      <CategoryFilter 
-        categories={categories}
-        activeCategory={activeCat}
-        onCategoryChange={setActiveCat}
-      />
+      {/* Search Input */}
+      <div style={{ marginBottom: 12 }}>
+        <input
+          type="text"
+          placeholder="🔍 Mahsulot qidirish..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          style={{
+            width: '100%',
+            padding: '12px',
+            border: '1px solid #ddd',
+            borderRadius: '8px',
+            fontSize: '16px',
+            outline: 'none'
+          }}
+        />
+      </div>
+
+      {/* Category Filter - Sticky */}
+      <div style={{ 
+        position: 'sticky', 
+        top: 0, 
+        backgroundColor: '#fff', 
+        zIndex: 100, 
+        padding: '8px 0',
+        marginBottom: 12
+      }}>
+        <CategoryFilter 
+          categories={categories}
+          activeCategory={activeCat}
+          onCategoryChange={setActiveCat}
+        />
+      </div>
 
       {/* Products grid */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))', gap:12 }}>

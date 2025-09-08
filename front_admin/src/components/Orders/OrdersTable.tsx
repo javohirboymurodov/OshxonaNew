@@ -78,7 +78,8 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ data, loading, pagination, on
   const getNextStatuses = (currentStatus: string, orderType?: string): string[] => {
     const common: Record<string, string[]> = {
       pending: ['confirmed', 'cancelled'],
-      confirmed: ['ready', 'cancelled'],
+      confirmed: ['preparing', 'cancelled'],
+      preparing: ['ready', 'cancelled'],
       ready: [],
       cancelled: [],
       delivered: [],
@@ -93,16 +94,25 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ data, loading, pagination, on
         ready: ['assigned'], 
         assigned: ['ready', 'cancelled'],
         picked_up: ['on_delivery', 'delivered'],
-        on_delivery: ['delivered']
+        on_delivery: ['delivered'],
+        delivered: ['completed']
       } as Record<string, string[]>;
       return flow[currentStatus] || [];
     }
     if (orderType === 'pickup') {
-      const flow = { ...common, ready: ['picked_up'] } as Record<string, string[]>;
+      const flow = { 
+        ...common, 
+        ready: ['picked_up'],
+        picked_up: ['completed']
+      } as Record<string, string[]>;
       return flow[currentStatus] || [];
     }
     // dine_in (predzakaz) va table (QR): tayyor → delivered
-    const flow = { ...common, ready: ['delivered'] } as Record<string, string[]>;
+    const flow = { 
+      ...common, 
+      ready: ['delivered'],
+      delivered: ['completed']
+    } as Record<string, string[]>;
     return flow[currentStatus] || [];
   };
   const columns: ColumnsType<Order> = [

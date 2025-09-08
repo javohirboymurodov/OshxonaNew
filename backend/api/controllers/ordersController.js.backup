@@ -230,19 +230,47 @@ async function updateStatus(req, res) {
     try {
       if (status === 'picked_up' && order.orderType === 'pickup') {
         const idForTimer = String(order._id);
+        console.log('🔄 Setting up pickup completion timer for order:', idForTimer);
         setTimeout(async () => {
           try {
             const fresh = await Order.findById(idForTimer);
             if (fresh && fresh.status === 'picked_up') {
+              console.log('✅ Auto-completing pickup order:', idForTimer);
               fresh.status = 'completed';
               fresh.updatedAt = new Date();
+              fresh.statusHistory.push({
+                status: 'completed',
+                message: 'Buyurtma avtomatik yakunlandi (pickup)',
+                timestamp: new Date(),
+                updatedBy: 'system'
+              });
               await fresh.save();
-              SocketManager.emitOrderUpdate(idForTimer, { status: 'completed', branchId: String(fresh.branch || '') });
+              
+              // Socket notification
+              SocketManager.emitOrderUpdate(idForTimer, { 
+                status: 'completed', 
+                branchId: String(fresh.branch || ''),
+                message: 'Buyurtma yakunlandi',
+                updatedAt: new Date()
+              });
+              
+              // User notification
+              SocketManager.emitStatusUpdate(fresh.user._id, {
+                orderId: fresh._id,
+                orderNumber: fresh.orderId,
+                status: 'completed',
+                message: 'Buyurtmangiz yakunlandi!',
+                updatedAt: new Date()
+              });
             }
-          } catch {}
-        }, 10000);
+          } catch (error) {
+            console.error('❌ Pickup completion timer error:', error);
+          }
+        }, 10000); // 10 seconds
       }
-    } catch {}
+    } catch (error) {
+      console.error('❌ Pickup timer setup error:', error);
+    }
   } catch (error) {
     console.error('Update order status error:', error);
     res.status(500).json({ success: false, message: 'Buyurtma holatini yangilashda xatolik!' });

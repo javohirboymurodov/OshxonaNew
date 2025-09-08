@@ -296,8 +296,8 @@ setInterval(async () => {
         }
       }
       
-      // Stale location uchun ogohlantirish
-      if (isStale && courier.telegramId) {
+      // Stale location uchun ogohlantirish - faqat online va available kuryerlar uchun
+      if (isStale && courier.telegramId && courier.courierInfo?.isOnline && courier.courierInfo?.isAvailable) {
         const notifiedAt = courier?.courierInfo?.staleNotifiedAt ? new Date(courier.courierInfo.staleNotifiedAt).getTime() : 0;
         if (!notifiedAt || now - notifiedAt > COURIER_STALE_MS) {
           try {

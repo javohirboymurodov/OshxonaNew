@@ -318,10 +318,17 @@ class SocketManager {
   // Real-time statistika (admin dashboard uchun)
   static emitStatistics(branchId, stats) {
     if (this.io) {
-      this.io.to(`branchId:${branchId}`).emit('statistics-update', {
+      this.io.to(`branch:${branchId}`).emit('statistics-update', {
         ...stats,
         timestamp: new Date()
       });
+    }
+  }
+  
+  // User'ga xabar yuborish (RealTimeTrackingManager uchun)
+  static emitToUser(userId, event, data) {
+    if (this.io) {
+      this.io.to(`user:${userId}`).emit(event, data);
     }
   }
   

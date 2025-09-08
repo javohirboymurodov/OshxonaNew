@@ -133,6 +133,18 @@ class DeliveryService {
     const branches = await Branch.find({ isActive: true });
     let best = null;
     let bestDist = Infinity;
+    
+    // Agar hech qanday filial topilmasa, mock filial qo'shamiz
+    if (branches.length === 0) {
+      console.log('⚠️ No branches found, using mock branch');
+      return { 
+        branchId: 'mock_branch_1', 
+        source: 'mock', 
+        distanceKm: 0,
+        address: 'Mock Branch Address'
+      };
+    }
+    
     for (const b of branches) {
       const bl = b.address?.coordinates?.latitude;
       const bo = b.address?.coordinates?.longitude;
@@ -142,8 +154,24 @@ class DeliveryService {
           bestDist = d;
           best = b;
         }
+      } else {
+        // Agar coordinates yo'q bo'lsa, default koordinatalar ishlatamiz
+        console.log(`⚠️ Branch ${b.name} has no coordinates, using default`);
+        const defaultLat = 41.2995; // Toshkent koordinatalari
+        const defaultLon = 69.2401;
+        const d = geoService.calculateDistance(defaultLat, defaultLon, userLocation.latitude, userLocation.longitude);
+        if (d < bestDist) {
+          bestDist = d;
+          best = b;
+        }
       }
     }
+    
+    console.log('🔍 Branch resolution result:', {
+      totalBranches: branches.length,
+      bestBranch: best ? { id: best._id, name: best.name, distance: bestDist } : null,
+      userLocation
+    });
     return best ? { branchId: String(best._id), source: 'radius', distanceKm: bestDist } : { branchId: null, source: 'none' };
   }
   

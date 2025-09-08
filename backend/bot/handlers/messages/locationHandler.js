@@ -202,6 +202,12 @@ async function handleEditedMessage(ctx) {
     user.courierInfo.currentLocation = { latitude, longitude, updatedAt: new Date() };
     await user.save();
     
+    console.log('🔄 Live location updated via edited_message:', {
+      userId: user._id,
+      location: { lat: latitude, lng: longitude },
+      timestamp: new Date().toISOString()
+    });
+    
     // Branch adminlariga broadkast
     try {
       const branchId = user.branch || user.courierInfo?.branch;
