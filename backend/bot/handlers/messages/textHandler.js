@@ -366,4 +366,4 @@ module.exports = {
   handleFeedback,
   handleWebAppData,
   registerTextHandlers
-};git 
+}; 

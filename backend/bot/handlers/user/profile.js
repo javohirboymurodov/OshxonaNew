@@ -101,7 +101,7 @@ async function showProfile(ctx) {
 
 async function getWelcomeStats() {
   try {
-    const { Product, Category } = require('../../models');
+    const { Product, Category } = require('../../../models');
     let totalProducts = 0;
     let totalCategories = 0;
     try {
