@@ -21,7 +21,9 @@ class LocationHandlers extends BaseHandler {
 
       try {
         // Find nearest branch and check delivery zones
+        console.log('🔍 Resolving branch for location:', { latitude, longitude });
         const result = await DeliveryService.resolveBranchForLocation({ latitude, longitude });
+        console.log('📍 Branch resolution result:', result);
         
         ctx.session.orderData = ctx.session.orderData || {};
         ctx.session.orderData.location = { latitude, longitude };
@@ -31,6 +33,7 @@ class LocationHandlers extends BaseHandler {
           console.log('✅ Branch found:', result.branchId);
         } else {
           console.log('⚠️ No specific branch found, using default');
+          ctx.session.orderData.branch = 'default';
         }
         
         // Generate Google Maps link from coordinates

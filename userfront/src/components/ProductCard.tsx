@@ -1,6 +1,6 @@
 import React from 'react';
 
-type Product = { _id: string; name: string; price: number; image?: string; categoryId?: { _id: string; name?: string } };
+type Product = { _id: string; name: string; price: number; originalPrice?: number; image?: string; categoryId?: { _id: string; name?: string } };
 
 interface ProductCardProps {
   product: Product;
@@ -20,7 +20,24 @@ export default function ProductCard({ product, quantity, onIncrement, onDecremen
         />
       )}
       <div style={{ fontWeight:600, fontSize: 14 }}>{product.name}</div>
-      <div style={{ color:'#666', margin:'4px 0', fontSize: 12 }}>{product.price.toLocaleString()} so'm</div>
+      <div style={{ margin:'4px 0', fontSize: 12 }}>
+        {product.originalPrice && product.originalPrice > product.price ? (
+          <div>
+            <span style={{ color:'#ff4d4f', textDecoration: 'line-through', fontSize: 10 }}>
+              {product.originalPrice.toLocaleString()} so'm
+            </span>
+            <br />
+            <span style={{ color:'#52c41a', fontWeight: 600 }}>
+              {product.price.toLocaleString()} so'm
+            </span>
+            <span style={{ color:'#ff4d4f', fontSize: 10, marginLeft: 4 }}>
+              -{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
+            </span>
+          </div>
+        ) : (
+          <span style={{ color:'#666' }}>{product.price.toLocaleString()} so'm</span>
+        )}
+      </div>
       <div style={{ display:'flex', gap:6, alignItems:'center', justifyContent:'center', marginTop: 8 }}>
         <button 
           onClick={onDecrement} 

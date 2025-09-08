@@ -226,6 +226,86 @@ async function notifyCustomerArrived(order) {
   }
 }
 
-module.exports = { notifyAdmins, notifyCustomerArrived };
+async function notifyCustomerStatusUpdate(order, status, message) {
+  try {
+    console.log('🔔 notifyCustomerStatusUpdate started:', {
+      orderId: order._id,
+      status,
+      message
+    });
+
+    const OrderModel = require('../../../../models/Order');
+    const populatedOrder = await OrderModel.findById(order._id).populate('user');
+    
+    if (!populatedOrder?.user?.telegramId) {
+      console.log('❌ User telegramId not found for order:', order._id);
+      return;
+    }
+
+    const bot = global.botInstance;
+    if (!bot) {
+      console.error('❌ Bot instance not found!');
+      return;
+    }
+
+    const statusMessages = {
+      'confirmed': '✅ Buyurtmangiz tasdiqlandi va tayyorlanishni boshladi',
+      'preparing': '👨‍🍳 Buyurtmangiz tayyorlanmoqda',
+      'ready': '🍽️ Buyurtmangiz tayyor! Olib ketishingiz mumkin',
+      'assigned': '🚚 Kuryer tayinlandi',
+      'on_delivery': '🚗 Buyurtmangiz yetkazilmoqda',
+      'delivered': '✅ Buyurtmangiz yetkazildi',
+      'picked_up': '📦 Buyurtmangiz olib ketildi',
+      'completed': '🎉 Buyurtmangiz yakunlandi',
+      'cancelled': '❌ Buyurtmangiz bekor qilindi'
+    };
+
+    const statusEmojis = {
+      'confirmed': '✅',
+      'preparing': '👨‍🍳',
+      'ready': '🍽️',
+      'assigned': '🚚',
+      'on_delivery': '🚗',
+      'delivered': '✅',
+      'picked_up': '📦',
+      'completed': '🎉',
+      'cancelled': '❌'
+    };
+
+    const statusText = statusMessages[status] || message || 'Holat yangilandi';
+    const emoji = statusEmojis[status] || '📋';
+
+    let notificationMessage = `${emoji} **${statusText}**\n\n`;
+    notificationMessage += `📋 **Buyurtma №:** ${populatedOrder.orderId}\n`;
+    notificationMessage += `💰 **Jami:** ${populatedOrder.total.toLocaleString()} so'm\n`;
+    notificationMessage += `📅 **Vaqt:** ${new Date().toLocaleString('uz-UZ')}\n\n`;
+
+    if (status === 'ready' && populatedOrder.orderType === 'pickup') {
+      notificationMessage += `🕐 **Olib ketish vaqti:** 15-20 daqiqa\n`;
+      notificationMessage += `📍 **Filial:** ${populatedOrder.branch?.name || 'Asosiy filial'}\n`;
+    } else if (status === 'on_delivery' && populatedOrder.orderType === 'delivery') {
+      notificationMessage += `🚚 **Kuryer:** ${populatedOrder.deliveryInfo?.courier?.firstName || 'Tayinlandi'}\n`;
+      notificationMessage += `⏰ **Taxminiy vaqt:** 30-45 daqiqa\n`;
+    }
+
+    // Send notification to user
+    await bot.telegram.sendMessage(populatedOrder.user.telegramId, notificationMessage, {
+      parse_mode: 'Markdown',
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: '📋 Buyurtmalarim', callback_data: 'my_orders' }],
+          [{ text: '🛒 Yangi buyurtma', callback_data: 'start_order' }]
+        ]
+      }
+    });
+
+    console.log('✅ Customer notification sent successfully');
+
+  } catch (error) {
+    console.error('❌ Notify customer status update error:', error);
+  }
+}
+
+module.exports = { notifyAdmins, notifyCustomerArrived, notifyCustomerStatusUpdate };
 
 
