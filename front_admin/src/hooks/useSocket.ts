@@ -23,7 +23,9 @@ export const useSocket = () => {
     }
 
     // Initialize socket connection
-    const socketUrl = import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+    const socketUrl = import.meta.env.VITE_SOCKET_URL || 
+                     import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 
+                     'https://oshxonanew.onrender.com';
     
     socket = io(socketUrl, {
       transports: ['websocket', 'polling'],
@@ -96,7 +98,6 @@ export const useSocket = () => {
       // Show status update notification
       const statusMessages = {
         'confirmed': '✅ Buyurtma tasdiqlandi',
-        'preparing': '👨‍🍳 Buyurtma tayyorlanmoqda',
         'ready': '🍽️ Buyurtma tayyor',
         'assigned': '🚚 Kuryer tayinlandi', 
         'on_delivery': '🚗 Yetkazilmoqda',

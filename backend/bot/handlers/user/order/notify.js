@@ -25,19 +25,37 @@ async function notifyAdmins(order) {
         customerName: populatedOrder.user?.firstName
       });
       
+      // 🔧 FIX: Order type ga qarab turli xabarlar
+      const getOrderTypeMessage = (orderType, tableNumber) => {
+        switch (orderType) {
+          case 'table':
+            return `🍽️ Stoldan buyurtma keldi! (Stol: ${tableNumber || 'N/A'})`;
+          case 'delivery':
+            return '🚚 Yetkazib berish uchun buyurtma!';
+          case 'pickup':
+            return '🛍️ Olib ketish uchun buyurtma!';
+          case 'dine_in':
+            return '🏪 Avvaldan buyurtma (restorandagi)!';
+          default:
+            return '🆕 Yangi buyurtma!';
+        }
+      };
+
       const orderPayload = {
         _id: order._id,
         orderId: order.orderId,
         status: order.status,
         total: order.total,
         orderType: populatedOrder.orderType,
+        orderTypeMessage: getOrderTypeMessage(populatedOrder.orderType, populatedOrder?.dineInInfo?.tableNumber),
         customerInfo: { 
           name: (populatedOrder.user && populatedOrder.user.firstName) ? populatedOrder.user.firstName : 'Mijoz' 
         },
         tableNumber: populatedOrder?.dineInInfo?.tableNumber,
         createdAt: order.createdAt || new Date(),
         items: populatedOrder.items || [],
-        paymentMethod: order.paymentMethod || 'cash'
+        paymentMethod: order.paymentMethod || 'cash',
+        soundType: populatedOrder.orderType // Kelajakda turli ovozlar uchun
       };
       
       // Send to specific branch only (no superadmin notification)
@@ -65,7 +83,8 @@ async function notifyAdmins(order) {
           console.error(`Admin telegramId noto'g'ri yoki yo'q:`, admin.telegramId);
           continue;
         }
-        let message = `\n🆕 **Yangi buyurtma!**\n\n`;
+        const orderTypeMessage = getOrderTypeMessage(populatedOrder.orderType, populatedOrder?.dineInInfo?.tableNumber);
+        let message = `\n${orderTypeMessage}\n\n`;
         message += `📋 **Buyurtma №:** ${populatedOrder.orderId}\n`;
         message += `👤 **Foydalanuvchi:** ${populatedOrder.user && populatedOrder.user.firstName ? populatedOrder.user.firstName : "Noma'lum"}\n`;
         message += `📞 **Telefon:** ${populatedOrder.customerInfo && populatedOrder.customerInfo.phone ? populatedOrder.customerInfo.phone : 'Kiritilmagan'}\n`;
@@ -94,10 +113,9 @@ async function notifyAdmins(order) {
             inline_keyboard: [
               [
                 { text: '✅ Tasdiqlash', callback_data: `admin_quick_confirmed_${populatedOrder._id}` },
-                { text: '👨‍🍳 Tayyorlash', callback_data: `admin_quick_preparing_${populatedOrder._id}` }
+                { text: '🍽️ Tayyor', callback_data: `admin_quick_ready_${populatedOrder._id}` }
               ],
               [
-                { text: '🎯 Tayyor', callback_data: `admin_quick_ready_${populatedOrder._id}` },
                 { text: '🚚 Yetkazildi', callback_data: `admin_quick_delivered_${populatedOrder._id}` }
               ],
               ...(populatedOrder.orderType === 'pickup' ? [[{ text: '🛍️ Olib ketdi', callback_data: `admin_quick_picked_up_${populatedOrder._id}` }]] : []),
@@ -226,6 +244,84 @@ async function notifyCustomerArrived(order) {
   }
 }
 
-module.exports = { notifyAdmins, notifyCustomerArrived };
+async function notifyCustomerStatusUpdate(order, status, message) {
+  try {
+    console.log('🔔 notifyCustomerStatusUpdate started:', {
+      orderId: order._id,
+      status,
+      message
+    });
+
+    const OrderModel = require('../../../../models/Order');
+    const populatedOrder = await OrderModel.findById(order._id).populate('user');
+    
+    if (!populatedOrder?.user?.telegramId) {
+      console.log('❌ User telegramId not found for order:', order._id);
+      return;
+    }
+
+    const bot = global.botInstance;
+    if (!bot) {
+      console.error('❌ Bot instance not found!');
+      return;
+    }
+
+    const statusMessages = {
+      'confirmed': '✅ Buyurtmangiz tasdiqlandi va tayyorlanishni boshladi',
+      'ready': '🍽️ Buyurtmangiz tayyor! Olib ketishingiz mumkin',
+      'assigned': '🚚 Kuryer tayinlandi',
+      'on_delivery': '🚗 Buyurtmangiz yetkazilmoqda',
+      'delivered': '✅ Buyurtmangiz yetkazildi',
+      'picked_up': '📦 Buyurtmangiz olib ketildi',
+      'completed': '🎉 Buyurtmangiz yakunlandi',
+      'cancelled': '❌ Buyurtmangiz bekor qilindi'
+    };
+
+    const statusEmojis = {
+      'confirmed': '✅',
+      'ready': '🍽️',
+      'assigned': '🚚',
+      'on_delivery': '🚗',
+      'delivered': '✅',
+      'picked_up': '📦',
+      'completed': '🎉',
+      'cancelled': '❌'
+    };
+
+    const statusText = statusMessages[status] || message || 'Holat yangilandi';
+    const emoji = statusEmojis[status] || '📋';
+
+    let notificationMessage = `${emoji} **${statusText}**\n\n`;
+    notificationMessage += `📋 **Buyurtma №:** ${populatedOrder.orderId}\n`;
+    notificationMessage += `💰 **Jami:** ${populatedOrder.total.toLocaleString()} so'm\n`;
+    notificationMessage += `📅 **Vaqt:** ${new Date().toLocaleString('uz-UZ')}\n\n`;
+
+    if (status === 'ready' && populatedOrder.orderType === 'pickup') {
+      notificationMessage += `🕐 **Olib ketish vaqti:** 15-20 daqiqa\n`;
+      notificationMessage += `📍 **Filial:** ${populatedOrder.branch?.name || 'Asosiy filial'}\n`;
+    } else if (status === 'on_delivery' && populatedOrder.orderType === 'delivery') {
+      notificationMessage += `🚚 **Kuryer:** ${populatedOrder.deliveryInfo?.courier?.firstName || 'Tayinlandi'}\n`;
+      notificationMessage += `⏰ **Taxminiy vaqt:** 30-45 daqiqa\n`;
+    }
+
+    // Send notification to user
+    await bot.telegram.sendMessage(populatedOrder.user.telegramId, notificationMessage, {
+      parse_mode: 'Markdown',
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: '📋 Buyurtmalarim', callback_data: 'my_orders' }],
+          [{ text: '🛒 Yangi buyurtma', callback_data: 'start_order' }]
+        ]
+      }
+    });
+
+    console.log('✅ Customer notification sent successfully');
+
+  } catch (error) {
+    console.error('❌ Notify customer status update error:', error);
+  }
+}
+
+module.exports = { notifyAdmins, notifyCustomerArrived, notifyCustomerStatusUpdate };
 
 

@@ -47,7 +47,6 @@ interface DashboardStats {
     byStatus: {
       pending: number;
       confirmed: number;
-      preparing: number;
       ready: number;
       delivered: number;
       cancelled: number;
@@ -161,7 +160,7 @@ const DashboardPage: React.FC = () => {
       const ordersUrl = `/orders?page=1&limit=20&dateFrom=${encodeURIComponent(startOfDay)}&dateTo=${encodeURIComponent(endOfDay)}${isSuper && branch ? `&branch=${encodeURIComponent(branch)}` : ''}`;
       const ordersData = await apiService.get<{ orders?: RawOrder[]; data?: { orders?: RawOrder[] } }>(ordersUrl);
       const rawOrders: RawOrder[] = (ordersData?.orders || ordersData?.data?.orders || []) as RawOrder[];
-      const activeStatuses = new Set(['pending','confirmed','preparing','ready','on_delivery']);
+      const activeStatuses = new Set(['pending','confirmed','ready','on_delivery']);
       const ordersResponse: RecentOrder[] = rawOrders
         .filter((o) => activeStatuses.has(String(o.status)))
         .slice(0, 10)
@@ -217,7 +216,7 @@ const DashboardPage: React.FC = () => {
       };
       const ordersData = await apiService.get<{ orders?: RawOrder[]; data?: { orders?: RawOrder[] } }>(`/orders?page=1&limit=20&dateFrom=${encodeURIComponent(startOfDay)}&dateTo=${encodeURIComponent(endOfDay)}`);
       const rawOrders: RawOrder[] = (ordersData?.orders || ordersData?.data?.orders || []) as RawOrder[];
-      const activeStatuses = new Set(['pending','confirmed','preparing','ready','on_delivery']);
+      const activeStatuses = new Set(['pending','confirmed','ready','on_delivery']);
       const ordersResponse: RecentOrder[] = rawOrders
         .filter((o) => activeStatuses.has(String(o.status)))
         .slice(0, 10)

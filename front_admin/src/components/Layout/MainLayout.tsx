@@ -29,9 +29,8 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useAuth } from '@/hooks/useAuth';
 import { useSocket } from '@/hooks/useSocket';
 import { useAppSelector, useAppDispatch } from '@/hooks/redux';
-import { dismissNewOrder, setSelectedOrder } from '@/store/slices/ordersSlice';
+import { dismissNewOrder } from '@/store/slices/ordersSlice';
 import { useNavigate as useNav } from 'react-router-dom';
-import { Order } from '@/types';
 
 const { Header, Sider, Content } = Layout;
 
@@ -42,12 +41,11 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   const isMobile = useMediaQuery('(max-width: 768px)');
   const { user } = useAuth();
-  const token = localStorage.getItem('token') || '';
   type UserShape = { role?: string; branch?: { _id?: string } } | null | undefined;
   const castUser = (user as unknown) as UserShape;
   const isSuper = String(castUser?.role || '').toLowerCase() === 'superadmin';
   // branchId is handled inside useSocket hook
-  const { connected } = useSocket();
+  useSocket();
   const dispatch = useAppDispatch();
   const { newOrders } = useAppSelector(state => state.orders);
   const go = useNav();
@@ -191,7 +189,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         </Drawer>
       )}
 
-      <Layout style={{ marginLeft: isMobile ? 0 : collapsed ? 80 : 200 }}>
+      <Layout style={{ marginLeft: isMobile ? 0 : collapsed ? 80 : 220 }}>
         <Header
           style={{
             padding: '0 16px',
@@ -250,12 +248,10 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                           if (currentPath !== '/orders') {
                             go('/orders', { state: { focusOrderId: orderId } });
                           } else {
-                            // If already on orders page, find and open modal directly
-                            const fullOrder = (item as Order);
-                            if (fullOrder && fullOrder._id) {
-                              dispatch(setSelectedOrder(fullOrder));
-                              // Modal will be opened by OrdersPage component through Redux
-                            }
+                            // If already on orders page, navigate with focus state 
+                            // This will trigger the focusOrderId useEffect in OrdersPage
+                            window.history.pushState({ focusOrderId: orderId }, '', '/orders');
+                            window.dispatchEvent(new PopStateEvent('popstate'));
                           }
                         }}
                       >
@@ -304,11 +300,12 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
         <Content
           style={{
-            margin: '16px',
-            padding: '16px',
+            margin: '16px 24px',
+            padding: '24px',
             background: colorBgContainer,
             borderRadius: 8,
             minHeight: 280,
+            overflow: 'auto',
           }}
         >
           {children}

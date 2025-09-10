@@ -297,8 +297,8 @@ const OrderDetailsModal: React.FC<Props> = ({ open, order, onClose, getOrderType
                   const map: Record<string, string> = {
                     pending: 'Kutilmoqda',
                     confirmed: 'Tasdiqlangan',
-                    preparing: 'Tayyorlanmoqda',
                     ready: 'Tayyor',
+                    assigned: 'Kuryer tayinlandi',
                     on_delivery: 'Yetkazilmoqda',
                     delivered: 'Yetkazilgan',
                     picked_up: 'Olib ketildi',
@@ -322,15 +322,8 @@ const OrderDetailsModal: React.FC<Props> = ({ open, order, onClose, getOrderType
         </Card>
       )}
 
-      {order.orderType === 'delivery' && !hasAssigned && !order.deliveryInfo?.courier && (
-      <Card title="Kuryer takliflari" style={{ marginTop: 16 }} extra={
-          <Tooltip title="Yuqori ball – yaxshi mos kuryer (yaqinlik, reyting, band emasligi)">
-            <Text type="secondary">Tavsiya</Text>
-          </Tooltip>
-        }>
-          <SuggestCouriers orderId={order._id} onAssigned={() => setHasAssigned(true)} />
-        </Card>
-      )}
+      {/* 🔧 FIX: Kuryer takliflarini olib tashlash - faqat jadvaldan "Kuryer" tugmasi orqali */}
+      {/* Kuryer tayinlash faqat buyurtmalar jadvalidagi "Kuryer" tugmasi orqali amalga oshirilsin */}
 
       {order.deliveryInfo?.courier && (
         <Card title="Kuryer ma'lumotlari" style={{ marginTop: 16 }}>

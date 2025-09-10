@@ -5,10 +5,11 @@ export type OrderStatus =
   | 'pending'
   | 'confirmed' 
   | 'assigned'
-  | 'preparing'
   | 'ready'
   | 'on_delivery'
   | 'delivered'
+  | 'picked_up'
+  | 'completed'
   | 'cancelled';
 
 export interface StatusConfig {
@@ -42,13 +43,6 @@ export const STATUS_CONFIGS: Record<OrderStatus, StatusConfig> = {
     icon: '🚚',
     description: 'Kuryerga tayinlandi'
   },
-  preparing: {
-    key: 'preparing',
-    text: 'Tayyorlanmoqda',
-    color: 'purple',
-    icon: '👨‍🍳',
-    description: 'Oshxonada tayyorlanmoqda'
-  },
   ready: {
     key: 'ready',
     text: 'Tayyor',
@@ -70,6 +64,20 @@ export const STATUS_CONFIGS: Record<OrderStatus, StatusConfig> = {
     icon: '✅',
     description: 'Buyurtma yetkazildi'
   },
+  picked_up: {
+    key: 'picked_up',
+    text: 'Olib ketildi',
+    color: 'green',
+    icon: '📦',
+    description: 'Buyurtma olib ketildi'
+  },
+  completed: {
+    key: 'completed',
+    text: 'Yakunlandi',
+    color: 'green',
+    icon: '🎉',
+    description: 'Buyurtma yakunlandi'
+  },
   cancelled: {
     key: 'cancelled',
     text: 'Bekor qilindi',
@@ -82,12 +90,13 @@ export const STATUS_CONFIGS: Record<OrderStatus, StatusConfig> = {
 // Valid status transitions (matching backend)
 export const STATUS_FLOW: Record<OrderStatus, OrderStatus[]> = {
   pending: ['confirmed', 'cancelled'],
-  confirmed: ['assigned', 'preparing', 'cancelled'],
+  confirmed: ['ready', 'cancelled'],
   assigned: ['on_delivery', 'cancelled'],
-  preparing: ['ready', 'cancelled'],
-  ready: ['assigned', 'delivered'],
-  on_delivery: ['delivered', 'cancelled'],
-  delivered: [],
+  ready: ['assigned', 'delivered', 'picked_up'], // delivery: assigned, dine-in/table: delivered, pickup: picked_up
+  on_delivery: ['delivered'],
+  delivered: ['completed'],
+  picked_up: ['completed'],
+  completed: [],
   cancelled: []
 };
 

@@ -82,7 +82,8 @@ function initializeBot(bot) {
 
   // 3. User profile module
   try {
-    require('./user/callbacks/profile')(bot);
+    const { registerProfileCallbacks } = require('./user/callbacks/profile');
+    registerProfileCallbacks(bot);
     console.log('✅ User profile loaded');
   } catch (error) {
     console.warn('⚠️ User profile load failed:', error.message);

@@ -15,8 +15,8 @@ function getStatusMessage(status) {
   const messages = {
     pending: 'Buyurtmangiz kutilmoqda',
     confirmed: 'Buyurtmangiz tasdiqlandi',
-    preparing: 'Buyurtmangiz tayyorlanmoqda',
     ready: 'Buyurtmangiz tayyor!',
+    assigned: 'Kuryer tayinlandi',
     on_delivery: 'Buyurtmangiz yetkazilmoqda',
     delivered: 'Buyurtmangiz yetkazildi',
     picked_up: 'Buyurtmangiz olib ketildi',
@@ -35,9 +35,9 @@ function getStatusEmoji(status) {
   const emojis = {
     pending: '⏳',
     confirmed: '✅',
-    preparing: '👨‍🍳',
     ready: '🍽️',
-    on_delivery: '🚚',
+    assigned: '🚚',
+    on_delivery: '🚗',
     delivered: '✅',
     picked_up: '📦',
     completed: '🎉',
@@ -54,8 +54,8 @@ function getStatusEmoji(status) {
  */
 function getEstimatedTime(status, orderType) {
   if (status === 'confirmed') return orderType === 'delivery' ? '30-45 daqiqa' : '15-25 daqiqa';
-  if (status === 'preparing') return orderType === 'delivery' ? '20-30 daqiqa' : '10-15 daqiqa';
   if (status === 'ready' && orderType !== 'delivery') return 'Olib ketishingiz mumkin';
+  if (status === 'assigned' && orderType === 'delivery') return '15-25 daqiqa';
   return null;
 }
 
@@ -96,6 +96,49 @@ async function updateStatus(req, res) {
     }
     
     if (!existing.branch && branchId) existing.branch = branchId;
+    
+    // 🔧 FIX: Yetkazib berish holatlarida kuryer tekshiruvi
+    if (existing.orderType === 'delivery') {
+      // Kuryer tayinlanishi kerak
+      if (['on_delivery', 'delivered'].includes(status)) {
+        if (!existing.deliveryInfo || !existing.deliveryInfo.courier) {
+          return res.status(400).json({ 
+            success: false, 
+            message: 'Yetkazib berish uchun avval kuryer tayinlash kerak!' 
+          });
+        }
+      }
+      
+      // 🔧 FIX: Faqat kuryer "delivered" statusni o'zgartira oladi
+      if (status === 'delivered') {
+        // Admin tomonidan qo'lda delivered qilish taqiqlanadi
+        return res.status(400).json({
+          success: false,
+          message: 'Yetkazib berish buyurtmasini faqat kuryer "Yetkazdim" tugmasi orqali yakunlay oladi!'
+        });
+      }
+      
+      // Completed statusga o'tish faqat delivered dan keyin
+      if (status === 'completed' && existing.status !== 'delivered') {
+        return res.status(400).json({
+          success: false,
+          message: 'Buyurtmani yakunlash uchun avval kuryer yetkazgan bo\'lishi kerak!'
+        });
+      }
+    }
+    
+    // Table/dine-in buyurtmalar uchun mijoz kelganligini tekshirish
+    if (['table', 'dine_in'].includes(existing.orderType) && status === 'delivered') {
+      // Mijoz kelganligini tekshirish - agar mijoz kelgan bo'lmasa, delivered holatiga o'tkazib bo'lmaydi
+      const hasArrivedStatus = existing.statusHistory?.some(h => h.status === 'customer_arrived');
+      if (!hasArrivedStatus) {
+        return res.status(400).json({
+          success: false,
+          message: 'Mijoz hali kelmagan! Avval mijoz kelganligini tasdiqlang.'
+        });
+      }
+    }
+    
     existing.status = status;
     existing.updatedAt = new Date();
     existing.statusHistory = existing.statusHistory || [];
@@ -110,6 +153,9 @@ async function updateStatus(req, res) {
     });
     
     const order = await existing.save();
+    
+    // 🔧 DISABLE: Auto-assignment qilinmaydi (manual assignment orqali)
+    // Faqat manual kuryer tayinlash admin paneldan
     
     // Socket events
     try {

@@ -72,7 +72,7 @@ export interface Order {
   branch: Branch;
   items: OrderItem[];
   totalAmount: number;
-  status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'on_delivery' | 'delivered' | 'picked_up' | 'completed' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'ready' | 'assigned' | 'on_delivery' | 'delivered' | 'picked_up' | 'completed' | 'cancelled';
   orderType: 'delivery' | 'pickup' | 'dine_in' | 'table';
   paymentMethod: 'cash' | 'card' | 'online';
   deliveryInfo?: {

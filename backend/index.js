@@ -296,8 +296,17 @@ setInterval(async () => {
         }
       }
       
-      // Stale location uchun ogohlantirish
-      if (isStale && courier.telegramId) {
+      // Stale location uchun ogohlantirish - faqat online va available kuryerlar uchun
+      // 🔧 FIX: Faqat lokatsiya yuborgan kuryerlarga xabar yuborish (yangilanmagan bo'lsa)
+      if (isStale && courier.telegramId && courier.courierInfo?.isOnline && courier.courierInfo?.isAvailable) {
+        // Agar kuryer hech qachon lokatsiya yuborgan bo'lmasa, xabar yubormaymiz (1-marta ishni boshlagan kuryer)
+        if (!loc || (!loc.latitude && !loc.longitude) || ts === 0) {
+          if (COURIER_CHECK_LOGS) {
+            console.log('⚡ Skipping stale warning for courier without location:', courier.firstName);
+          }
+          continue;
+        }
+        
         const notifiedAt = courier?.courierInfo?.staleNotifiedAt ? new Date(courier.courierInfo.staleNotifiedAt).getTime() : 0;
         if (!notifiedAt || now - notifiedAt > COURIER_STALE_MS) {
           try {

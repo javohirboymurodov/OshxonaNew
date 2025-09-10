@@ -54,7 +54,6 @@ interface OrdersState {
   stats: {
     pending: number;
     confirmed: number;
-    preparing: number;
     ready: number;
     delivered: number;
     cancelled: number;
@@ -62,6 +61,34 @@ interface OrdersState {
   statsLoading: boolean;
   newOrders: Order[];
 }
+
+// 🔧 FIX: newOrders ni localStorage dan yuklash
+const loadNewOrdersFromStorage = (): Order[] => {
+  try {
+    const stored = localStorage.getItem('admin_new_orders');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      // Faqat oxirgi 2 soat ichidagi buyurtmalarni saqlaymiz
+      const twoHoursAgo = Date.now() - (2 * 60 * 60 * 1000);
+      return parsed.filter((order: Order) => {
+        const orderTime = new Date(order.createdAt).getTime();
+        return orderTime > twoHoursAgo;
+      });
+    }
+  } catch (error) {
+    console.error('Error loading new orders from storage:', error);
+  }
+  return [];
+};
+
+// newOrders ni localStorage ga saqlash
+const saveNewOrdersToStorage = (newOrders: Order[]) => {
+  try {
+    localStorage.setItem('admin_new_orders', JSON.stringify(newOrders));
+  } catch (error) {
+    console.error('Error saving new orders to storage:', error);
+  }
+};
 
 const initialState: OrdersState = {
   orders: [],
@@ -78,13 +105,12 @@ const initialState: OrdersState = {
   stats: {
     pending: 0,
     confirmed: 0,
-    preparing: 0,
     ready: 0,
     delivered: 0,
     cancelled: 0,
   },
   statsLoading: false,
-  newOrders: [],
+  newOrders: loadNewOrdersFromStorage(),
 };
 
 // Async thunks for API calls
@@ -179,13 +205,27 @@ const ordersSlice = createSlice({
     },
     
     // Real-time update handler
-    handleOrderUpdate: (state, action: PayloadAction<{ orderId: string; status: OrderStatus; statusName?: string; updatedAt: string }>) => {
-      const { orderId, status, updatedAt } = action.payload;
+    handleOrderUpdate: (state, action: PayloadAction<{ 
+      orderId: string; 
+      status: OrderStatus; 
+      statusName?: string; 
+      updatedAt: string;
+      courier?: { _id: string; firstName: string; lastName: string; phone: string };
+    }>) => {
+      const { orderId, status, updatedAt, courier } = action.payload;
       const orderIndex = state.orders.findIndex(order => order._id === orderId);
       
       if (orderIndex !== -1) {
         state.orders[orderIndex].status = status;
         state.orders[orderIndex].updatedAt = updatedAt;
+        
+        // 🔧 FIX: Kuryer ma'lumotini ham yangilash (assignment paytida)
+        if (courier) {
+          if (!state.orders[orderIndex].deliveryInfo) {
+            state.orders[orderIndex].deliveryInfo = {};
+          }
+          state.orders[orderIndex].deliveryInfo!.courier = courier;
+        }
         
         // Update status history if needed
         if (!state.orders[orderIndex].statusHistory) {
@@ -200,11 +240,10 @@ const ordersSlice = createSlice({
         });
       }
       
-      // Update selected order if it's the same
-      if (state.selectedOrder && state.selectedOrder._id === orderId) {
-        state.selectedOrder.status = status;
-        state.selectedOrder.updatedAt = updatedAt;
-      }
+      // 🔧 FIX: selectedOrder ni socket update dan ajratish
+      // Socket orqali kelgan status update selectedOrder ni o'zgartirmasin
+      // Faqat modal ochiq bo'lgan paytda yangilash
+      // Bu modal avtomatik ochilishini oldini oladi
     },
     
     // Handle new order
@@ -218,6 +257,8 @@ const ordersSlice = createSlice({
       if (state.newOrders.length > 10) {
         state.newOrders = state.newOrders.slice(0, 10);
       }
+      // 🔧 FIX: localStorage ga saqlash
+      saveNewOrdersToStorage(state.newOrders);
     },
     
     setRealTimeUpdates: (state, action: PayloadAction<boolean>) => {
@@ -230,10 +271,14 @@ const ordersSlice = createSlice({
     
     clearNewOrders: (state) => {
       state.newOrders = [];
+      // 🔧 FIX: localStorage tozalash
+      saveNewOrdersToStorage([]);
     },
     
     dismissNewOrder: (state, action: PayloadAction<string>) => {
       state.newOrders = state.newOrders.filter(order => order._id !== action.payload);
+      // 🔧 FIX: localStorage yangilash
+      saveNewOrdersToStorage(state.newOrders);
     },
   },
   
@@ -310,7 +355,6 @@ const ordersSlice = createSlice({
         state.stats = {
           pending: Number(stats?.pending) || 0,
           confirmed: Number(stats?.confirmed) || 0,
-          preparing: Number(stats?.preparing) || 0,
           ready: Number(stats?.ready) || 0,
           delivered: Number(stats?.delivered) || 0,
           cancelled: Number(stats?.cancelled) || 0,

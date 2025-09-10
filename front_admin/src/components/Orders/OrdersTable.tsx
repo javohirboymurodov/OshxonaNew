@@ -1,10 +1,9 @@
 import React from 'react';
 import { Table, Tag, Badge, Space, Button, Typography, Dropdown } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { EyeOutlined, ClockCircleOutlined, CheckCircleOutlined, TruckOutlined, ShopOutlined, CloseCircleOutlined } from '@ant-design/icons';
-import { useAppSelector, useAppDispatch } from '../../hooks/redux';
-import { getStatusConfig, OrderStatus } from '../../utils/orderStatus';
-import { updateOrderStatus } from '../../store/slices/ordersSlice';
+import { OrderStatus } from '@/utils/orderStatus';
+import { EyeOutlined, ClockCircleOutlined, TruckOutlined, ShopOutlined } from '@ant-design/icons';
+import { getStatusConfig } from '../../utils/orderStatus';
 
 const { Text } = Typography;
 
@@ -28,7 +27,7 @@ export interface Order {
     address?: string;
     courier?: { firstName?: string; lastName?: string; phone?: string } | null;
   } | null;
-  status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'assigned' | 'picked_up' | 'on_delivery' | 'delivered' | 'completed' | 'cancelled';
+  status: OrderStatus;
   orderType: 'delivery' | 'pickup' | 'dine_in' | 'table';
   paymentMethod: 'cash' | 'card' | 'online' | string;
   deliveryAddress?: string;
@@ -66,15 +65,6 @@ const getPaymentMethodText = (method: string) => {
 };
 
 const OrdersTable: React.FC<OrdersTableProps> = ({ data, loading, pagination, onChangePage, onShowDetails, onAssignCourier, onQuickStatusChange, highlightId }) => {
-  const dispatch = useAppDispatch();
-  
-  const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
-    try {
-      await dispatch(updateOrderStatus({ orderId, status: newStatus })).unwrap();
-    } catch (error) {
-      console.error('Failed to update status:', error);
-    }
-  };
   const getNextStatuses = (currentStatus: string, orderType?: string): string[] => {
     const common: Record<string, string[]> = {
       pending: ['confirmed', 'cancelled'],
@@ -91,18 +81,26 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ data, loading, pagination, on
       const flow = { 
         ...common, 
         ready: ['assigned'], 
-        assigned: ['ready', 'cancelled'],
-        picked_up: ['on_delivery', 'delivered'],
-        on_delivery: ['delivered']
+        assigned: ['on_delivery', 'cancelled'],
+        on_delivery: ['delivered'],
+        delivered: ['completed']
       } as Record<string, string[]>;
       return flow[currentStatus] || [];
     }
     if (orderType === 'pickup') {
-      const flow = { ...common, ready: ['picked_up'] } as Record<string, string[]>;
+      const flow = { 
+        ...common, 
+        ready: ['picked_up'],
+        picked_up: ['completed']
+      } as Record<string, string[]>;
       return flow[currentStatus] || [];
     }
     // dine_in (predzakaz) va table (QR): tayyor → delivered
-    const flow = { ...common, ready: ['delivered'] } as Record<string, string[]>;
+    const flow = { 
+      ...common, 
+      ready: ['delivered'],
+      delivered: ['completed']
+    } as Record<string, string[]>;
     return flow[currentStatus] || [];
   };
   const columns: ColumnsType<Order> = [
@@ -208,7 +206,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ data, loading, pagination, on
         const c = record.courier || record.deliveryInfo?.courier;
         return c ? `${c.firstName || ''} ${c.lastName || ''}`.trim() : '-';
       },
-      responsive: ['lg']
+      responsive: ['md']
     },
     {
       title: 'Amallar',
@@ -216,7 +214,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ data, loading, pagination, on
       width: 120,
       render: (_: unknown, record: Order) => {
         const next = getNextStatuses(record.status, record.orderType);
-        const menuItems = next.map((s) => ({ key: s, label: getStatusConfig(s).text }));
+        const menuItems = next.map((s) => ({ key: s, label: getStatusConfig(s as OrderStatus).text }));
         return (
           <Space size="small">
             <Button 
@@ -248,17 +246,17 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ data, loading, pagination, on
                 Kuryer
               </Button>
             )}
-            {record.orderType === 'delivery' && record.status === 'assigned' && (
-              <Button type="link" size="small" style={{ color: 'green' }}>✅ Qabul qildi</Button>
+            {/* Kuryer tayinlandi - faqat ko'rsatish uchun */}
+            {record.orderType === 'delivery' && record.status === 'assigned' && record.deliveryInfo?.courier && (
+              <Button type="link" size="small" style={{ color: 'green' }} disabled>
+                ✅ Kuryer: {record.deliveryInfo.courier.firstName}
+              </Button>
             )}
-            {record.orderType === 'delivery' && record.status === 'ready' && record.deliveryInfo?.courier && (
-              <Button type="link" size="small" style={{ color: 'blue' }}>📦 Olib ketdi</Button>
-            )}
-            {record.orderType === 'delivery' && record.status === 'picked_up' && (
-              <Button type="link" size="small" style={{ color: 'purple' }}>🚚 Yo'lda</Button>
-            )}
+            {/* Yo'lda - faqat ko'rsatish uchun */}
             {record.orderType === 'delivery' && record.status === 'on_delivery' && (
-              <Button type="link" size="small" style={{ color: 'orange' }}>📍 Yetkazdi</Button>
+              <Button type="link" size="small" style={{ color: 'blue' }} disabled>
+                🚗 Yo'lda
+              </Button>
             )}
           </Space>
         );
@@ -275,7 +273,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ data, loading, pagination, on
       loading={loading}
       pagination={{ ...pagination, showSizeChanger: true, showQuickJumper: true, showTotal: (total, range) => `${range[0]}-${range[1]} / ${total} ta buyurtma` }}
       onChange={(p) => onChangePage(p.current!, p.pageSize!)}
-      scroll={{ x: 1000 }}
+      scroll={{ x: 'max-content' }}
       size="middle"
     />
   );

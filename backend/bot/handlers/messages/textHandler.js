@@ -30,6 +30,28 @@ async function handleText(ctx) {
       return;
     }
     
+    // 🔧 FIX: Kuryer uchun maxsus handling
+    if (user.role === 'courier') {
+      console.log('🚚 Courier text detected, handling courier-specific logic');
+      
+      // Reply keyboard tugmasi
+      if (text === '⬅️ Kuryer menyusi') {
+        try {
+          const CourierHandlers = require('../courier/handlers');
+          await CourierHandlers.start(ctx);
+          return;
+        } catch (courierError) {
+          console.error('❌ Courier menu handler error:', courierError);
+          await ctx.reply('❌ Kuryer menyusida xatolik yuz berdi!');
+          return;
+        }
+      }
+      
+      // Boshqa kuryer text handling (agar kerak bo'lsa)
+      console.log('🚚 Other courier text, skipping...');
+      return;
+    }
+    
     // Table number input for dine-in arrival
     if (ctx.session?.waitingFor === 'table_number') {
       await handleTableNumber(ctx, user, text);
@@ -93,7 +115,7 @@ async function handleTableNumber(ctx, user, text) {
       latestOrder = await Order.findOne({ 
         user: user._id, 
         orderType: 'dine_in',
-        status: { $in: ['pending', 'confirmed', 'preparing', 'ready'] }
+        status: { $in: ['pending', 'confirmed', 'ready'] }
       }).sort({ createdAt: -1 });
       
       if (latestOrder) {
@@ -366,4 +388,4 @@ module.exports = {
   handleFeedback,
   handleWebAppData,
   registerTextHandlers
-};git 
+}; 

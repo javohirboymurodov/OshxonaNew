@@ -23,7 +23,11 @@ class PaymentFlow extends BaseHandler {
       }
 
       // Check if phone is provided
-      if (!user.phone && ctx.session.orderType !== 'dine_in_qr') {
+      // 🔧 FIX: QR kod orqali kelganda telefon so'rash shart emas
+      const isQROrder = ctx.session.orderType === 'table' && ctx.session.orderData?.tableQR;
+      const skipPhoneCheck = ctx.session.orderType === 'dine_in_qr' || isQROrder;
+      
+      if (!user.phone && !skipPhoneCheck) {
         // Agar telefon raqam allaqachon so'ralgan bo'lsa, qayta so'ramaymiz
         if (ctx.session.phoneRequested) {
           console.log('Phone already requested, skipping...');
@@ -277,8 +281,9 @@ class PaymentFlow extends BaseHandler {
             location: orderData.location,
             instructions: orderData.addressNotes 
           } : undefined,
-          dineInInfo: ctx.session.orderType === 'dine_in' ? {
-            arrivalTime: orderData.arrivalTime
+          dineInInfo: (ctx.session.orderType === 'dine_in' || ctx.session.orderType === 'table') ? {
+            arrivalTime: orderData.arrivalTime,
+            tableNumber: orderData.tableNumber
           } : undefined,
           branch: orderData.branch || null,
           customerInfo: { name: [user.firstName, user.lastName].filter(Boolean).join(' '), phone: user.phone }
@@ -324,7 +329,8 @@ class PaymentFlow extends BaseHandler {
       }
 
       // Prepare flags before clearing session
-      const isDineInOrder = String(order.orderType) === 'dine_in' || String(order.orderType) === 'dine_in_qr' || String(order.orderType) === 'table';
+      const isDineInOrder = String(order.orderType) === 'dine_in' || String(order.orderType) === 'table';
+      const needsArrivalButton = String(order.orderType) === 'dine_in'; // Faqat avvaldan buyurtma uchun "Keldim" kerak
 
       // Clear session
       ctx.session.orderData = null;
@@ -346,7 +352,7 @@ class PaymentFlow extends BaseHandler {
       
       message += `\n\nTez orada sizga aloqaga chiqamiz!`;
 
-      const extraButtons = isDineInOrder
+      const extraButtons = needsArrivalButton
         ? [[{ text: '🏁 Keldim (stol raqami)', callback_data: 'dinein_arrived_preview' }]]
         : [];
       await ctx.editMessageText(message, {

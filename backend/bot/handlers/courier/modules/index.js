@@ -24,7 +24,8 @@ module.exports = {
   toggleAvailable: shiftHandlers.toggleAvailable,
   
   // Profile & Stats - profil va statistika
-  activeOrders: profileHandlers.activeOrders,
+  activeOrders: (ctx, page) => profileHandlers.activeOrders(ctx, page),
+  allOrders: (ctx, page) => profileHandlers.allOrders(ctx, page),
   earnings: profileHandlers.earnings,
   profile: profileHandlers.profile,
   
@@ -33,11 +34,11 @@ module.exports = {
   onWay: orderHandlers.onWay,
   delivered: orderHandlers.delivered,
   cancelOrder: orderHandlers.cancelOrder,
+  rejectOrder: orderHandlers.rejectOrder,
   orderDetails: orderHandlers.orderDetails,
   
   // Direct access to modules - to'g'ridan-to'g'ri kirish
   auth: authHandlers,
   shift: shiftHandlers,
-  profile: profileHandlers,
   order: orderHandlers
 };

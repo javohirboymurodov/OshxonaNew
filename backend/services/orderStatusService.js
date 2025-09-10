@@ -5,14 +5,13 @@ const SocketManager = require('../config/socketConfig');
 class OrderStatusService {
   // Valid status transitions
   static statusFlow = {
-    'pending': ['confirmed', 'assigned', 'cancelled'], // Allow direct assignment from pending
-    'confirmed': ['assigned', 'preparing', 'cancelled'],
+    'pending': ['confirmed', 'cancelled'],
+    'confirmed': ['ready', 'cancelled'],
+    'ready': ['assigned', 'delivered', 'picked_up'], // delivery->assigned, dine_in/table->delivered, pickup->picked_up
     'assigned': ['on_delivery', 'cancelled'],
-    'preparing': ['ready', 'cancelled'], 
-    'ready': ['assigned', 'delivered', 'picked_up'], // Added picked_up for pickup orders
     'on_delivery': ['delivered', 'cancelled'],
     'delivered': ['completed'],
-    'picked_up': ['completed'], // Pickup orders complete after picked_up
+    'picked_up': ['completed'],
     'completed': [], // Final status
     'cancelled': []
   };
@@ -22,7 +21,6 @@ class OrderStatusService {
     'pending': '⏳ Kutilmoqda',
     'confirmed': '✅ Tasdiqlandi',
     'assigned': '🚚 Kuryer tayinlandi',
-    'preparing': '👨‍🍳 Tayyorlanmoqda',
     'ready': '🎯 Tayyor',
     'on_delivery': '🚗 Yetkazilmoqda',
     'delivered': '✅ Yetkazildi',

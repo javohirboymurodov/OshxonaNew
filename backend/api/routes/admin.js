@@ -1,7 +1,10 @@
 const express = require('express');
 const { authenticateToken, requireAdmin, requireRole } = require('../../middlewares/apiAuth');
 const AdminController = require('../controllers/adminController');
-const OrdersController = require('../controllers/ordersController.js.backup');
+// Import specific controllers for orders
+const StatusController = require('../controllers/orders/statusController');
+const AssignmentController = require('../controllers/orders/courier/assignmentController');
+const AdminOrdersController = require('../controllers/orders/adminController');
 const { uploadSingle, handleUploadError } = require('../../config/localUploadConfig');
 const Branch = require('../../models/Branch');
 const Product = require('../../models/Product');
@@ -65,13 +68,13 @@ router.get('/orders', AdminController.getOrders);
 router.get('/orders/stats', AdminController.getOrdersStats);
 
 // Get single order by ID
-router.get('/orders/:id', OrdersController.getOrderById);
+router.get('/orders/:id', AdminOrdersController.getOrderById);
 
 // Update order status
-router.patch('/orders/:id/status', OrdersController.updateStatus);
+router.patch('/orders/:id/status', StatusController.updateStatus);
 
 // Assign courier to order
-router.patch('/orders/:id/assign-courier', OrdersController.assignCourier);
+router.patch('/orders/:id/assign-courier', AssignmentController.assignCourier);
 
 // Settings routes
 router.get('/settings', AdminController.getSettings);

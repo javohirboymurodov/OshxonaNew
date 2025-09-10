@@ -24,7 +24,7 @@ function mainMenuKeyboard(user) {
       // 🔧 FIX: Faqat ishni boshlash/tugatish - joylashuvni yuborish tugmasi keraksiz
       [ { text: info.isOnline ? '🛑 Ishni tugatish' : '✅ Ishni boshlash', callback_data: info.isOnline ? 'courier_stop_work' : 'courier_start_work' } ],
       [ { text: info.isAvailable ? '❌ Band qilish' : '✅ Mavjud qilish', callback_data: 'courier_available_toggle' } ],
-      [ { text: '📋 Faol buyurtmalar', callback_data: 'courier_active_orders' } ],
+      [ { text: '📋 Buyurtmalar', callback_data: 'courier_all_orders' } ],
       [ { text: '👤 Profil', callback_data: 'courier_profile' }, { text: '💰 Daromad', callback_data: 'courier_earnings' } ],
       [ { text: '🔙 Kuryer paneli', callback_data: 'courier_main_menu' } ],
     ]

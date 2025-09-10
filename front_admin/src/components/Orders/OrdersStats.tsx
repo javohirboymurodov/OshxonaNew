@@ -6,7 +6,6 @@ export interface OrderStatsProps {
   stats: {
     pending: number;
     confirmed: number;
-    preparing: number;
     ready: number;
     delivered: number;
     cancelled: number;
@@ -25,11 +24,6 @@ const OrdersStats: React.FC<OrderStatsProps> = ({ stats, onSelectStatus }) => {
       <Col xs={12} sm={8} lg={4}>
         <Card hoverable onClick={() => onSelectStatus && onSelectStatus('confirmed')} style={{ cursor: onSelectStatus ? 'pointer' : undefined }}>
           <Statistic title="Tasdiqlangan" value={stats.confirmed} valueStyle={{ color: '#1890ff' }} prefix={<CheckCircleOutlined />} />
-        </Card>
-      </Col>
-      <Col xs={12} sm={8} lg={4}>
-        <Card hoverable onClick={() => onSelectStatus && onSelectStatus('preparing')} style={{ cursor: onSelectStatus ? 'pointer' : undefined }}>
-          <Statistic title="Tayyorlanmoqda" value={stats.preparing} valueStyle={{ color: '#722ed1' }} prefix={<ClockCircleOutlined />} />
         </Card>
       </Col>
       <Col xs={12} sm={8} lg={4}>

@@ -10,6 +10,14 @@ const SocketManager = require('../../../../config/socketConfig');
 // PATCH /api/orders/:id/assign-courier
 async function assignCourier(req, res) {
   try {
+    console.log('🚚 ASSIGN COURIER API CALLED:', {
+      orderId: req.params.id,
+      courierId: req.body.courierId,
+      adminUser: req.user.firstName || req.user._id,
+      adminRole: req.user.role,
+      timestamp: new Date().toISOString()
+    });
+    
     const { id } = req.params;
     const { courierId } = req.body;
     const branchId = req.user.role === 'superadmin' ? null : req.user.branch;
@@ -65,31 +73,87 @@ async function assignCourier(req, res) {
       update, 
       { new: true }
     )
-      .populate('deliveryInfo.courier', 'firstName lastName phone courierInfo')
+      .populate('deliveryInfo.courier', 'firstName lastName phone telegramId courierInfo')
       .populate('user', 'firstName lastName phone telegramId')
-      .populate('branch', 'address coordinates');
+      .populate('branch', 'name title address coordinates');
     
     // Use centralized status service
     const OrderStatusService = require('../../../../services/orderStatusService');
     
-    // Only update status to 'assigned' if the order is not already in ready/preparing state
-    const targetStatus = ['ready', 'preparing'].includes(order.status) ? order.status : 'assigned';
+    // 🔧 FIX: Admin kuryer tayinlaganda har doim "assigned" statusga o'tkazish
+    console.log(`🔍 Courier assignment: Current status: ${order.status}, changing to: assigned`);
     
-    if (targetStatus === 'assigned') {
-      await OrderStatusService.updateStatus(order._id, 'assigned', {
-        message: `Kuryer tayinlandi: ${courier.firstName} ${courier.lastName}`,
-        updatedBy: req.user._id
-      });
-    } else {
-      // Just emit courier assignment notification without status change
+    // To'g'ridan-to'g'ri order status ni o'zgartiramiz
+    order.status = 'assigned';
+    order.statusHistory = order.statusHistory || [];
+    order.statusHistory.push({
+      status: 'assigned',
+      message: `Kuryer tayinlandi: ${courier.firstName} ${courier.lastName}`,
+      timestamp: new Date(),
+      updatedBy: req.user._id
+    });
+    order.updatedAt = new Date();
+    await order.save();
+    
+    console.log(`✅ Order status changed to: ${order.status}`);
+    
+    // Socket notification yuborish
+    try {
       SocketManager.emitOrderUpdate(order._id.toString(), {
-        type: 'courier-assigned',
         orderId: order.orderId,
-        courierName: `${courier.firstName} ${courier.lastName}`,
-        courierPhone: courier.phone,
+        status: 'assigned',
         message: `Kuryer tayinlandi: ${courier.firstName} ${courier.lastName}`,
+        branchId: String(order.branch || ''),
+        courier: {
+          _id: courier._id,
+          firstName: courier.firstName,
+          lastName: courier.lastName,
+          phone: courier.phone
+        },
         timestamp: new Date()
       });
+      console.log('✅ Socket notification sent for courier assignment with courier details');
+    } catch (socketError) {
+      console.error('❌ Socket notification error:', socketError);
+    }
+    
+    // 🔧 FIX: Manual kuryer tayinlashda ham kuryerga telegram notification yuborish
+    try {
+      console.log('🚚 Sending telegram notification to courier after manual assignment');
+      console.log('🚚 Courier details:', {
+        courierId: courier._id,
+        courierName: courier.firstName,
+        telegramId: courier.telegramId,
+        orderType: order.orderType
+      });
+      
+      const bot = global.botInstance;
+      console.log('🚚 Bot instance status:', !!bot);
+      
+      if (bot && courier.telegramId) {
+        const message = `🚚 **Yangi buyurtma tayinlandi!**\n\n` +
+          `📋 **Buyurtma №:** ${order.orderId}\n` +
+          `💰 **Jami:** ${order.total.toLocaleString()} so'm\n` +
+          `📍 **Manzil:** ${order.deliveryInfo?.address || 'Kiritilmagan'}\n` +
+          `📞 **Mijoz:** ${order.customerInfo?.phone || 'N/A'}\n\n` +
+          `Buyurtmani qabul qilish uchun "Yo'ldaman" tugmasini bosing.`;
+        
+        await bot.telegram.sendMessage(courier.telegramId, message, {
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '🚗 Yo\'ldaman', callback_data: `courier_on_way_${order._id}` }],
+              [{ text: '❌ Rad etish', callback_data: `courier_reject_${order._id}` }]
+            ]
+          }
+        });
+        
+        console.log('✅ Manual assignment telegram notification sent to courier:', courier.telegramId);
+      } else {
+        console.log('❌ Cannot send notification - bot or courier telegramId missing');
+      }
+    } catch (courierNotifyError) {
+      console.error('❌ Manual courier assignment notification error:', courierNotifyError);
     }
     
     if (!order) {
@@ -133,8 +197,12 @@ async function assignCourier(req, res) {
         const courierPhone = order.deliveryInfo?.courier?.phone || '';
         const text = `🚚 Buyurtmangiz yetkazilmoqda\n\nKuryer: ${courierName || '—'}\nTelefon: ${courierPhone || '—'}\nETA: ${etaText}`;
         
-        const { bot } = require('../../../../index');
-        await bot.telegram.sendMessage(order.user.telegramId, text);
+        const bot = global.botInstance;
+        if (bot) {
+          await bot.telegram.sendMessage(order.user.telegramId, text);
+        } else {
+          console.error('❌ Bot instance not found for customer notification');
+        }
       }
     } catch (e) {
       console.error('Customer notification error:', e);

@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Space, Card, Row, Col, Typography, Select, DatePicker, message as antdMessage, Input, Drawer } from 'antd';
 import { FilterOutlined, ReloadOutlined } from '@ant-design/icons';
-import dayjs, { type Dayjs } from 'dayjs';
+import { type Dayjs } from 'dayjs';
 import OrdersStats from '@/components/Orders/OrdersStats';
 
 import OrdersTable, { type Order as TableOrder } from '@/components/Orders/OrdersTable';
@@ -12,6 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 // import { useSocket } from '@/hooks/useSocket'; // Moved to MainLayout
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { fetchOrders, setSelectedOrder, updateOrderStatus, setPagination, fetchOrderStats } from '@/store/slices/ordersSlice';
+import { OrderStatus } from '@/utils/orderStatus';
 import apiService from '@/services/api';
 import { useLocation } from 'react-router-dom';
 import '@/pages/Orders/orders-highlight.css';
@@ -41,7 +42,7 @@ const OrdersPage: React.FC = () => {
 
   interface Filters {
     search: string;
-    status: string;
+    status: OrderStatus | '';
     orderType: string;
     paymentMethod: string;
     dateRange: [Dayjs | null, Dayjs | null] | null;
@@ -100,8 +101,12 @@ const OrdersPage: React.FC = () => {
   // 🔧 Guard: filtr o'zgarganda avtomatik modal ochilmasin
   const suppressAutoOpenRef = useRef(false);
   useEffect(() => {
+    console.log('🔧 suppressAutoOpen set to TRUE (filters changed)');
     suppressAutoOpenRef.current = true;
-    const t = setTimeout(() => { suppressAutoOpenRef.current = false; }, 400);
+    const t = setTimeout(() => { 
+      suppressAutoOpenRef.current = false; 
+      console.log('🔧 suppressAutoOpen set to FALSE (timeout)');
+    }, 400);
     return () => clearTimeout(t);
   }, [filters, pagination.current, pagination.pageSize]);
 
@@ -110,8 +115,8 @@ const OrdersPage: React.FC = () => {
     dispatch(fetchOrders({
       page: pagination.current,
       limit: pagination.pageSize,
-      status: filters.status,
-      orderType: filters.orderType,
+      status: filters.status || undefined,
+      orderType: filters.orderType || undefined,
     }));
   }, [dispatch, pagination.current, pagination.pageSize, filters.status, filters.orderType]);
 
@@ -132,8 +137,8 @@ const OrdersPage: React.FC = () => {
     dispatch(fetchOrders({
       page: pagination.current,
       limit: pagination.pageSize,
-      status: filters.status,
-      orderType: filters.orderType,
+      status: filters.status || undefined,
+      orderType: filters.orderType || undefined,
     }));
   }, [dispatch, filters, pagination.current, pagination.pageSize]);
 
@@ -142,11 +147,17 @@ const OrdersPage: React.FC = () => {
     const state = location.state as { focusOrderId?: string } | null;
     if (!state?.focusOrderId) return;
     if (suppressAutoOpenRef.current) return;
-    const order = orders.find(o => o._id === state.focusOrderId || o.orderNumber === state.focusOrderId);
+    
+    console.log('🔔 NOTIFICATION FOCUS triggered:', state.focusOrderId);
+    
+    const order = orders.find(o => o._id === state.focusOrderId || o.orderId === state.focusOrderId);
     if (order) {
+      console.log('🔔 Opening modal from notification for order:', order.orderId);
       dispatch(setSelectedOrder(order));
       setDetailsVisible(true);
       // highlight uchun qisqa scroll/hilite class qo'shish mumkin — hozir modal ochish yetarli
+    } else {
+      console.log('🔔 Order not found for focusOrderId:', state.focusOrderId);
     }
     // location.state ni tozalash uchun tarixni almashtirish (optional)
     window.history.replaceState({}, document.title);
@@ -154,24 +165,26 @@ const OrdersPage: React.FC = () => {
 
   // Customer arrival handling is now done through Socket.io events in useSocket hook
 
-  // Watch for selectedOrder changes from Redux (e.g. from notification clicks)
-  useEffect(() => {
-    if (selectedOrder) {
-      setDetailsVisible(true);
-    } else {
-      setDetailsVisible(false);
-    }
-  }, [selectedOrder]);
+  // 🔧 FIX: Modal avtomatik ochilishini faqat manual selection uchun
+  // selectedOrder Redux dan avtomatik o'zgarganida modal ochilmasin
+  // Faqat manual showOrderDetails chaqirilganda modal ochilsin
+  // useEffect([selectedOrder]) ni o'chirish
 
   // Fokus ID bo'lsa va ro'yxat yangilangan bo'lsa, moddalni ochamiz
   useEffect(() => {
     if (!pendingFocusId || orders.length === 0) return;
     if (suppressAutoOpenRef.current) return;
-    const order = orders.find(o => o._id === pendingFocusId || o.orderNumber === pendingFocusId);
+    
+    console.log('🔔 PENDING FOCUS triggered:', pendingFocusId, 'suppressAuto:', suppressAutoOpenRef.current);
+    
+    const order = orders.find(o => o._id === pendingFocusId || o.orderId === pendingFocusId);
     if (order) {
+      console.log('🔔 Opening modal from pending focus for order:', order.orderId);
       dispatch(setSelectedOrder(order));
       setDetailsVisible(true);
       setPendingFocusId(null);
+    } else {
+      console.log('🔔 Order not found for pendingFocusId:', pendingFocusId);
     }
   }, [pendingFocusId, orders]);
 
@@ -200,10 +213,10 @@ const OrdersPage: React.FC = () => {
   );
 
   const showOrderDetails = async (order: TableOrder) => {
-    console.log('👁️ showOrderDetails chaqirildi:', order.orderId);
-    dispatch(setSelectedOrder(order as unknown as Order));
+    console.log('👁️ MANUAL showOrderDetails chaqirildi:', order.orderId);
+    dispatch(setSelectedOrder(order as any));
     setDetailsVisible(true);
-    const ackId = (order as unknown as { _id?: string; orderNumber?: string })._id || (order as unknown as { _id?: string; orderNumber?: string }).orderNumber;
+    const ackId = (order as unknown as { _id?: string; orderId?: string })._id || (order as unknown as { _id?: string; orderId?: string }).orderId;
     if (ackId) {
       try { localStorage.setItem('ackOrderId', String(ackId)); } catch { /* ignore */ }
     }
@@ -215,13 +228,13 @@ const OrdersPage: React.FC = () => {
           ...(order as unknown as Record<string, unknown>),
           ...(full as Record<string, unknown>),
         } as Record<string, unknown>;
-        if (!merged.orderNumber) {
-          merged.orderNumber = (full as Record<string, unknown>)['orderNumber']
-            || (order as unknown as Record<string, unknown>)['orderNumber']
-            || (full as Record<string, unknown>)['orderId']
+        if (!merged.orderId) {
+          merged.orderId = (full as Record<string, unknown>)['orderId']
+            || (order as unknown as Record<string, unknown>)['orderId']
+            || (full as Record<string, unknown>)['orderNumber']
             || '';
         }
-        dispatch(setSelectedOrder(merged as unknown as Order));
+        dispatch(setSelectedOrder(merged as any));
       }
     } catch (e) {
       console.warn('Order details fetch failed', e);
@@ -258,8 +271,8 @@ const OrdersPage: React.FC = () => {
               dispatch(fetchOrders({
                 page: pagination.current,
                 limit: pagination.pageSize,
-                status: filters.status,
-                orderType: filters.orderType,
+                status: filters.status || undefined,
+                orderType: filters.orderType || undefined,
               }));
             }}>Yangilash</Button>
           </Space>
@@ -269,7 +282,7 @@ const OrdersPage: React.FC = () => {
       <OrdersStats
         stats={stats}
         onSelectStatus={(s) =>
-          setFilters((prev) => ({ ...prev, status: prev.status === s ? '' : s }))
+          setFilters((prev) => ({ ...prev, status: (prev.status === s ? '' : s) as (OrderStatus | '') }))
         }
       />
 
@@ -300,12 +313,11 @@ const OrdersPage: React.FC = () => {
               placeholder="Holat"
               allowClear
               value={filters.status || undefined}
-              onChange={(value) => setFilters({ ...filters, status: value || '' })}
+              onChange={(value) => setFilters({ ...filters, status: (value as OrderStatus) || '' })}
               style={{ width: '100%' }}
             >
               <Option value="pending">Kutilmoqda</Option>
               <Option value="confirmed">Tasdiqlangan</Option>
-              <Option value="preparing">Tayyorlanmoqda</Option>
               <Option value="ready">Tayyor</Option>
               <Option value="delivered">Yetkazilgan</Option>
               <Option value="cancelled">Bekor qilingan</Option>
@@ -377,8 +389,8 @@ const OrdersPage: React.FC = () => {
           dispatch(fetchOrders({
             page: pagination.current,
             limit: pagination.pageSize,
-            status: filters.status,
-            orderType: filters.orderType,
+            status: filters.status || undefined,
+            orderType: filters.orderType || undefined,
           }));
         }}
       />
@@ -397,8 +409,8 @@ const OrdersPage: React.FC = () => {
           dispatch(fetchOrders({
             page: pagination.current,
             limit: pagination.pageSize,
-            status: filters.status,
-            orderType: filters.orderType,
+            status: filters.status || undefined,
+            orderType: filters.orderType || undefined,
           }));
           setAssignModalVisible(false);
           setSelectedOrderForAssign(null);
@@ -436,8 +448,8 @@ const OrdersPage: React.FC = () => {
             dispatch(fetchOrders({
               page: 1,
               limit: pagination.pageSize,
-              status: filters.status,
-              orderType: filters.orderType,
+              status: filters.status || undefined,
+              orderType: filters.orderType || undefined,
             }));
           }}>
             Filtrlarni qo'llash

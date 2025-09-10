@@ -76,19 +76,31 @@ class RatingHandlers {
       const orderId = match[1];
       const rating = parseInt(match[2]);
       
-      // Find and verify order
-      const { Order } = require('../../../models');
-      const order = await Order.findById(orderId);
+      // Find and verify order with user population
+      const { Order, User } = require('../../../models');
+      const order = await Order.findById(orderId).populate('user', 'telegramId');
       
       if (!order) {
         await ctx.answerCbQuery('❌ Buyurtma topilmadi');
         return;
       }
       
-      // Verify user owns this order
+      // 🔧 FIX: To'g'ri user verification 
       const telegramId = ctx.from.id;
-      if (order.user?.toString() !== telegramId.toString()) {
+      
+      if (!order.user || !order.user.telegramId) {
+        await ctx.answerCbQuery('❌ Buyurtma egasi topilmadi');
+        return;
+      }
+      
+      if (order.user.telegramId !== telegramId) {
         await ctx.answerCbQuery('❌ Bu buyurtmani baholash huquqingiz yo\'q');
+        return;
+      }
+      
+      // Yetkazildi yoki completed bo'lgan buyurtmalarnigina baholash mumkin
+      if (!['delivered', 'completed'].includes(order.status)) {
+        await ctx.answerCbQuery('❌ Faqat yetkazilgan buyurtmalarni baholash mumkin');
         return;
       }
       
@@ -126,12 +138,21 @@ class RatingHandlers {
         ]
       };
       
-      if (ctx.callbackQuery) {
-        await ctx.editMessageText(message, {
-          parse_mode: 'HTML',
-          reply_markup: keyboard
-        });
-      } else {
+      try {
+        if (ctx.callbackQuery) {
+          await ctx.editMessageText(message, {
+            parse_mode: 'HTML',
+            reply_markup: keyboard
+          });
+        } else {
+          await ctx.reply(message, {
+            parse_mode: 'HTML',
+            reply_markup: keyboard
+          });
+        }
+      } catch (editError) {
+        // 🔧 FIX: Agar xabar bir xil bo'lsa, yangi xabar yuboramiz
+        console.log('🔄 Edit failed (same content), sending new feedback message');
         await ctx.reply(message, {
           parse_mode: 'HTML',
           reply_markup: keyboard

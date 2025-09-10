@@ -23,7 +23,8 @@ module.exports = {
   toggleAvailable: courierModules.toggleAvailable,
   
   // Profile & Stats
-  activeOrders: courierModules.activeOrders,
+  activeOrders: (ctx, page) => courierModules.activeOrders(ctx, page),
+  allOrders: (ctx, page) => courierModules.allOrders(ctx, page),
   earnings: courierModules.earnings,
   profile: courierModules.profile,
   
@@ -32,6 +33,7 @@ module.exports = {
   onWay: courierModules.onWay,
   delivered: courierModules.delivered,
   cancelOrder: courierModules.cancelOrder,
+  rejectOrder: courierModules.rejectOrder,
   orderDetails: courierModules.orderDetails
 };
 

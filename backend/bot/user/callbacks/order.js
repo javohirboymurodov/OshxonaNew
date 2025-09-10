@@ -34,10 +34,21 @@ function registerOrderCallbacks(bot) {
         return await ctx.answerCbQuery('❌ Savat bo\'sh!');
       }
       
-      // Start order flow with order type selection
-      const OrderFlow = require('../../handlers/user/order/orderFlow');
-      await OrderFlow.startOrder(ctx);
-      await ctx.answerCbQuery('🛒 Buyurtma turiga o\'tamiz');
+      // 🔧 FIX: QR kod orqali kelganda buyurtma turi tanlash bosqichini o'tkazib yuborish
+      const isQROrder = ctx.session?.orderType === 'table' && ctx.session?.orderData?.tableQR;
+      
+      if (isQROrder) {
+        console.log('🍽️ QR order detected, skipping order type selection');
+        // QR kod orqali kelganda to'g'ridan-to'g'ri to'lov usulini so'ramiz
+        const PaymentFlow = require('../../handlers/user/order/paymentFlow');
+        await PaymentFlow.askForPaymentMethod(ctx);
+        await ctx.answerCbQuery('💳 To\'lov usulini tanlang');
+      } else {
+        // Oddiy buyurtma - order type selection
+        const OrderFlow = require('../../handlers/user/order/orderFlow');
+        await OrderFlow.startOrder(ctx);
+        await ctx.answerCbQuery('🛒 Buyurtma turiga o\'tamiz');
+      }
     } catch (error) {
       console.error('❌ checkout error:', error);
       if (ctx.answerCbQuery) await ctx.answerCbQuery('❌ Xatolik yuz berdi!');
