@@ -16,9 +16,23 @@ async function list(req, res) {
       const numericId = /^\d+$/.test(text) ? Number(text) : null;
       query.$and = (query.$and || []).concat([{ $or: [ { firstName: { $regex: regex } }, { lastName: { $regex: regex } }, { email: { $regex: regex } }, { phone: { $regex: regex } }, ...(numericId !== null ? [{ telegramId: numericId }] : []) ] }]);
     }
-    const users = await User.find(query).populate('branch', 'name').sort({ createdAt: -1 }).limit(limit * 1).skip((page - 1) * limit).select('-password');
+    const users = await User.find(query)
+      .populate('branch', 'name')
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
+      .select('-password');
     const total = await User.countDocuments(query);
-    res.json({ success: true, data: { users, pagination: { current: parseInt(page), pageSize: parseInt(limit), total, pages: Math.ceil(total / limit) } } });
+    // Map lastOrderDate for UI (from stats.lastOrderDate if present)
+    const enriched = users.map(u => {
+      const obj = u.toObject();
+      obj.lastOrderDate = obj.stats?.lastOrderDate || null;
+      obj.totalOrders = obj.stats?.totalOrders ?? obj.totalOrders ?? 0;
+      obj.totalSpent = obj.stats?.totalSpent ?? obj.totalSpent ?? 0;
+      return obj;
+    });
+
+    res.json({ success: true, data: { users: enriched, pagination: { current: parseInt(page), pageSize: parseInt(limit), total, pages: Math.ceil(total / limit) } } });
   } catch (e) { res.status(500).json({ success: false, message: 'Foydalanuvchilarni olishda xatolik!' }); }
 }
 

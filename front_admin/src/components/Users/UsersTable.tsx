@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table, Space, Tag, Avatar, Badge, Tooltip, Typography, Button } from 'antd';
+import { Table, Space, Tag, Avatar, Badge, Typography, Button } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { UserOutlined, EyeOutlined, EditOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 
@@ -16,6 +16,7 @@ export interface User {
   isActive: boolean;
   isBlocked: boolean;
   lastSeen?: string;
+  lastOrderDate?: string | null;
   totalOrders: number;
   totalSpent: number;
   createdAt: string;
@@ -96,14 +97,14 @@ const UsersTable: React.FC<UsersTableProps> = ({ data, loading, pagination, onCh
       dataIndex: 'lastSeen',
       key: 'lastSeen',
       render: (date: string) => (
-        <Tooltip title={date}><Text type="secondary">{date ? new Date(date).toLocaleString('uz-UZ') : '-'}</Text></Tooltip>
+        <Text type="secondary">{date ? new Date(date).toLocaleString('uz-UZ') : '-'}</Text>
       ),
     },
     {
       title: 'Amallar',
       key: 'actions',
       width: 150,
-      render: (_: any, record: User) => (
+      render: (_: unknown, record: User) => (
         <Space size="small">
           <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => onShowDetails(record)} />
           <Button type="link" size="small" icon={<EditOutlined />} onClick={() => onEdit(record)} />
@@ -114,7 +115,7 @@ const UsersTable: React.FC<UsersTableProps> = ({ data, loading, pagination, onCh
   ];
 
   return (
-    <Table
+    <Table<User>
       columns={columns}
       dataSource={data}
       rowKey="_id"

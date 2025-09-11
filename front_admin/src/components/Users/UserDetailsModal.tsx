@@ -21,6 +21,7 @@ export interface UserDetails {
   lastSeen?: string;
   loyaltyPoints?: number;
   referrals?: { totalReferrals?: number } | null;
+  lastOrderDate?: string;
 }
 
 interface Props {
@@ -67,6 +68,10 @@ const UserDetailsModal: React.FC<Props> = ({ open, user, onClose, roleText }) =>
         <Row gutter={16}>
           <Col span={12}><Statistic title="Jami buyurtmalar" value={user.totalOrders || 0} /></Col>
           <Col span={12}><Statistic title="Jami xarajatlar" value={Number(user.totalSpent || 0)} suffix="so'm" formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} /></Col>
+        </Row>
+        <Row gutter={16} style={{ marginTop: 16 }}>
+          <Col span={12}><Statistic title="O'rtacha buyurtma" value={user.totalOrders ? Math.round((Number(user.totalSpent || 0)) / Number(user.totalOrders || 1)) : 0} suffix="so'm" formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} /></Col>
+          <Col span={12}><Statistic title="Oxirgi buyurtma" value={user.lastOrderDate ? Math.floor((Date.now() - new Date(user.lastOrderDate).getTime()) / (1000 * 60 * 60 * 24)) : 0} suffix="kun oldin" /></Col>
         </Row>
         <Row gutter={16} style={{ marginTop: 16 }}>
           <Col span={12}><Statistic title="Loyalty balllar" value={Number(user.loyaltyPoints || 0)} /></Col>
