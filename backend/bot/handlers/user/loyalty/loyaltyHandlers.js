@@ -29,8 +29,7 @@ const loyaltyHandlers = {
 
       let message = `${levelEmojis[loyaltyInfo.currentLevel]} <b>Sizning Darajangiz: ${loyaltyInfo.currentLevel}</b>\n\n`;
       message += `💰 <b>Loyalty balllar:</b> ${loyaltyInfo.loyaltyPoints.toLocaleString()}\n`;
-      message += `📊 <b>Jami buyurtmalar:</b> ${loyaltyInfo.totalOrders}\n`;
-      message += `💸 <b>Jami xarajat:</b> ${loyaltyInfo.totalSpent.toLocaleString()} so'm\n\n`;
+      message += `📊 <b>Jami buyurtmalar:</b> ${loyaltyInfo.totalOrders}\n\n`;
 
       // Keyingi daraja uchun ma'lumot
       if (loyaltyInfo.nextLevel && loyaltyInfo.requiredForNext) {

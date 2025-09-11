@@ -40,7 +40,13 @@ class LoyaltyService {
     const user = await User.findById(userId);
     if (!user) return null;
 
-    const newLevel = this.getLoyaltyLevel(user.stats.totalSpent, user.stats.totalOrders);
+    // Rolling window: oxirgi 180 kun
+    const cutoff = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000);
+    const recentOrders = await Order.find({ user: userId, paymentStatus: 'paid', updatedAt: { $gte: cutoff } }).select('total');
+    const windowSpent = recentOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+    const windowOrders = recentOrders.length;
+
+    const newLevel = this.getLoyaltyLevel(windowSpent, windowOrders);
     const oldLevel = user.loyaltyLevel;
 
     if (newLevel !== oldLevel) {
@@ -310,6 +316,32 @@ class LoyaltyService {
       totalPoints: user.loyaltyPoints,
       levelUpdate
     };
+  }
+
+  // Referral bonus on first paid order only
+  static async awardReferralOnFirstOrder(newUserId, referrerId) {
+    try {
+      const newUser = await User.findById(newUserId);
+      const referrer = await User.findById(referrerId);
+      if (!newUser || !referrer) return false;
+      // Prevent double-award: check if welcome already used
+      const already = newUser.bonuses?.some(b => b.type === 'referral_welcome' && b.used === false);
+      if (!newUser.referrals?.referredBy || String(newUser.referrals.referredBy) !== String(referrerId)) return false;
+
+      if (!already) {
+        newUser.loyaltyPoints += 5000;
+        newUser.bonuses.push({ type: 'referral_welcome', amount: 5000, message: 'Xush kelibsiz bonusi!', expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) });
+        await newUser.save();
+      }
+
+      referrer.loyaltyPoints += 3000;
+      referrer.bonuses.push({ type: 'referral_reward', amount: 3000, message: `${newUser.firstName} ni taklif qilganingiz uchun bonus!`, expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) });
+      await referrer.save();
+      return true;
+    } catch (e) {
+      console.error('awardReferralOnFirstOrder error:', e);
+      return false;
+    }
   }
 }
 

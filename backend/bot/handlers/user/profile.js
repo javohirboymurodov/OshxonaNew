@@ -68,7 +68,7 @@ async function showProfile(ctx) {
       return;
     }
     
-    const stats = user.stats || { totalOrders: 0, totalSpent: 0 };
+    const stats = user.stats || { totalOrders: 0 };
     const loyalty = user.loyaltyPoints || 0;
     const level = user.loyaltyLevel || 'STARTER';
     
@@ -78,7 +78,6 @@ async function showProfile(ctx) {
       `🌐 **Til:** ${user.language || 'uz'}\n\n` +
       `📊 **Statistika:**\n` +
       `   🛒 Buyurtmalar: ${stats.totalOrders}\n` +
-      `   💰 Xarajat: ${stats.totalSpent.toLocaleString()} so'm\n` +
       `   💎 Loyalty: ${loyalty.toLocaleString()} ball\n` +
       `   🏆 Daraja: ${level}`;
         

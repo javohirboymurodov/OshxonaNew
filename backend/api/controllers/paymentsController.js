@@ -1,6 +1,7 @@
 const { Order } = require('../../models');
 const SocketManager = require('../../config/socketConfig');
 const LoyaltyService = require('../../services/loyaltyService');
+const User = require('../../models/User');
 
 /**
  * Payments Controller
@@ -52,6 +53,19 @@ async function confirmPaid(req, res) {
     // Award loyalty points and process bonuses
     try {
       await LoyaltyService.processOrderCompletion(order._id);
+
+      // Referral bonus ONLY on first paid order
+      try {
+        const user = await User.findById(order.user._id);
+        if (user && user.referrals && user.referrals.referredBy) {
+          const paidOrders = await require('../../models/Order').countDocuments({ user: user._id, paymentStatus: 'paid' });
+          if (paidOrders === 1) {
+            await LoyaltyService.awardReferralOnFirstOrder(user._id, user.referrals.referredBy);
+          }
+        }
+      } catch (reErr) {
+        console.error('Referral first-order bonus error:', reErr);
+      }
     } catch (e) {
       console.error('Loyalty processing error:', e);
     }
