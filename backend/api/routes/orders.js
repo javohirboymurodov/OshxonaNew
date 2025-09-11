@@ -27,6 +27,10 @@ router.get('/:id', requireAdmin, OrdersController.getOrder);
 // Update order status
 router.patch('/:id/status', requireAdmin, OrdersController.updateStatus);
 
+// Payment confirmation (admin/internal or webhook with secret header)
+const PaymentsController = require('../controllers/paymentsController');
+router.post('/:id/paid', PaymentsController.confirmPaid);
+
 // Helper functions are defined in the controller
 
 // Assign courier to order

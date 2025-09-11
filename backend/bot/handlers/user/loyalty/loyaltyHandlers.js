@@ -125,11 +125,12 @@ const loyaltyHandlers = {
         message += `💡 <b>Foydalanish:</b> Buyurtma berishda avtomatik qo'llaniladi\n`;
       }
 
+      // Balllarni ishlatish tugmasi vaqtincha o'chirildi — to'lov tasdiqlashda avtomatik qo'llanadi
       const keyboard = {
         inline_keyboard: [
           [
-            { text: '🔄 Balllarni ishlatish', callback_data: 'use_points' },
-            { text: '📊 Darajam', callback_data: 'my_loyalty_level' }
+            { text: '📊 Darajam', callback_data: 'my_loyalty_level' },
+            { text: '📈 Statistikam', callback_data: 'my_stats' }
           ],
           [
             { text: '🏠 Bosh menyu', callback_data: 'back_to_main' }

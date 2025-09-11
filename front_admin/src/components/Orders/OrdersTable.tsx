@@ -126,7 +126,16 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ data, loading, pagination, on
           }
           // Yetkazib berish uchun delivery info bor bo'lsa
           if (record.deliveryInfo?.address) {
-            return `📍 ${record.deliveryInfo.address}`;
+            const addr = record.deliveryInfo.address;
+            const isUrl = /^https?:\/\//i.test(addr);
+            if (isUrl) {
+              return (
+                <a href={addr} target="_blank" rel="noreferrer">
+                  📍 Xarita
+                </a>
+              );
+            }
+            return `📍 ${addr}`;
           }
           return 'Yetkazib berish';
         }

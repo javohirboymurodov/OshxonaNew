@@ -19,6 +19,8 @@ export interface UserDetails {
   createdAt: string;
   updatedAt: string;
   lastSeen?: string;
+  loyaltyPoints?: number;
+  referrals?: { totalReferrals?: number } | null;
 }
 
 interface Props {
@@ -65,6 +67,10 @@ const UserDetailsModal: React.FC<Props> = ({ open, user, onClose, roleText }) =>
         <Row gutter={16}>
           <Col span={12}><Statistic title="Jami buyurtmalar" value={user.totalOrders || 0} /></Col>
           <Col span={12}><Statistic title="Jami xarajatlar" value={Number(user.totalSpent || 0)} suffix="so'm" formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} /></Col>
+        </Row>
+        <Row gutter={16} style={{ marginTop: 16 }}>
+          <Col span={12}><Statistic title="Loyalty balllar" value={Number(user.loyaltyPoints || 0)} /></Col>
+          <Col span={12}><Statistic title="Referrallar" value={Number(user.referrals?.totalReferrals || 0)} /></Col>
         </Row>
       </Card>
     </Modal>

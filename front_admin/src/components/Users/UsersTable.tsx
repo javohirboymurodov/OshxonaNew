@@ -20,6 +20,8 @@ export interface User {
   totalSpent: number;
   createdAt: string;
   updatedAt: string;
+  loyaltyPoints?: number;
+  referrals?: { totalReferrals?: number } | null;
 }
 
 interface UsersTableProps {

@@ -179,7 +179,8 @@ const startUnifiedServer = async (bot) => {
       try {
         await bot.telegram.deleteWebhook({ drop_pending_updates: true });
         console.log('✅ Webhook tozalandi, 3 soniyadan keyin qayta urinish...');
-        setTimeout(() => startUnifiedServer(), 3000);
+        // ⚠️ Muhim: mavjud bot instansiyasini qayta ishlatamiz
+        setTimeout(() => startUnifiedServer(bot), 3000);
         return;
       } catch (webhookError) {
         console.error('❌ Webhook tozalashda xatolik:', webhookError.message);

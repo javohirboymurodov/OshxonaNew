@@ -304,29 +304,8 @@ class PaymentFlow extends BaseHandler {
       // Order tracking started - Admin will manually confirm the order
       // No automatic status updates - waiting for admin confirmation
 
-      // Process loyalty points for completed order
+      // Loyalty points will be awarded on payment confirmation webhook/endpoint
       let loyaltyUpdate = null;
-      try {
-        // Calculate and award loyalty points
-        const earnedPoints = await LoyaltyService.calculatePoints(order.total, user._id);
-        
-        // Update user stats and points
-        user.loyaltyPoints += earnedPoints;
-        user.stats.totalOrders += 1;
-        user.stats.totalSpent += order.total;
-        user.stats.lastOrderDate = new Date();
-        await user.save();
-
-        // Check for level updates
-        loyaltyUpdate = await LoyaltyService.updateUserLoyaltyLevel(user._id);
-
-        // Check for birthday bonus
-        await LoyaltyService.checkBirthdayBonus(user._id);
-
-        console.log(`✅ Loyalty points processed: ${earnedPoints} points earned`);
-      } catch (loyaltyError) {
-        console.error('❌ Loyalty points processing error:', loyaltyError);
-      }
 
       // Prepare flags before clearing session
       const isDineInOrder = String(order.orderType) === 'dine_in' || String(order.orderType) === 'table';
@@ -337,18 +316,9 @@ class PaymentFlow extends BaseHandler {
       ctx.session.orderType = null;
       ctx.session.waitingFor = null;
 
-      // Success message with loyalty info
+      // Success message
       let message = `✅ **Buyurtma qabul qilindi!**\n\n📦 Buyurtma raqami: ${order.orderId}\n💰 Jami: ${order.total.toLocaleString()} so'm`;
-      
-      // Add loyalty points info
-      if (loyaltyUpdate && user.loyaltyPoints > 0) {
-        const earnedPoints = await LoyaltyService.calculatePoints(order.total, user._id);
-        message += `\n\n🎉 **Loyalty bonusi:**\n💎 +${earnedPoints} ball olishingiz\n💰 Jami ballaringiz: ${user.loyaltyPoints.toLocaleString()}`;
-        
-        if (loyaltyUpdate.levelUp) {
-          message += `\n🏆 Tabriklaymiz! ${loyaltyUpdate.newLevel} darajasiga ko'tarildingiz!`;
-        }
-      }
+      message += `\n\n💳 To'lov tasdiqlangach, ball va bonuslar avtomatik qo'llanadi.`;
       
       message += `\n\nTez orada sizga aloqaga chiqamiz!`;
 

@@ -116,12 +116,15 @@ const initialState: OrdersState = {
 // Async thunks for API calls
 export const fetchOrders = createAsyncThunk(
   'orders/fetchOrders',
-  async (params: { page?: number; limit?: number; status?: OrderStatus; orderType?: string }) => {
+  async (params: { page?: number; limit?: number; status?: OrderStatus; orderType?: string; branchId?: string; search?: string; courier?: string }) => {
     const searchParams = new URLSearchParams();
     if (params.page) searchParams.append('page', params.page.toString());
     if (params.limit) searchParams.append('limit', params.limit.toString());
     if (params.status) searchParams.append('status', params.status);
     if (params.orderType) searchParams.append('orderType', params.orderType);
+    if (params.branchId) searchParams.append('branchId', params.branchId);
+    if (params.search) searchParams.append('search', params.search);
+    if (params.courier) searchParams.append('courier', params.courier);
 
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
     const response = await fetch(`${apiBaseUrl}/admin/orders?${searchParams}`, {

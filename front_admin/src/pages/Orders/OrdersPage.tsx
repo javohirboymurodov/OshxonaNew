@@ -117,8 +117,11 @@ const OrdersPage: React.FC = () => {
       limit: pagination.pageSize,
       status: filters.status || undefined,
       orderType: filters.orderType || undefined,
+      branchId: (isSuper ? branch : undefined) || undefined,
+      search: filters.search || undefined,
+      courier: filters.courier || undefined,
     }));
-  }, [dispatch, pagination.current, pagination.pageSize, filters.status, filters.orderType]);
+  }, [dispatch, pagination.current, pagination.pageSize, filters.status, filters.orderType, filters.search, filters.courier, branch, isSuper]);
 
   // Show error messages
   useEffect(() => {
@@ -139,8 +142,11 @@ const OrdersPage: React.FC = () => {
       limit: pagination.pageSize,
       status: filters.status || undefined,
       orderType: filters.orderType || undefined,
+      branchId: (isSuper ? branch : undefined) || undefined,
+      search: filters.search || undefined,
+      courier: filters.courier || undefined,
     }));
-  }, [dispatch, filters, pagination.current, pagination.pageSize]);
+  }, [dispatch, filters, pagination.current, pagination.pageSize, branch, isSuper]);
 
   // Bell popoverdan focusOrderId kelsa: topib highlight + modalni ochish
   useEffect(() => {
@@ -268,6 +274,9 @@ const OrdersPage: React.FC = () => {
                 limit: pagination.pageSize,
                 status: filters.status || undefined,
                 orderType: filters.orderType || undefined,
+                branchId: (isSuper ? branch : undefined) || undefined,
+                search: filters.search || undefined,
+                courier: filters.courier || undefined,
               }));
             }}>Yangilash</Button>
           </Space>
@@ -357,7 +366,7 @@ const OrdersPage: React.FC = () => {
           onShowDetails={showOrderDetails}
            onQuickStatusChange={async (order, newStatus) => {
             try {
-              await dispatch(updateOrderStatus({ orderId: order._id, status: newStatus })).unwrap();
+              await dispatch(updateOrderStatus({ orderId: order._id, status: newStatus as OrderStatus })).unwrap();
               messageApi.success('Holat yangilandi');
               // Stats yangilash
               dispatch(fetchOrderStats());
@@ -386,6 +395,9 @@ const OrdersPage: React.FC = () => {
             limit: pagination.pageSize,
             status: filters.status || undefined,
             orderType: filters.orderType || undefined,
+            branchId: (isSuper ? branch : undefined) || undefined,
+            search: filters.search || undefined,
+            courier: filters.courier || undefined,
           }));
         }}
       />
@@ -445,6 +457,9 @@ const OrdersPage: React.FC = () => {
               limit: pagination.pageSize,
               status: filters.status || undefined,
               orderType: filters.orderType || undefined,
+              branchId: (isSuper ? branch : undefined) || undefined,
+              search: filters.search || undefined,
+              courier: filters.courier || undefined,
             }));
           }}>
             Filtrlarni qo'llash
