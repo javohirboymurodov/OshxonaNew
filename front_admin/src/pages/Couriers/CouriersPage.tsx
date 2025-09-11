@@ -5,6 +5,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useAuth } from '@/hooks/useAuth';
 import { apiService } from '@/services/api';
+import { useSocket } from '@/hooks/useSocket';
 
 const { Text } = Typography;
 
@@ -45,7 +46,7 @@ const CouriersPage: React.FC = () => {
   const branchId = (user as any)?.branch || (user as any)?.branchId || '';
   const token = useMemo(() => localStorage.getItem('token') || '', []);
 
-  // const { socket, connected } = useSocket(); // Moved to MainLayout
+  const { socket, connected } = useSocket();
 
   const [markers, setMarkers] = useState<Record<string, CourierMarker>>({});
   const [branches, setBranches] = useState<BranchMarker[]>([]);
@@ -144,33 +145,32 @@ const CouriersPage: React.FC = () => {
     return () => { mounted = false; };
   }, [branchId]);
 
-  // 🔧 YANGI: Auto-refresh interval (30 soniyada)
+  // 🔧 YANGI: Auto-refresh interval (5 daqiqada)
   useEffect(() => {
     const interval = setInterval(() => {
-      if (connected) {
-        refreshCouriers();
-      }
-    }, 30000); // 30 seconds
+      // Socket bo'lmasa ham API orqali yangilaymiz
+      refreshCouriers();
+    }, 300000); // 5 minutes
 
     return () => clearInterval(interval);
-  }, [refreshCouriers]); // removed connected dependency
+  }, [refreshCouriers]);
 
-  // Realtime updates via Socket.IO - handled in MainLayout
-  // useEffect(() => {
-  //   if (!socket || !connected) return;
-  //   const onLocation = (payload: CourierMarker) => {
-  //     setMarkers(prev => ({
-  //       ...prev,
-  //       [payload.courierId]: {
-  //         ...(prev[payload.courierId] || {}),
-  //         ...payload
-  //       }
-  //     }));
-  //     setLastUpdate(new Date());
-  //   };
-  //   socket.on('courier:location', onLocation);
-  //   return () => { socket.off('courier:location', onLocation); };
-  // }, [socket, connected]);
+  // Realtime updates via Socket.IO
+  useEffect(() => {
+    if (!socket || !connected) return;
+    const onLocation = (payload: CourierMarker) => {
+      setMarkers(prev => ({
+        ...prev,
+        [payload.courierId]: {
+          ...(prev[payload.courierId] || {}),
+          ...payload
+        }
+      }));
+      setLastUpdate(new Date());
+    };
+    socket.on('courier:location', onLocation);
+    return () => { socket.off('courier:location', onLocation); };
+  }, [socket, connected]);
 
   const filtered = useMemo(() => {
     const list = Object.values(markers);
@@ -277,9 +277,9 @@ const CouriersPage: React.FC = () => {
         </div>
         <Alert style={{ marginTop: 12 }} type="info" showIcon message={
           <div>
-            <div>Kuryerlar lokatsiyasi avtomatik ravishda real-vaqtda yangilanadi.</div>
+            <div>Kuryerlar lokatsiyasi real-vaqtda socket orqali va har 5 daqiqada API orqali yangilanadi.</div>
             <div>Oxirgi yangilanish: {lastUpdate.toLocaleTimeString()}</div>
-            <div>Auto-refresh: 30 soniyada | 5 daqiqa yangilanmasa, Stale sifatida ajratiladi.</div>
+            <div>Auto-refresh: 5 daqiqada | 5 daqiqa yangilanmasa, Stale sifatida ajratiladi.</div>
           </div>
         } />
       </Card>

@@ -241,12 +241,7 @@ const OrdersPage: React.FC = () => {
     }
   };
 
-  // Bell popoverdan kirilganda newOrders ichidagi eng so'nggi buyurtmani ochish - handled in MainLayout
-  // useEffect(() => {
-  //   if (!connected || !detailsVisible) return;
-  // }, [connected, detailsVisible]);
 
-  // Deprecated: full-screen status update modal removed in favor of quick actions
 
   const openAssignCourier = (order: TableOrder) => {
     // Don't set selectedOrder - it triggers OrderDetailsModal via useEffect
