@@ -10,7 +10,14 @@ interface ProductGridProps {
 }
 
 export default function ProductGrid({ products, cart, onIncrement, onDecrement }: ProductGridProps) {
+  console.log('🔍 ProductGrid render:', {
+    productsCount: products.length,
+    firstProduct: products[0],
+    cartKeys: Object.keys(cart)
+  });
+
   if (products.length === 0) {
+    console.log('🔍 ProductGrid: No products to display');
     return (
       <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>
         <div style={{ fontSize: 48, marginBottom: 16 }}>🔍</div>

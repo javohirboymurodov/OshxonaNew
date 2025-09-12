@@ -200,18 +200,37 @@ export default function App() {
 
   // Filter products based on active category and search - PROFESSIONAL YECHIM
   const filteredProducts = React.useMemo(() => {
+    console.log('🔍 Filtering products:', {
+      totalProducts: products.length,
+      activeCat,
+      searchQuery,
+      firstProduct: products[0]
+    });
+
     let filtered = products;
 
     // Kategoriya filter
     if (activeCat !== 'all') {
-      filtered = filtered.filter(p => p.categoryId?._id === activeCat);
+      console.log('🔍 Filtering by category:', activeCat);
+      filtered = filtered.filter(p => {
+        const matches = p.categoryId?._id === activeCat;
+        console.log('🔍 Product category check:', {
+          productId: p._id,
+          productName: p.name,
+          productCategoryId: p.categoryId?._id,
+          activeCat,
+          matches
+        });
+        return matches;
+      });
     }
 
     // Search filter
-        if (searchQuery) {
+    if (searchQuery) {
+      console.log('🔍 Filtering by search:', searchQuery);
       filtered = filtered.filter(p => 
-            p.name.toLowerCase().includes(searchQuery.toLowerCase())
-          );
+        p.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
     }
 
     // Kategoriya ketma-ketligida tartiblash
@@ -226,6 +245,11 @@ export default function App() {
       
       // Xuddi shu kategoriyada nom bo'yicha tartiblash
       return a.name.localeCompare(b.name);
+    });
+
+    console.log('🔍 Filtered products result:', {
+      filteredCount: filtered.length,
+      firstFiltered: filtered[0]
     });
 
     return filtered;
@@ -488,6 +512,26 @@ export default function App() {
         onIncrement={incrementProduct}
         onDecrement={decrementProduct}
       />
+      
+      {/* Debug info */}
+      {(import.meta as any).env?.DEV && (
+        <div style={{ 
+          position: 'fixed', 
+          top: 10, 
+          right: 10, 
+          background: 'rgba(0,0,0,0.8)', 
+          color: 'white', 
+          padding: 8, 
+          fontSize: 12, 
+          borderRadius: 4,
+          zIndex: 9999
+        }}>
+          <div>Products: {products.length}</div>
+          <div>Filtered: {filteredProducts.length}</div>
+          <div>ActiveCat: {activeCat}</div>
+          <div>Search: {searchQuery}</div>
+        </div>
+      )}
 
       <BottomBar
         total={total}
