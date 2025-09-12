@@ -11,7 +11,8 @@ async function handleWebAppData(ctx) {
     console.log('🌐 WebApp data received:', {
       updateType: ctx.updateType,
       webAppData: ctx.webAppData,
-      message: ctx.message
+      message: ctx.message,
+      from: ctx.from
     });
 
     // WebApp dan kelayotgan ma'lumotni olish

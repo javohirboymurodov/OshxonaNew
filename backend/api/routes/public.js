@@ -145,15 +145,28 @@ router.post('/webapp-data', async (req, res) => {
     });
 
     // Bot ga ma'lumotlarni yuborish
-    const { bot } = require('../../bot/botManager');
+    const { getBotInstance } = require('../../bot/botManager');
+    const bot = getBotInstance();
+    
+    console.log('🤖 Bot instance check:', {
+      hasBot: !!bot,
+      botType: typeof bot
+    });
+    
     if (bot) {
       // Simulate web_app_data update
       const mockCtx = {
         updateType: 'web_app_data',
         webAppData: { data: data },
-        from: { id: parseInt(telegramId) }
+        from: { id: parseInt(telegramId) },
+        reply: async (message, options) => {
+          console.log('📤 Bot reply:', message);
+          return { message_id: Date.now() };
+        }
       };
 
+      console.log('🔄 Calling handleWebAppData with mock context:', mockCtx);
+      
       const { handleWebAppData } = require('../../bot/handlers/user/webAppHandler');
       await handleWebAppData(mockCtx);
       
@@ -162,6 +175,7 @@ router.post('/webapp-data', async (req, res) => {
         message: 'Ma\'lumotlar bot ga yuborildi!'
       });
     } else {
+      console.error('❌ Bot instance not found');
       res.status(500).json({
         success: false,
         message: 'Bot mavjud emas!'

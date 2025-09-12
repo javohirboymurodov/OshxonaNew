@@ -400,7 +400,7 @@ export default function App() {
         console.log('📤 Test mode: Sending data directly to bot');
         
         try {
-          const response = await fetch(`${API_BASE}/webapp-data`, {
+          const response = await fetch(`${API_BASE}/public/webapp-data`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
