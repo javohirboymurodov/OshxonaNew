@@ -121,6 +121,15 @@ async function handleTableNumber(ctx, user, text) {
       if (latestOrder) {
         latestOrder.dineInInfo = latestOrder.dineInInfo || {};
         latestOrder.dineInInfo.tableNumber = tableNumber;
+        
+        // Order status va history ni yangilash
+        latestOrder.statusHistory = latestOrder.statusHistory || [];
+        latestOrder.statusHistory.push({ 
+          status: 'customer_arrived', 
+          timestamp: new Date(), 
+          note: `Mijoz keldi, stol: ${tableNumber}` 
+        });
+        
         await latestOrder.save();
         console.log(`✅ Table number ${tableNumber} saved to order ${latestOrder.orderId}`);
       }
@@ -134,17 +143,46 @@ async function handleTableNumber(ctx, user, text) {
     // Send to admin panel via socket
     try {
       const SocketManager = require('../../../config/socketConfig');
-      if (SocketManager.io) {
-        SocketManager.io.emit('customer_arrived', {
-          customer: {
+      if (latestOrder) {
+        // Order update emit qilish
+        SocketManager.emitOrderUpdate(latestOrder._id, {
+          orderId: latestOrder.orderId,
+          status: 'customer_arrived',
+          message: `Mijoz keldi: ${user.firstName || 'Noma\'lum'} - Stol: ${tableNumber}`,
+          customer: { 
             name: user.firstName || 'Mijoz',
             phone: user.phone,
             telegramId: user.telegramId
           },
-          tableNumber,
+          total: latestOrder.total,
+          orderType: latestOrder.orderType,
+          tableNumber: tableNumber,
+          branchId: String(latestOrder.branch || ''),
           timestamp: new Date(),
-          orderId: latestOrder?.orderId
+          event: 'dine_in_arrived' // Bu muhim - customer-arrived event'ini trigger qiladi
         });
+        
+        // Branch-specific notification
+        if (latestOrder.branch) {
+          SocketManager.emitOrderUpdate(String(latestOrder.branch), {
+            orderId: latestOrder.orderId,
+            status: 'customer_arrived',
+            message: `Mijoz keldi: ${user.firstName || 'Noma\'lum'} - Stol: ${tableNumber}`,
+            customer: { 
+              name: user.firstName || 'Mijoz',
+              phone: user.phone,
+              telegramId: user.telegramId
+            },
+            total: latestOrder.total,
+            orderType: latestOrder.orderType,
+            tableNumber: tableNumber,
+            branchId: String(latestOrder.branch),
+            timestamp: new Date(),
+            event: 'dine_in_arrived' // Bu muhim - customer-arrived event'ini trigger qiladi
+          });
+        }
+        
+        console.log('✅ Socket notification sent for customer arrival');
       }
     } catch (socketError) {
       console.error('❌ Socket notification error:', socketError);

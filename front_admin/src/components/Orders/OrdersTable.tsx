@@ -280,7 +280,16 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ data, loading, pagination, on
       rowKey="_id"
       rowClassName={(record) => (highlightId && record._id === highlightId ? 'row-highlight' : '')}
       loading={loading}
-      pagination={{ ...pagination, showSizeChanger: true, showQuickJumper: true, showTotal: (total, range) => `${range[0]}-${range[1]} / ${total} ta buyurtma` }}
+      pagination={{ 
+        ...pagination, 
+        showSizeChanger: true, 
+        showQuickJumper: true, 
+        showTotal: (total, range) => `${range[0]}-${range[1]} / ${total} ta buyurtma`,
+        // Pagination muammosini hal qilish uchun
+        current: pagination.current,
+        pageSize: pagination.pageSize,
+        total: pagination.total
+      }}
       onChange={(p) => onChangePage(p.current!, p.pageSize!)}
       scroll={{ x: 'max-content' }}
       size="middle"

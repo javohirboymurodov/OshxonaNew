@@ -40,29 +40,29 @@ export const useSocket = () => {
     });
 
     // Listen for new orders
-    socket.on('new-order', (data: any) => {
+    socket.on('new-order', (data: unknown) => {
       // Convert data to order format if needed
-      let orderData = data.order || data;
+      const orderData = (data as { order?: unknown })?.order || data;
       
       // Ensure we have required fields for Redux
-      if (orderData && (orderData._id || orderData.id || orderData.orderId)) {
+      if (orderData && ((orderData as { _id?: string })._id || (orderData as { id?: string }).id || (orderData as { orderId?: string }).orderId)) {
         // Normalize the order data
         const normalizedOrder = {
-          _id: orderData._id || orderData.id || orderData.orderId,
-          orderId: orderData.orderNumber || orderData.orderId || orderData._id,
-          status: orderData.status || 'pending',
-          total: orderData.total || 0,
-          orderType: orderData.orderType || 'delivery',
+          _id: (orderData as { _id?: string })._id || (orderData as { id?: string }).id || (orderData as { orderId?: string }).orderId || '',
+          orderId: (orderData as { orderNumber?: string }).orderNumber || (orderData as { orderId?: string }).orderId || (orderData as { _id?: string })._id || '',
+          status: ((orderData as { status?: string }).status || 'pending') as OrderStatus,
+          total: (orderData as { total?: number }).total || 0,
+          orderType: (orderData as { orderType?: string }).orderType || 'delivery',
           customerInfo: {
-            name: orderData.customerName || orderData.customer?.name || 'Mijoz'
+            name: (orderData as { customerName?: string }).customerName || ((orderData as { customer?: { name?: string } }).customer?.name) || 'Mijoz'
           },
-          createdAt: orderData.createdAt || new Date().toISOString(),
-          updatedAt: orderData.updatedAt || new Date().toISOString(),
-          items: orderData.items || [],
-          paymentMethod: orderData.paymentMethod || 'cash'
+          createdAt: (orderData as { createdAt?: string }).createdAt || new Date().toISOString(),
+          updatedAt: (orderData as { updatedAt?: string }).updatedAt || new Date().toISOString(),
+          items: (orderData as { items?: unknown[] }).items || [],
+          paymentMethod: (orderData as { paymentMethod?: string }).paymentMethod || 'cash'
         };
         
-        dispatch(handleNewOrder(normalizedOrder));
+        dispatch(handleNewOrder(normalizedOrder as any));
         
         // Play notification sound
         SoundPlayer.playNotification('/beep.wav', 0.8);
@@ -90,13 +90,14 @@ export const useSocket = () => {
       status: OrderStatus;
       statusName?: string;
       updatedAt: string;
-      details?: any;
+      details?: unknown;
     }) => {
 
       dispatch(handleOrderUpdate(data));
       
       // Show status update notification
-      const statusMessages = {
+      const statusMessages: Record<string, string> = {
+        'pending': '⏳ Buyurtma kutilmoqda',
         'confirmed': '✅ Buyurtma tasdiqlandi',
         'ready': '🍽️ Buyurtma tayyor',
         'assigned': '🚚 Kuryer tayinlandi', 
@@ -115,8 +116,7 @@ export const useSocket = () => {
     });
 
     // Listen for courier assignments
-    socket.on('courier-assigned', (data: any) => {
-
+    socket.on('courier-assigned', (data: { courierName?: string; orderId?: string }) => {
       message.success({
         content: `🚚 Kuryer tayinlandi - ${data.courierName || 'Kuryer'} buyurtma №${data.orderId}ga`,
         duration: 4,
@@ -124,8 +124,7 @@ export const useSocket = () => {
     });
 
     // Listen for customer arrival (dine-in)
-    socket.on('customer-arrived', (data: any) => {
-
+    socket.on('customer-arrived', (data: { customer?: { name?: string }; orderNumber?: string; orderId?: string }) => {
       message.info({
         content: `👋 Mijoz keldi - ${data.customer?.name || 'Mijoz'} (Buyurtma №${data.orderNumber || data.orderId})`,
         duration: 6,
@@ -136,7 +135,7 @@ export const useSocket = () => {
     socket.on('connect', () => {
       // Re-join admin room after reconnection
       const token = localStorage.getItem('token');
-      socket.emit('join-admin', { 
+      socket?.emit('join-admin', { 
         token: token,
         branchId: branchId
       });
@@ -146,12 +145,12 @@ export const useSocket = () => {
       console.log('Socket disconnected');
     });
 
-    socket.on('error', (error: any) => {
+    socket.on('error', (error: unknown) => {
       console.error('Socket error:', error);
     });
 
     // Listen for authentication errors
-    socket.on('auth-error', (error: any) => {
+    socket.on('auth-error', (error: unknown) => {
       console.error('Socket auth error:', error);
       // Token expire bo'lsa logout qilish
       localStorage.removeItem('token');
@@ -159,7 +158,7 @@ export const useSocket = () => {
     });
 
     // Listen for successful admin join
-    socket.on('joined-admin', (data: any) => {
+    socket.on('joined-admin', () => {
       // Admin room joined successfully
     });
 
@@ -170,7 +169,7 @@ export const useSocket = () => {
         socket = null;
       }
     };
-  }, [dispatch, realTimeUpdates, branchId]);
+  }, [dispatch, realTimeUpdates, branchId, user]);
 
   return {
     socket,

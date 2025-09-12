@@ -110,8 +110,9 @@ async function updateStatus(req, res) {
       }
       
       // 🔧 FIX: Faqat kuryer "delivered" statusni o'zgartira oladi
-      if (status === 'delivered') {
-        // Admin tomonidan qo'lda delivered qilish taqiqlanadi
+      // Lekin avvaldan buyurtma (dine_in/table) uchun admin delivered qila oladi
+      if (status === 'delivered' && existing.orderType === 'delivery') {
+        // Faqat delivery buyurtmalar uchun kuryer talab qilinadi
         return res.status(400).json({
           success: false,
           message: 'Yetkazib berish buyurtmasini faqat kuryer "Yetkazdim" tugmasi orqali yakunlay oladi!'
@@ -128,15 +129,19 @@ async function updateStatus(req, res) {
     }
     
     // Table/dine-in buyurtmalar uchun mijoz kelganligini tekshirish
-    if (['table', 'dine_in'].includes(existing.orderType) && status === 'delivered') {
-      // Mijoz kelganligini tekshirish - agar mijoz kelgan bo'lmasa, delivered holatiga o'tkazib bo'lmaydi
-      const hasArrivedStatus = existing.statusHistory?.some(h => h.status === 'customer_arrived');
-      if (!hasArrivedStatus) {
-        return res.status(400).json({
-          success: false,
-          message: 'Mijoz hali kelmagan! Avval mijoz kelganligini tasdiqlang.'
-        });
+    // - dine_in: "Mijoz keldim" tasdiqlangan bo'lishi shart (statusHistory: customer_arrived)
+    // - table (QR): mijoz joyida bo'ladi, shuning uchun delivered uchun qo'shimcha tekshiruv talab qilinmaydi
+    if (status === 'delivered') {
+      if (existing.orderType === 'dine_in') {
+        const hasArrivedStatus = existing.statusHistory?.some(h => h.status === 'customer_arrived');
+        if (!hasArrivedStatus) {
+          return res.status(400).json({
+            success: false,
+            message: 'Mijoz hali kelmagan! Avval mijoz kelganligini tasdiqlang.'
+          });
+        }
       }
+      // table (QR) uchun check yo'q
     }
     
     existing.status = status;
