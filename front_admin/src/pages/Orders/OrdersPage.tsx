@@ -148,26 +148,36 @@ const OrdersPage: React.FC = () => {
     }));
   }, [dispatch, filters, pagination.current, pagination.pageSize, branch, isSuper]);
 
-  // Bell popoverdan focusOrderId kelsa: topib highlight + modalni ochish
+  // Bell popoverdan focusOrderId kelsa: to'liq buyurtmani yuklab, modalni ochish
   useEffect(() => {
-    const state = location.state as { focusOrderId?: string } | null;
+    const state = location.state as { focusOrderId?: string; ts?: number } | null;
     if (!state?.focusOrderId) return;
     if (suppressAutoOpenRef.current) return;
     
-    console.log('🔔 NOTIFICATION FOCUS triggered:', state.focusOrderId);
-    
-    const order = orders.find(o => o._id === state.focusOrderId || o.orderId === state.focusOrderId);
-    if (order) {
-      console.log('🔔 Opening modal from notification for order:', order.orderId);
-      dispatch(setSelectedOrder(order));
-      setDetailsVisible(true);
-      // highlight uchun qisqa scroll/hilite class qo'shish mumkin — hozir modal ochish yetarli
-    } else {
-      console.log('🔔 Order not found for focusOrderId:', state.focusOrderId);
-    }
-    // location.state ni tozalash uchun tarixni almashtirish (optional)
-    window.history.replaceState({}, document.title);
-  }, [location.state, orders]);
+    (async () => {
+      const focusId = state.focusOrderId!;
+      console.log('🔔 NOTIFICATION FOCUS triggered:', focusId);
+      const order = orders.find(o => o._id === focusId || o.orderId === focusId);
+      if (order) {
+        try {
+          const fullResp = await apiService.getOrderById((order as unknown as { _id: string })._id);
+          const full = (fullResp as any)?.order || fullResp;
+          const merged = { ...(order as unknown as Record<string, unknown>), ...(full as unknown as Record<string, unknown>) } as Record<string, unknown>;
+          if (!merged.orderId) merged.orderId = (full as Record<string, unknown>)['orderId'] || (order as Record<string, unknown>)['orderId'] || '';
+          dispatch(setSelectedOrder(merged as unknown as any));
+          setDetailsVisible(true);
+        } catch (e) {
+          console.warn('Order details fetch failed (focus)', e);
+          dispatch(setSelectedOrder(order as any));
+          setDetailsVisible(true);
+        }
+      } else {
+        console.log('🔔 Order not found for focusOrderId:', focusId);
+      }
+      // state’ni tozalash: ts bilan unique navigate ishlatilgan, baribir tozalab qo'yamiz
+      window.history.replaceState({}, document.title, '/orders');
+    })();
+  }, [location.state, orders, dispatch]);
 
   // Customer arrival handling is now done through Socket.io events in useSocket hook
 
@@ -176,22 +186,32 @@ const OrdersPage: React.FC = () => {
   // Faqat manual showOrderDetails chaqirilganda modal ochilsin
   // useEffect([selectedOrder]) ni o'chirish
 
-  // Fokus ID bo'lsa va ro'yxat yangilangan bo'lsa, moddalni ochamiz
+  // Fokus ID bo'lsa va ro'yxat yangilangan bo'lsa, to'liq buyurtmani yuklab modalni ochamiz
   useEffect(() => {
     if (!pendingFocusId || orders.length === 0) return;
     if (suppressAutoOpenRef.current) return;
     
     console.log('🔔 PENDING FOCUS triggered:', pendingFocusId, 'suppressAuto:', suppressAutoOpenRef.current);
-    
     const order = orders.find(o => o._id === pendingFocusId || o.orderId === pendingFocusId);
-    if (order) {
-      console.log('🔔 Opening modal from pending focus for order:', order.orderId);
-      dispatch(setSelectedOrder(order));
-      setDetailsVisible(true);
-      setPendingFocusId(null);
-    } else {
-      console.log('🔔 Order not found for pendingFocusId:', pendingFocusId);
-    }
+    (async () => {
+      if (order) {
+        console.log('🔔 Opening modal from pending focus for order:', order.orderId);
+        try {
+          const fullResp = await apiService.getOrderById((order as unknown as { _id: string })._id);
+          const full = (fullResp as any)?.order || fullResp;
+          const merged = { ...(order as unknown as Record<string, unknown>), ...(full as unknown as Record<string, unknown>) } as Record<string, unknown>;
+          if (!merged.orderId) merged.orderId = (full as Record<string, unknown>)['orderId'] || (order as Record<string, unknown>)['orderId'] || '';
+          dispatch(setSelectedOrder(merged as unknown as any));
+        } catch (e) {
+          console.warn('Order details fetch failed (pendingFocus)', e);
+          dispatch(setSelectedOrder(order as any));
+        }
+        setDetailsVisible(true);
+        setPendingFocusId(null);
+      } else {
+        console.log('🔔 Order not found for pendingFocusId:', pendingFocusId);
+      }
+    })();
   }, [pendingFocusId, orders]);
 
   // Refresh data when socket reconnects - handled in MainLayout

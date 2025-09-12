@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { message } from 'antd';
 import { useAppDispatch, useAppSelector } from './redux';
-import { handleOrderUpdate, handleNewOrder } from '../store/slices/ordersSlice';
+import { handleOrderUpdate, handleNewOrder, addArrival } from '../store/slices/ordersSlice';
 import { OrderStatus } from '../utils/orderStatus';
 import { useAuth } from './useAuth';
 import { SoundPlayer } from '@/utils/sound';
@@ -62,7 +62,8 @@ export const useSocket = () => {
           paymentMethod: (orderData as { paymentMethod?: string }).paymentMethod || 'cash'
         };
         
-        dispatch(handleNewOrder(normalizedOrder as any));
+        // We accept partially-typed payload since it comes from socket
+        dispatch(handleNewOrder(normalizedOrder as unknown as never));
         
         // Play notification sound
         SoundPlayer.playNotification('/beep.wav', 0.8);
@@ -124,11 +125,23 @@ export const useSocket = () => {
     });
 
     // Listen for customer arrival (dine-in)
-    socket.on('customer-arrived', (data: { customer?: { name?: string }; orderNumber?: string; orderId?: string }) => {
+    socket.on('customer-arrived', (data: { customer?: { name?: string }; orderNumber?: string; orderId?: string; tableNumber?: string; total?: number; branchId?: string }) => {
       message.info({
         content: `👋 Mijoz keldi - ${data.customer?.name || 'Mijoz'} (Buyurtma №${data.orderNumber || data.orderId})`,
         duration: 6,
       });
+
+      // Bell ichida alohida arrivals ro'yxatiga yozamiz (newOrder emas)
+      if (data.orderId || data.orderNumber) {
+        dispatch(addArrival({
+          orderId: String(data.orderId || data.orderNumber),
+          orderNumber: data.orderNumber,
+          tableNumber: data.tableNumber,
+          customerName: data.customer?.name,
+          total: data.total,
+          branchId: data.branchId,
+        }));
+      }
     });
 
     // Connection status

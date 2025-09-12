@@ -29,7 +29,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useAuth } from '@/hooks/useAuth';
 import { useSocket } from '@/hooks/useSocket';
 import { useAppSelector, useAppDispatch } from '@/hooks/redux';
-import { dismissNewOrder } from '@/store/slices/ordersSlice';
+import { dismissNewOrder, clearArrival } from '@/store/slices/ordersSlice';
 import { useNavigate as useNav } from 'react-router-dom';
 
 const { Header, Sider, Content } = Layout;
@@ -47,7 +47,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // branchId is handled inside useSocket hook
   useSocket();
   const dispatch = useAppDispatch();
-  const { newOrders } = useAppSelector(state => state.orders);
+  const { newOrders, arrivals } = useAppSelector(state => state.orders);
   const go = useNav();
   const [notifOpen, setNotifOpen] = useState(false);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
@@ -242,17 +242,9 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                             setDismissedIds((prev) => new Set(prev).add(orderId));
                           }
                           setNotifOpen(false);
-                          
-                          // If we're not on orders page, navigate first
-                          const currentPath = window.location.pathname;
-                          if (currentPath !== '/orders') {
-                            go('/orders', { state: { focusOrderId: orderId } });
-                          } else {
-                            // If already on orders page, navigate with focus state 
-                            // This will trigger the focusOrderId useEffect in OrdersPage
-                            window.history.pushState({ focusOrderId: orderId }, '', '/orders');
-                            window.dispatchEvent(new PopStateEvent('popstate'));
-                          }
+                          // Har doim state bilan navigate — hatto shu sahifada turgan bo'lsak ham
+                          // state har safar ts bilan yangilanadi va OrdersPage effect'i ishlaydi
+                          go('/orders', { state: { focusOrderId: orderId, ts: Date.now() } });
                         }}
                       >
                           <List.Item.Meta
@@ -272,13 +264,39 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                       </List.Item>
                     )}
                   />
+                  {arrivals.length > 0 && (
+                    <>
+                      <div style={{ padding: '8px 8px 0', color: '#999', fontSize: 12 }}>Keldi (dine-in / stol):</div>
+                      <List
+                        dataSource={arrivals.slice(0, 10)}
+                        renderItem={(a: { orderId: string; orderNumber?: string; tableNumber?: string; customerName?: string; total?: number }) => (
+                          <List.Item
+                            style={{ cursor: 'pointer' }}
+                            onClick={() => {
+                              const id = String(a.orderId || a.orderNumber || '');
+                              if (id) {
+                                dispatch(clearArrival(id));
+                              }
+                              setNotifOpen(false);
+                              go('/orders', { state: { focusOrderId: id, ts: Date.now() } });
+                            }}
+                          >
+                            <List.Item.Meta
+                              title={<span>№ {a.orderNumber || a.orderId}</span>}
+                              description={<span>🪑 Stol: {a.tableNumber || '-'} • {a.customerName || 'Mijoz'} • {(a.total || 0).toLocaleString()} so'm</span>}
+                            />
+                          </List.Item>
+                        )}
+                      />
+                    </>
+                  )}
                   <div style={{ textAlign: 'right', padding: '4px 8px' }}>
                     <Button type="link" size="small" onClick={() => go('/orders')}>Barchasini ko\'rish</Button>
                   </div>
                 </div>
               )}
             >
-              <Badge count={visibleOrders.length} overflowCount={99} offset={[0, 4]}>
+              <Badge count={visibleOrders.length + (arrivals?.length || 0)} overflowCount={99} offset={[0, 4]}>
                 <Button type="text" icon={<BellOutlined />} />
               </Badge>
             </Dropdown>

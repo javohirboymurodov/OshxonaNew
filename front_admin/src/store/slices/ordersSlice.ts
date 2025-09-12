@@ -60,6 +60,15 @@ interface OrdersState {
   };
   statsLoading: boolean;
   newOrders: Order[];
+  arrivals: Array<{
+    orderId: string;
+    orderNumber?: string;
+    tableNumber?: string;
+    customerName?: string;
+    total?: number;
+    branchId?: string;
+    createdAt: string;
+  }>;
 }
 
 // 🔧 FIX: newOrders ni localStorage dan yuklash
@@ -111,6 +120,7 @@ const initialState: OrdersState = {
   },
   statsLoading: false,
   newOrders: loadNewOrdersFromStorage(),
+  arrivals: [],
 };
 
 // Async thunks for API calls
@@ -263,6 +273,18 @@ const ordersSlice = createSlice({
       // 🔧 FIX: localStorage ga saqlash
       saveNewOrdersToStorage(state.newOrders);
     },
+
+    // 👋 Customer arrived (dine_in/table) - persistent, lekin buyurtma qo'shmaymiz
+    addArrival: (state, action: PayloadAction<{ orderId: string; orderNumber?: string; tableNumber?: string; customerName?: string; total?: number; branchId?: string }>) => {
+      const id = action.payload.orderId;
+      // 60 soniya ichida dublikatni yo'qotish
+      const now = Date.now();
+      state.arrivals = (state.arrivals || []).filter(a => (now - new Date(a.createdAt).getTime()) < 60000 && a.orderId !== id);
+      state.arrivals.unshift({ ...action.payload, createdAt: new Date().toISOString() });
+    },
+    clearArrival: (state, action: PayloadAction<string>) => {
+      state.arrivals = (state.arrivals || []).filter(a => a.orderId !== action.payload);
+    },
     
     setRealTimeUpdates: (state, action: PayloadAction<boolean>) => {
       state.realTimeUpdates = action.payload;
@@ -377,6 +399,8 @@ export const {
   setPagination,
   handleOrderUpdate,
   handleNewOrder,
+  addArrival,
+  clearArrival,
   setRealTimeUpdates,
   clearError,
   clearNewOrders,
