@@ -6,6 +6,34 @@
 function initializeBot(bot) {
   console.log('🤖 Bot handlerlarini ulash...');
 
+  // ========================================
+  // 🌐 WEBAPP DATA HANDLER (PRIORITY)
+  // ========================================
+
+  // WebApp dan kelayotgan ma'lumotlarni qayta ishlash
+  try {
+    const { handleWebAppData } = require('./handlers/user/webAppHandler');
+    
+    // WebApp data handler - bu eng yuqori prioritetga ega
+    bot.on('web_app_data', async (ctx) => {
+      console.log('🌐 WebApp data update received');
+      await handleWebAppData(ctx);
+    });
+    
+    // Fallback: message.web_app_data uchun ham handler
+    bot.on('message', async (ctx, next) => {
+      if (ctx.message?.web_app_data) {
+        console.log('🌐 WebApp data in message received');
+        await handleWebAppData(ctx);
+        return; // Don't pass to next middleware
+      }
+      return next();
+    });
+    
+    console.log('✅ WebApp data handlers loaded');
+  } catch (error) {
+    console.warn('⚠️ WebApp data handlers load failed:', error.message);
+  }
 
   // ========================================
   // 👤 USER MODULE

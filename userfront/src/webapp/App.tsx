@@ -1,9 +1,4 @@
 import React from 'react';
-import ProductCard from '../components/ProductCard';
-import CategoryFilter from '../components/CategoryFilter';
-import CartModal from '../components/CartModal';
-import BottomBar from '../components/BottomBar';
-import LoadingSpinner from '../components/LoadingSpinner';
 
 declare global {
   interface Window { Telegram?: any }
@@ -15,31 +10,468 @@ type Branch = { _id: string; name: string; title?: string };
 
 const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || 'https://oshxonanew.onrender.com/api';
 
-// Mock data for testing when backend is not available
-const MOCK_CATEGORIES: Category[] = [
-  { _id: '1', name: '🍛 Milliy taomlar' },
-  { _id: '2', name: '🍔 Fast food' },
-  { _id: '3', name: '🥤 Ichimliklar' },
-  { _id: '4', name: '🍰 Shirinliklar' },
-  { _id: 'promo', name: '🎉 Aksiyalar' }
-];
+// Loading Spinner Component
+function LoadingSpinner() {
+  return (
+    <div style={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 40
+    }}>
+      <div style={{
+        width: 40,
+        height: 40,
+        border: '3px solid #f3f3f3',
+        borderTop: '3px solid #1677ff',
+        borderRadius: '50%',
+        animation: 'spin 1s linear infinite'
+      }} />
+      <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
+    </div>
+  );
+}
 
-const MOCK_BRANCHES: Branch[] = [
-  { _id: 'branch1', name: 'Oshxona - Chilonzor', title: 'Chilonzor filiali' },
-  { _id: 'branch2', name: 'Oshxona - Yunusobod', title: 'Yunusobod filiali' }
-];
+// Product Card Component
+function ProductCard({ product, quantity, onIncrement, onDecrement }: {
+  product: Product;
+  quantity: number;
+  onIncrement: () => void;
+  onDecrement: () => void;
+}) {
+  return (
+    <div 
+      data-product-card
+      data-product-id={product._id}
+      data-category-id={product.categoryId?._id}
+      style={{ 
+        border:'1px solid #eee', 
+        borderRadius:10, 
+        padding:10,
+        backgroundColor: '#fff'
+      }}
+    >
+      {product.image && (
+        <img 
+          src={`https://oshxonanew.onrender.com${product.image}`} 
+          alt={product.name}
+          style={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 8, marginBottom: 8 }}
+        />
+      )}
+      <div style={{ fontWeight:600, fontSize: 14 }}>{product.name}</div>
+      <div style={{ margin:'4px 0', fontSize: 12 }}>
+        {product.originalPrice && product.originalPrice > product.price ? (
+          <div>
+            <span style={{ color:'#ff4d4f', textDecoration: 'line-through', fontSize: 10 }}>
+              {product.originalPrice.toLocaleString()} so'm
+            </span>
+            <br />
+            <span style={{ color:'#52c41a', fontWeight: 600 }}>
+              {product.price.toLocaleString()} so'm
+            </span>
+            <span style={{ color:'#ff4d4f', fontSize: 10, marginLeft: 4 }}>
+              -{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
+            </span>
+          </div>
+        ) : (
+          <span style={{ color:'#666' }}>{product.price.toLocaleString()} so'm</span>
+        )}
+      </div>
+      <div style={{ display:'flex', gap:6, alignItems:'center', justifyContent:'center', marginTop: 8 }}>
+        <button 
+          onClick={onDecrement} 
+          style={{ 
+            width: 30, 
+            height: 30, 
+            borderRadius: '50%', 
+            border: '1px solid #ddd', 
+            background: '#fff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 18,
+            cursor: 'pointer'
+          }}
+        >
+          −
+        </button>
+        <div style={{ minWidth: 30, textAlign: 'center', fontWeight: 600 }}>{quantity}</div>
+        <button 
+          onClick={onIncrement} 
+          style={{ 
+            width: 30, 
+            height: 30, 
+            borderRadius: '50%', 
+            border: '1px solid #1677ff', 
+            background: '#1677ff',
+            color: '#fff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 18,
+            cursor: 'pointer'
+          }}
+        >
+          +
+        </button>
+      </div>
+    </div>
+  );
+}
 
-const MOCK_PRODUCTS: Product[] = [
-  { _id: 'p1', name: 'Osh', price: 25000, categoryId: { _id: '1', name: 'Milliy taomlar' } },
-  { _id: 'p2', name: 'Manti', price: 18000, categoryId: { _id: '1', name: 'Milliy taomlar' } },
-  { _id: 'p3', name: 'Burger', price: 35000, categoryId: { _id: '2', name: 'Fast food' } },
-  { _id: 'p4', name: 'Lavash', price: 22000, categoryId: { _id: '2', name: 'Fast food' } },
-  { _id: 'p5', name: 'Coca Cola', price: 8000, categoryId: { _id: '3', name: 'Ichimliklar' } },
-  { _id: 'p6', name: 'Tort', price: 45000, categoryId: { _id: '4', name: 'Shirinliklar' } },
-  { _id: 'p7', name: 'Osh (Aksiya)', price: 20000, originalPrice: 25000, categoryId: { _id: 'promo', name: 'Aksiyalar' } },
-  { _id: 'p8', name: 'Burger (Aksiya)', price: 28000, originalPrice: 35000, categoryId: { _id: 'promo', name: 'Aksiyalar' } }
-];
+// Category Filter Component
+function CategoryFilter({ categories, activeCategory, onCategoryChange }: {
+  categories: Category[];
+  activeCategory: string;
+  onCategoryChange: (categoryId: string) => void;
+}) {
+  const categoryContainerRef = React.useRef<HTMLDivElement>(null);
 
+  // Auto-scroll active category into view
+  React.useEffect(() => {
+    if (categoryContainerRef.current) {
+      const activeButton = categoryContainerRef.current.querySelector(`[data-category-id="${activeCategory}"]`) as HTMLElement;
+      if (activeButton) {
+        activeButton.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'nearest', 
+          inline: 'center' 
+        });
+      }
+    }
+  }, [activeCategory]);
+
+  return (
+    <div 
+      ref={categoryContainerRef}
+      data-category-container
+      style={{ 
+        display:'flex', 
+        gap:8, 
+        overflowX:'auto', 
+        marginBottom:16, 
+        paddingBottom: 4,
+        scrollBehavior: 'smooth'
+      }}
+    >
+      <button 
+        data-category-id="all"
+        onClick={() => onCategoryChange('all')} 
+        style={{ 
+          padding:'8px 12px', 
+          borderRadius:20, 
+          border:'1px solid #ddd', 
+          background: activeCategory==='all'?'#1677ff':'#fff', 
+          color:activeCategory==='all'?'#fff':'#333',
+          fontSize: 14,
+          fontWeight: activeCategory==='all' ? 600 : 400,
+          whiteSpace: 'nowrap',
+          cursor: 'pointer'
+        }}
+      >
+        Barchasi
+      </button>
+      {categories.map(c => (
+        <button 
+          key={c._id} 
+          data-category-id={c._id}
+          onClick={() => onCategoryChange(c._id)} 
+          style={{ 
+            padding:'8px 12px', 
+            borderRadius:20, 
+            border:'1px solid #ddd', 
+            background: activeCategory===c._id?'#1677ff':'#fff', 
+            color:activeCategory===c._id?'#fff':'#333',
+            fontSize: 14,
+            fontWeight: activeCategory===c._id ? 600 : 400,
+            whiteSpace: 'nowrap',
+            cursor: 'pointer'
+          }}
+        >
+          {c.name}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// Cart Modal Component
+function CartModal({ isOpen, onClose, cart, products, onUpdateQuantity, onPlaceOrder, total }: {
+  isOpen: boolean;
+  onClose: () => void;
+  cart: Record<string, number>;
+  products: Product[];
+  onUpdateQuantity: (productId: string, quantity: number) => void;
+  onPlaceOrder: () => void;
+  total: number;
+}) {
+  if (!isOpen) return null;
+
+  const cartItems = Object.entries(cart)
+    .filter(([_, quantity]) => quantity > 0)
+    .map(([productId, quantity]) => ({
+      product: products.find(p => p._id === productId)!,
+      quantity
+    }))
+    .filter(item => item.product);
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      zIndex: 1000,
+      display: 'flex',
+      alignItems: 'flex-end'
+    }}>
+      <div style={{
+        width: '100%',
+        maxHeight: '80vh',
+        backgroundColor: '#fff',
+        borderRadius: '16px 16px 0 0',
+        padding: 16,
+        overflowY: 'auto'
+      }}>
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <h3 style={{ margin: 0 }}>🧺 Savat</h3>
+          <button 
+            onClick={onClose}
+            style={{
+              background: 'none',
+              border: 'none',
+              fontSize: 24,
+              cursor: 'pointer',
+              color: '#666'
+            }}
+          >
+            ×
+          </button>
+        </div>
+
+        {/* Cart Items */}
+        {cartItems.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>🛒</div>
+            <div>Savat bo'sh</div>
+          </div>
+        ) : (
+          <div style={{ marginBottom: 20 }}>
+            {cartItems.map(({ product, quantity }) => (
+              <div key={product._id} style={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: 12,
+                borderBottom: '1px solid #eee'
+              }}>
+                {product.image && (
+                  <img 
+                    src={`https://oshxonanew.onrender.com${product.image}`}
+                    alt={product.name}
+                    style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 8, marginRight: 12 }}
+                  />
+                )}
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600, fontSize: 14 }}>{product.name}</div>
+                  <div style={{ color: '#666', fontSize: 12 }}>{product.price.toLocaleString()} so'm</div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <button
+                    onClick={() => onUpdateQuantity(product._id, Math.max(0, quantity - 1))}
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: '50%',
+                      border: '1px solid #ddd',
+                      background: '#fff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    −
+                  </button>
+                  <span style={{ minWidth: 20, textAlign: 'center', fontWeight: 600 }}>{quantity}</span>
+                  <button
+                    onClick={() => onUpdateQuantity(product._id, quantity + 1)}
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: '50%',
+                      border: '1px solid #1677ff',
+                      background: '#1677ff',
+                      color: '#fff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    +
+                  </button>
+                </div>
+                <div style={{ marginLeft: 12, fontWeight: 600, minWidth: 80, textAlign: 'right' }}>
+                  {(product.price * quantity).toLocaleString()} so'm
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Footer */}
+        {cartItems.length > 0 && (
+          <div>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '16px 0',
+              borderTop: '2px solid #f0f0f0',
+              marginBottom: 16
+            }}>
+              <div style={{ fontSize: 18, fontWeight: 600 }}>Jami:</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: '#1677ff' }}>
+                {total.toLocaleString()} so'm
+              </div>
+            </div>
+            <button
+              onClick={onPlaceOrder}
+              style={{
+                width: '100%',
+                background: '#52c41a',
+                color: '#fff',
+                padding: '14px 20px',
+                border: 'none',
+                borderRadius: 8,
+                fontSize: 16,
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              Buyurtma berish
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Bottom Bar Component
+function BottomBar({ total, itemCount, onOpenCart, onPlaceOrder }: {
+  total: number;
+  itemCount: number;
+  onOpenCart: () => void;
+  onPlaceOrder: () => void;
+}) {
+  if (itemCount === 0) return null;
+
+  return (
+    <div style={{
+      position: 'fixed',
+      left: 0,
+      right: 0,
+      bottom: 0,
+      padding: 16,
+      background: '#fff',
+      borderTop: '1px solid #eee',
+      display: 'flex',
+      gap: 12,
+      alignItems: 'center',
+      boxShadow: '0 -2px 10px rgba(0,0,0,0.1)'
+    }}>
+      <button
+        onClick={onOpenCart}
+        style={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '12px 16px',
+          border: '1px solid #1677ff',
+          background: '#fff',
+          color: '#1677ff',
+          borderRadius: 8,
+          fontSize: 14,
+          fontWeight: 600,
+          cursor: 'pointer'
+        }}
+      >
+        🧺 Savat ({itemCount})
+      </button>
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center',
+        minWidth: 100
+      }}>
+        <div style={{ fontSize: 12, color: '#666' }}>Jami</div>
+        <div style={{ fontSize: 16, fontWeight: 700, color: '#1677ff' }}>
+          {total.toLocaleString()} so'm
+        </div>
+      </div>
+      <button
+        onClick={onPlaceOrder}
+        style={{
+          flex: 1,
+          background: '#52c41a',
+          color: '#fff',
+          padding: '12px 16px',
+          border: 'none',
+          borderRadius: 8,
+          fontSize: 14,
+          fontWeight: 600,
+          cursor: 'pointer'
+        }}
+      >
+        Buyurtma berish
+      </button>
+    </div>
+  );
+}
+
+// Error Display Component
+function ErrorDisplay({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  return (
+    <div style={{
+      textAlign: 'center',
+      padding: 40,
+      color: '#666',
+      backgroundColor: '#fff3f3',
+      borderRadius: 8,
+      border: '1px solid #ffcdd2'
+    }}>
+      <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
+      <div style={{ marginBottom: 16 }}>{message}</div>
+      {onRetry && (
+        <button
+          onClick={onRetry}
+          style={{
+            padding: '8px 16px',
+            backgroundColor: '#1677ff',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 6,
+            cursor: 'pointer'
+          }}
+        >
+          Qaytadan urinish
+        </button>
+      )}
+    </div>
+  );
+}
+
+// Main App Component
 function useInitData() {
   const [telegramId, setTelegramId] = React.useState<string | null>(null);
   React.useEffect(() => {
@@ -51,14 +483,14 @@ function useInitData() {
       // Fallback: allow testing via query param if not inside Telegram
       const url = new URL(window.location.href);
       const qpId = url.searchParams.get('telegramId') || url.searchParams.get('tgId');
-      setTelegramId(id || qpId || 'test_user_123'); // Test fallback for development
+      setTelegramId(id || qpId || 'test_user_123');
     } catch {
       try {
         const url = new URL(window.location.href);
         const qpId = url.searchParams.get('telegramId') || url.searchParams.get('tgId');
-        setTelegramId(qpId || 'test_user_123'); // Test fallback for development
+        setTelegramId(qpId || 'test_user_123');
       } catch {
-        setTelegramId('test_user_123'); // Final fallback
+        setTelegramId('test_user_123');
       }
     }
   }, []);
@@ -76,196 +508,246 @@ export default function App() {
   const [loading, setLoading] = React.useState(true);
   const [cartModalOpen, setCartModalOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState<string>('');
+  const [scrollTimeout, setScrollTimeout] = React.useState<number | null>(null);
+  const [error, setError] = React.useState<string>('');
 
   // Load categories
   React.useEffect(() => {
     if (!telegramId) return;
-    setLoading(true);
-    fetch(`${API_BASE}/public/categories?telegramId=${telegramId}`)
-      .then(r=>r.json())
-      .then(r=>{
-        const list: Category[] = (Array.isArray(r?.data) ? r.data : r?.data?.items) || [];
+    
+    const loadCategories = async () => {
+      try {
+        setLoading(true);
+        setError('');
+        
+        const response = await fetch(`${API_BASE}/public/categories?telegramId=${telegramId}`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+          throw new Error(data.message || 'Kategoriyalarni olishda xatolik');
+        }
+        
+        const list: Category[] = Array.isArray(data.data) ? data.data : [];
         setCategories(list);
-      })
-      .catch(()=>{
-        console.log('🔄 API unavailable, using mock categories');
-        setCategories(MOCK_CATEGORIES);
-      })
-      .finally(() => setLoading(false));
+        console.log('✅ Categories loaded:', list.length);
+      } catch (error) {
+        console.error('❌ Categories load error:', error);
+        setError('Kategoriyalarni yuklab bo\'lmadi. Internetni tekshiring.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCategories();
   }, [telegramId]);
 
   // Load branches
   React.useEffect(() => {
     if (!telegramId) return;
-    fetch(`${API_BASE}/public/branches?telegramId=${telegramId}`)
-      .then(r=>r.json())
-      .then(r=>{
-        const list: Branch[] = (Array.isArray(r?.data) ? r.data : r?.data?.items) || [];
+    
+    const loadBranches = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/public/branches?telegramId=${telegramId}`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+          throw new Error(data.message || 'Filiallarni olishda xatolik');
+        }
+        
+        const list: Branch[] = Array.isArray(data.data) ? data.data : [];
         setBranches(list);
+        
         if (list.length > 0 && !branch) {
           setBranch(list[0]._id);
         }
-      })
-      .catch(()=>{
-        console.log('🔄 API unavailable, using mock branches');
-        setBranches(MOCK_BRANCHES);
-        if (!branch) {
-          setBranch(MOCK_BRANCHES[0]._id);
-        }
-      });
+        
+        console.log('✅ Branches loaded:', list.length);
+      } catch (error) {
+        console.error('❌ Branches load error:', error);
+        // Don't show error for branches as it's not critical
+      }
+    };
+
+    loadBranches();
   }, [telegramId, branch]);
 
   // Load products
   React.useEffect(() => {
     if (!telegramId) return;
-    const qp: string[] = [];
-    if (activeCat !== 'all') qp.push(`category=${encodeURIComponent(activeCat)}`);
-    if (searchQuery) qp.push(`search=${encodeURIComponent(searchQuery)}`);
-    const url = `${API_BASE}/public/products?telegramId=${telegramId}${qp.length?`&${qp.join('&')}`:''}`;
-    fetch(url)
-      .then(r=>r.json())
-      .then(r=>{
-        const items: Product[] = r?.data?.items || r?.data || [];
-        // Filter by category if selected
-        let filteredProducts = items;
-        if (activeCat !== 'all') {
-          filteredProducts = items.filter(p => p.categoryId?._id === activeCat);
+    
+    const loadProducts = async () => {
+      try {
+        const qp: string[] = [];
+        if (activeCat !== 'all') qp.push(`category=${encodeURIComponent(activeCat)}`);
+        if (searchQuery) qp.push(`search=${encodeURIComponent(searchQuery)}`);
+        
+        const url = `${API_BASE}/public/products?telegramId=${telegramId}${qp.length ? `&${qp.join('&')}` : ''}`;
+        
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-        // Filter by search query
-        if (searchQuery) {
-          filteredProducts = filteredProducts.filter(p => 
-            p.name.toLowerCase().includes(searchQuery.toLowerCase())
-          );
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+          throw new Error(data.message || 'Mahsulotlarni olishda xatolik');
         }
-        setProducts(filteredProducts);
-      })
-      .catch(()=>{
-        console.log('🔄 API unavailable, using mock products');
-        let filteredProducts = MOCK_PRODUCTS;
-        if (activeCat !== 'all') {
-          filteredProducts = MOCK_PRODUCTS.filter(p => p.categoryId?._id === activeCat);
-        }
-        // Filter by search query
-        if (searchQuery) {
-          filteredProducts = filteredProducts.filter(p => 
-            p.name.toLowerCase().includes(searchQuery.toLowerCase())
-          );
-        }
-        setProducts(filteredProducts);
-      });
+        
+        const items: Product[] = data.data?.items || data.data || [];
+        setProducts(items);
+        
+        console.log('✅ Products loaded:', {
+          total: items.length,
+          category: activeCat,
+          search: searchQuery
+        });
+      } catch (error) {
+        console.error('❌ Products load error:', error);
+        setProducts([]);
+      }
+    };
+
+    loadProducts();
   }, [activeCat, searchQuery, telegramId]);
 
-
-
-  // Auto-scroll category based on visible products
+  // Improved auto-scroll category based on visible products
   React.useEffect(() => {
+    if (activeCat !== 'all') return; // Only auto-scroll when showing all products
+
     const handleScroll = () => {
-      const categoryContainer = document.querySelector('[data-category-container]') as HTMLElement;
-      if (!categoryContainer) return;
-
-      const productCards = document.querySelectorAll('[data-product-card]');
-      if (productCards.length === 0) return;
-
-      // Find the first visible product card
-      let firstVisibleProduct = null;
-      for (const card of productCards) {
-        const rect = card.getBoundingClientRect();
-        if (rect.top >= 0 && rect.top <= window.innerHeight) {
-          firstVisibleProduct = card;
-          break;
-        }
+      // Clear existing timeout
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
       }
 
-      if (firstVisibleProduct) {
-        const productId = firstVisibleProduct.getAttribute('data-product-id');
-        if (productId) {
-          const product = products.find(p => p._id === productId);
-          if (product && product.categoryId?._id && product.categoryId._id !== activeCat) {
-            // Faqat kategoriyani o'zgartirish, scroll qilmaslik
-            setActiveCat(product.categoryId._id);
+      // Set new timeout for debouncing
+      const newTimeout = setTimeout(() => {
+        const productCards = document.querySelectorAll('[data-product-card]');
+        if (productCards.length === 0) return;
+
+        // Find the first visible product card in viewport
+        let firstVisibleProduct = null;
+        const viewportTop = window.scrollY;
+        const viewportCenter = viewportTop + window.innerHeight / 3; // Use upper third for better UX
+
+        for (const card of productCards) {
+          const rect = card.getBoundingClientRect();
+          const cardTop = rect.top + viewportTop;
+          
+          if (cardTop <= viewportCenter && (cardTop + rect.height) > viewportTop) {
+            firstVisibleProduct = card;
+            break;
           }
         }
+
+        if (firstVisibleProduct) {
+          const categoryId = firstVisibleProduct.getAttribute('data-category-id');
+          if (categoryId && categoryId !== activeCat) {
+            setActiveCat(categoryId);
+          }
+        }
+      }, 150); // Debounce for 150ms
+
+      setScrollTimeout(newTimeout);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
       }
     };
-
-    // Throttle scroll events for better performance
-    let scrollTimeout: number;
-    const throttledScroll = () => {
-      clearTimeout(scrollTimeout);
-      scrollTimeout = setTimeout(handleScroll, 200);
-    };
-
-    window.addEventListener('scroll', throttledScroll);
-    return () => {
-      window.removeEventListener('scroll', throttledScroll);
-      clearTimeout(scrollTimeout);
-    };
-  }, [products, activeCat]);
+  }, [activeCat, scrollTimeout]);
 
   // Calculate totals
-  const total = Object.entries(cart).reduce((sum,[pid,qty])=>{
-    const p = products.find(x=>x._id===pid); return sum + (p? p.price*qty:0)
-  },0);
+  const total = Object.entries(cart).reduce((sum, [pid, qty]) => {
+    const p = products.find(x => x._id === pid); 
+    return sum + (p ? p.price * qty : 0);
+  }, 0);
 
   const itemCount = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
 
-  // Cart functions
+  // Cart functions - FIXED: Never clear cart, always accumulate
   const updateCartQuantity = (productId: string, quantity: number) => {
-    setCart(prev => ({
-      ...prev,
-      [productId]: Math.max(0, quantity)
-    }));
+    setCart(prev => {
+      const newCart = { ...prev };
+      if (quantity <= 0) {
+        delete newCart[productId];
+      } else {
+        newCart[productId] = quantity;
+      }
+      return newCart;
+    });
   };
 
   const incrementProduct = (productId: string) => {
-    const newQuantity = (cart[productId] || 0) + 1;
-    updateCartQuantity(productId, newQuantity);
-    
-    // Modal faqat birinchi marta mahsulot qo'shilganda ochiladi
-    // Keyingi safar + bosilganda modal ochilmaydi
-    if (newQuantity === 1) {
-      // Modal ochishni faqat birinchi marta qilamiz
-      // setCartModalOpen(true); // Bu qatorni o'chirib tashladik
-    }
+    setCart(prev => ({
+      ...prev,
+      [productId]: (prev[productId] || 0) + 1
+    }));
   };
 
   const decrementProduct = (productId: string) => {
-    updateCartQuantity(productId, (cart[productId] || 0) - 1);
+    setCart(prev => {
+      const newQuantity = (prev[productId] || 0) - 1;
+      if (newQuantity <= 0) {
+        const newCart = { ...prev };
+        delete newCart[productId];
+        return newCart;
+      }
+      return {
+        ...prev,
+        [productId]: newQuantity
+      };
+    });
   };
 
-  // Order placement
+  // Order placement - FIXED: Don't clear cart unless order is successful
   const placeOrder = () => {
-    if (Object.keys(cart).length === 0) {
+    const cartEntries = Object.entries(cart).filter(([_, quantity]) => quantity > 0);
+    
+    if (cartEntries.length === 0) {
       alert('Savat bo\'sh!');
       return;
     }
 
-    // Don't send branch - let bot handle branch selection based on order type
     const payload = { 
       telegramId, 
-      items: Object.entries(cart)
-        .filter(([_, quantity]) => quantity > 0)
-        .map(([productId, quantity]) => ({ productId, quantity }))
+      items: cartEntries.map(([productId, quantity]) => ({ productId, quantity }))
     };
 
     try {
       const tg = window.Telegram?.WebApp;
 
-      console.log('📤 Telegram WebApp object:', tg);
       console.log('📤 Sending data to bot:', payload);
-      console.log('📤 Cart items count:', Object.keys(cart).length);
-      console.log('📤 Cart details:', cart);
+      console.log('📤 Cart items:', cartEntries);
       
       if (tg?.sendData) {
         // Send data to bot
         tg.sendData(JSON.stringify(payload));
-        console.log('✅ Data sent successfully');
+        console.log('✅ Data sent successfully to Telegram bot');
         
         // Close cart modal
         setCartModalOpen(false);
         
-        // Show success message instead of JSON
-        alert('✅ Buyurtma muvaffaqiyatli yuborildi! Bot orqali davom eting.');
+        // Show success message
+        alert('✅ Buyurtma muvaffaqiyatli botga yuborildi! Bot orqali davom eting.');
+        
+        // Only clear cart after successful send
+        setCart({});
         
         // Close WebApp after a short delay
         setTimeout(() => {
@@ -280,8 +762,8 @@ export default function App() {
         console.log('📤 Not in Telegram, showing fallback');
         console.log('📤 Would send to bot:', payload);
         
-        // Show user-friendly message instead of JSON
-        alert('✅ Test rejimi: Buyurtma ma\'lumotlari bot\'ga yuborildi!\n\nBot orqali buyurtmani davom ettiring.');
+        // In test mode, show data but don't clear cart
+        alert(`✅ Test rejimi: Buyurtma ma'lumotlari:\n\nMahsulotlar: ${cartEntries.length} ta\nJami: ${total.toLocaleString()} so'm\n\nBot orqali buyurtmani davom ettiring.`);
       }
     } catch (error) {
       console.error('❌ Error sending data:', error);
@@ -289,17 +771,36 @@ export default function App() {
     }
   };
 
+  // Retry function for error cases
+  const retryLoad = () => {
+    setError('');
+    setLoading(true);
+    // Trigger reload by changing telegramId state
+    const currentId = telegramId;
+    setTelegramId(null);
+    setTimeout(() => setTelegramId(currentId), 100);
+  };
+
   if (loading) {
     return (
-      <div style={{ fontFamily:'system-ui, sans-serif', padding:12 }}>
+      <div style={{ fontFamily: 'system-ui, sans-serif', padding: 12 }}>
         <h3>🍽️ Katalog</h3>
         <LoadingSpinner />
       </div>
     );
   }
 
+  if (error) {
+    return (
+      <div style={{ fontFamily: 'system-ui, sans-serif', padding: 12 }}>
+        <h3>🍽️ Katalog</h3>
+        <ErrorDisplay message={error} onRetry={retryLoad} />
+      </div>
+    );
+  }
+
   return (
-    <div style={{ fontFamily:'system-ui, sans-serif', padding:12, paddingBottom: itemCount > 0 ? 80 : 12 }}>
+    <div style={{ fontFamily: 'system-ui, sans-serif', padding: 12, paddingBottom: itemCount > 0 ? 80 : 12 }}>
       <h3>🍽️ Katalog</h3>
       
       {/* Branch info */}
@@ -322,45 +823,136 @@ export default function App() {
             border: '1px solid #ddd',
             borderRadius: '8px',
             fontSize: '16px',
-            outline: 'none'
+            outline: 'none',
+            boxSizing: 'border-box'
           }}
         />
       </div>
 
       {/* Category Filter - Sticky */}
-      <div style={{ 
-        position: 'sticky', 
-        top: 0, 
-        backgroundColor: '#fff', 
-        zIndex: 100, 
-        padding: '8px 0',
-        marginBottom: 12
-      }}>
-        <CategoryFilter 
-          categories={categories}
-          activeCategory={activeCat}
-          onCategoryChange={setActiveCat}
-        />
-      </div>
-
-      {/* Products grid */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))', gap:12 }}>
-        {products.map(product => (
-          <ProductCard
-            key={product._id}
-            product={product}
-            quantity={cart[product._id] || 0}
-            onIncrement={() => incrementProduct(product._id)}
-            onDecrement={() => decrementProduct(product._id)}
+      {categories.length > 0 && (
+        <div style={{ 
+          position: 'sticky', 
+          top: 0, 
+          backgroundColor: '#fff', 
+          zIndex: 100, 
+          padding: '8px 0',
+          marginBottom: 12
+        }}>
+          <CategoryFilter 
+            categories={categories}
+            activeCategory={activeCat}
+            onCategoryChange={(categoryId) => {
+              setActiveCat(categoryId);
+              // Scroll to top when manually selecting category
+              if (categoryId !== 'all') {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+            }}
           />
-        ))}
-      </div>
+        </div>
+      )}
+
+      {/* Products grouped by category for better display */}
+      {activeCat === 'all' ? (
+        // Show all products grouped by category
+        <div>
+          {categories.map(category => {
+            const categoryProducts = products.filter(p => p.categoryId?._id === category._id);
+            if (categoryProducts.length === 0) return null;
+            
+            return (
+              <div key={category._id} style={{ marginBottom: 32 }}>
+                <h4 style={{ 
+                  margin: '0 0 16px 0', 
+                  padding: '8px 12px',
+                  backgroundColor: '#f5f5f5',
+                  borderRadius: 8,
+                  fontSize: 16,
+                  fontWeight: 600
+                }}>
+                  {category.name}
+                </h4>
+                <div style={{ 
+                  display:'grid', 
+                  gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))', 
+                  gap:12,
+                  marginBottom: 16
+                }}>
+                  {categoryProducts.map(product => (
+                    <ProductCard
+                      key={product._id}
+                      product={product}
+                      quantity={cart[product._id] || 0}
+                      onIncrement={() => incrementProduct(product._id)}
+                      onDecrement={() => decrementProduct(product._id)}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        // Show products for selected category only
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))', gap:12 }}>
+          {products.map(product => (
+            <ProductCard
+              key={product._id}
+              product={product}
+              quantity={cart[product._id] || 0}
+              onIncrement={() => incrementProduct(product._id)}
+              onDecrement={() => decrementProduct(product._id)}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Empty state */}
-      {products.length === 0 && (
+      {products.length === 0 && categories.length > 0 && (
         <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>🔍</div>
-          <div>Mahsulotlar topilmadi</div>
+          <div>
+            {searchQuery ? `"${searchQuery}" bo'yicha mahsulotlar topilmadi` : 'Bu kategoriyada mahsulotlar topilmadi'}
+          </div>
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              style={{
+                marginTop: 12,
+                padding: '8px 16px',
+                backgroundColor: '#1677ff',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 6,
+                cursor: 'pointer'
+              }}
+            >
+              Qidiruvni tozalash
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* No categories loaded */}
+      {categories.length === 0 && (
+        <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>📂</div>
+          <div>Kategoriyalar yuklanmadi</div>
+          <button
+            onClick={retryLoad}
+            style={{
+              marginTop: 12,
+              padding: '8px 16px',
+              backgroundColor: '#1677ff',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 6,
+              cursor: 'pointer'
+            }}
+          >
+            Qaytadan yuklash
+          </button>
         </div>
       )}
 
