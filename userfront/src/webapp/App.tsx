@@ -314,7 +314,7 @@ export default function App() {
     });
 
     return () => observer.disconnect();
-  }, [activeCat, categories]);
+  }, [activeCat, categories, productsByCategory]);
 
   // Always keep active category button centered when activeCat changes
   React.useEffect(() => {
@@ -532,7 +532,7 @@ export default function App() {
                 key={cat._id}
                 ref={el => { sectionRefs.current[cat._id] = el; }}
                 data-category-section-id={cat._id}
-                style={{ marginBottom: 16 }}
+                style={{ marginBottom: 16, scrollMarginTop: 72 }}
              >
                 <h4 style={{ margin: '8px 4px', color: '#555', fontWeight: 700 }}>{cat.name}</h4>
                 <ProductGrid
