@@ -127,4 +127,53 @@ router.get('/categories', getCategoriesHandler);
 // Products
 router.get('/products', getProductsHandler);
 
+// WebApp data endpoint
+router.post('/webapp-data', async (req, res) => {
+  try {
+    const { telegramId, data } = req.body;
+    
+    if (!telegramId || !data) {
+      return res.status(400).json({
+        success: false,
+        message: 'Telegram ID va data kerak!'
+      });
+    }
+
+    console.log('🌐 WebApp data received via API:', {
+      telegramId,
+      data: JSON.parse(data)
+    });
+
+    // Bot ga ma'lumotlarni yuborish
+    const { bot } = require('../../bot/botManager');
+    if (bot) {
+      // Simulate web_app_data update
+      const mockCtx = {
+        updateType: 'web_app_data',
+        webAppData: { data: data },
+        from: { id: parseInt(telegramId) }
+      };
+
+      const { handleWebAppData } = require('../../bot/handlers/user/webAppHandler');
+      await handleWebAppData(mockCtx);
+      
+      res.json({
+        success: true,
+        message: 'Ma\'lumotlar bot ga yuborildi!'
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: 'Bot mavjud emas!'
+      });
+    }
+  } catch (error) {
+    console.error('❌ WebApp data API error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Xatolik yuz berdi!'
+    });
+  }
+});
+
 module.exports = router;

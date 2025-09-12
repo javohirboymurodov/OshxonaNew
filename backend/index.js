@@ -8,7 +8,7 @@ const Database = require('./config/database');
 const { startAPIServer, SocketManager } = require('./api/server');
 
 // Bot Manager
-const { initializeBot } = require('./bot/botManager');
+const { initializeBot, setBotInstance } = require('./bot/botManager');
 
 // ========================================
 // 💾 DATABASE CONNECTION
@@ -111,6 +111,9 @@ const initializeApp = async () => {
     
     // Barcha bot handlerlarini ulash
     initializeBot(bot);
+    
+    // Bot instance ni global saqlash
+    setBotInstance(bot);
     
     // Bot ready bo'lgandan keyin server ishga tushirish
     startUnifiedServer(bot);

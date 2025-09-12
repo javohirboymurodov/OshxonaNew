@@ -135,4 +135,20 @@ function initializeBot(bot) {
   console.log('✅ Bot handlarlari muvaffaqiyatli ulandi');
 }
 
-module.exports = { initializeBot };
+// Bot instance ni global saqlash
+let botInstance = null;
+
+function setBotInstance(bot) {
+  botInstance = bot;
+}
+
+function getBotInstance() {
+  return botInstance;
+}
+
+module.exports = { 
+  initializeBot, 
+  setBotInstance, 
+  getBotInstance,
+  bot: () => botInstance
+};

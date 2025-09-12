@@ -362,7 +362,7 @@ export default function App() {
   };
 
   // Order placement - PROFESSIONAL YECHIM
-  const placeOrder = () => {
+  const placeOrder = async () => {
     if (Object.keys(cart).length === 0) {
       alert('Savat bo\'sh!');
       return;
@@ -383,8 +383,9 @@ export default function App() {
       const tg = window.Telegram?.WebApp;
       
       if (tg?.sendData) {
+        // Telegram WebApp orqali yuborish
         tg.sendData(JSON.stringify(payload));
-        console.log('✅ Data sent successfully');
+        console.log('✅ Data sent via Telegram WebApp');
         
         setCartModalOpen(false);
         alert('✅ Buyurtma muvaffaqiyatli yuborildi! Bot orqali davom eting.');
@@ -395,8 +396,33 @@ export default function App() {
           }
         }, 1000);
       } else {
-        console.log('📤 Not in Telegram, showing fallback');
-        alert('✅ Test rejimi: Buyurtma ma\'lumotlari bot\'ga yuborildi!\n\nBot orqali buyurtmani davom ettiring.');
+        // Test rejimi - bot ga to'g'ridan-to'g'ri yuborish
+        console.log('📤 Test mode: Sending data directly to bot');
+        
+        try {
+          const response = await fetch(`${API_BASE}/webapp-data`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              telegramId: telegramId,
+              data: JSON.stringify(payload)
+            })
+          });
+          
+          if (response.ok) {
+            console.log('✅ Data sent to bot successfully');
+            setCartModalOpen(false);
+            alert('✅ Buyurtma muvaffaqiyatli yuborildi! Bot orqali davom eting.');
+          } else {
+            console.error('❌ Bot API error:', response.status);
+            alert('❌ Bot ga yuborishda xatolik! Qaytadan urinib ko\'ring.');
+          }
+        } catch (apiError) {
+          console.error('❌ API call error:', apiError);
+          alert('✅ Test rejimi: Buyurtma ma\'lumotlari tayyor!\n\nBot orqali buyurtmani davom ettiring.');
+        }
       }
     } catch (error) {
       console.error('❌ Error sending data:', error);
