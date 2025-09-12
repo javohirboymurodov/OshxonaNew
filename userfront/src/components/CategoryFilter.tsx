@@ -1,6 +1,5 @@
 import React from 'react';
-
-type Category = { _id: string; name: string };
+import { Category } from '../types';
 
 interface CategoryFilterProps {
   categories: Category[];
@@ -25,7 +24,8 @@ export default function CategoryFilter({ categories, activeCategory, onCategoryC
           color:activeCategory==='all'?'#fff':'#333',
           fontSize: 14,
           fontWeight: activeCategory==='all' ? 600 : 400,
-          whiteSpace: 'nowrap'
+          whiteSpace: 'nowrap',
+          cursor: 'pointer'
         }}
       >
         Barchasi
@@ -43,7 +43,8 @@ export default function CategoryFilter({ categories, activeCategory, onCategoryC
             color:activeCategory===c._id?'#fff':'#333',
             fontSize: 14,
             fontWeight: activeCategory===c._id ? 600 : 400,
-            whiteSpace: 'nowrap'
+            whiteSpace: 'nowrap',
+            cursor: 'pointer'
           }}
         >
           {c.name}

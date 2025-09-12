@@ -1,6 +1,5 @@
 import React from 'react';
-
-type Product = { _id: string; name: string; price: number; image?: string; categoryId?: { _id: string; name?: string } };
+import { Product } from '../types';
 
 interface CartModalProps {
   isOpen: boolean;

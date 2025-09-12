@@ -271,116 +271,7 @@ async function handleFeedback(ctx, user, text) {
   }
 }
 
-/**
- * WebApp data ni qayta ishlash
- * @param {Object} ctx - Telegraf context
- */
-async function handleWebAppData(ctx) {
-  try {
-    console.log('🎯 WebApp data handler called!');
-    console.log('📱 Full context:', JSON.stringify(ctx.message, null, 2));
-    
-    const webAppData = ctx.message.web_app_data;
-    console.log('📱 WebApp data received:', webAppData);
-    
-    let cartData;
-    try {
-      cartData = JSON.parse(webAppData.data);
-      console.log('📦 Parsed cart data:', cartData);
-    } catch (e) {
-      console.error('❌ Failed to parse WebApp data:', e);
-      return ctx.reply('❌ WebApp ma\'lumotini o\'qishda xatolik!');
-    }
-    
-    const { telegramId, items } = cartData;
-    
-    console.log('🔍 WebApp data details:');
-    console.log('📱 Telegram ID:', telegramId);
-    console.log('📦 Items:', items);
-    console.log('📦 Items length:', items?.length);
-    
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      console.log('❌ No items in WebApp data');
-      return ctx.reply('🛒 Savat bo\'sh! Iltimos, mahsulot tanlang.');
-    }
-    
-    // Mahsulotlarni olish va savatga qo'shish (branch'siz)
-    let totalAmount = 0;
-    const cartItems = [];
-    
-    for (const item of items) {
-      const product = await Product.findById(item.productId);
-      if (!product || !product.isActive || !product.isAvailable) {
-        console.log(`⚠️ Product ${item.productId} not available`);
-        continue;
-      }
-      
-      const price = product.price;
-      const itemTotal = price * item.quantity;
-      totalAmount += itemTotal;
-      
-      cartItems.push({
-        product: product._id,
-        productName: product.name,
-        quantity: item.quantity,
-        price: price,
-        totalPrice: itemTotal
-      });
-    }
-    
-    if (cartItems.length === 0) {
-      return ctx.reply('❌ Hech qanday mavjud mahsulot topilmadi!');
-    }
-    
-
-    // User'ni topish
-    const user = await User.findOne({ telegramId: ctx.from.id });
-    if (!user) {
-      return ctx.reply('❌ Foydalanuvchi topilmadi! /start buyrug\'ini yuboring.');
-    }
-    
-    // Savatni yaratish yoki yangilash (branch'siz)
-    let cart = await Cart.findOne({ user: user._id, isActive: true });
-    if (!cart) {
-      cart = new Cart({
-        user: user._id,
-        items: cartItems,
-        total: totalAmount,
-        isActive: true
-      });
-    } else {
-      // Mavjud savatni to'liq yangilash
-      cart.items = cartItems;
-      cart.total = totalAmount;
-      cart.isActive = true;
-    }
-    
-    await cart.save();
-    console.log('✅ Cart saved with items:', cartItems.length);
-    
-    // Buyurtma turini tanlash
-    const orderTypeMessage = `🛒 <b>Savat yangilandi!</b>\n\n` +
-      `📦 Mahsulotlar: ${cartItems.length} ta\n` +
-      `💰 Jami: ${totalAmount.toLocaleString()} so'm\n\n` +
-      `🎯 <b>Buyurtma turini tanlang:</b>`;
-    
-    await ctx.reply(orderTypeMessage, {
-      parse_mode: 'HTML',
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: '🚚 Yetkazib berish', callback_data: 'start_delivery' }],
-          [{ text: '🏃 Olib ketish', callback_data: 'start_pickup' }],
-          [{ text: '🍽️ Restoranda ovqatlanish', callback_data: 'start_dine_in' }],
-          [{ text: '🛒 Savatni ko\'rish', callback_data: 'show_cart' }]
-        ]
-      }
-    });
-    
-  } catch (error) {
-    console.error('❌ WebApp data handler error:', error);
-    await ctx.reply('❌ Xatolik yuz berdi! Iltimos, qaytadan urinib ko\'ring.');
-  }
-}
+// WebApp data handler moved to webAppHandler.js
 
 /**
  * Text handlerlarini bot ga ulash
@@ -388,7 +279,7 @@ async function handleWebAppData(ctx) {
  */
 function registerTextHandlers(bot) {
   bot.on('text', handleText);
-  bot.on('web_app_data', handleWebAppData);
+  // WebApp data handler moved to webAppHandler.js
 }
 
 module.exports = {
@@ -396,6 +287,5 @@ module.exports = {
   handleTableNumber,
   handleDeliveryAddress,
   handleFeedback,
-  handleWebAppData,
   registerTextHandlers
 }; 

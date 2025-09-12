@@ -89,6 +89,7 @@ async function handleWebAppData(ctx) {
         cart.items[existingItemIndex].quantity = quantity;
         cart.items[existingItemIndex].productName = product.name;
         cart.items[existingItemIndex].price = product.price;
+        cart.items[existingItemIndex].totalPrice = product.price * quantity;
         cart.items[existingItemIndex].updatedAt = new Date();
         updatedCount++;
         
@@ -100,6 +101,7 @@ async function handleWebAppData(ctx) {
           productName: product.name,
           quantity: quantity,
           price: product.price,
+          totalPrice: product.price * quantity,
           addedAt: new Date()
         });
         addedCount++;
@@ -110,6 +112,9 @@ async function handleWebAppData(ctx) {
 
     // Bo'sh miqdorli elementlarni olib tashlash
     cart.items = cart.items.filter(item => item.quantity > 0);
+
+    // Total ni hisoblash
+    cart.total = cart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
     // Savatni saqlash
     cart.updatedAt = new Date();

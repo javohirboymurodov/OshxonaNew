@@ -1,6 +1,5 @@
 import React from 'react';
-
-type Product = { _id: string; name: string; price: number; originalPrice?: number; image?: string; categoryId?: { _id: string; name?: string } };
+import { Product } from '../types';
 
 interface ProductCardProps {
   product: Product;
@@ -14,7 +13,13 @@ export default function ProductCard({ product, quantity, onIncrement, onDecremen
     <div 
       data-product-card
       data-product-id={product._id}
-      style={{ border:'1px solid #eee', borderRadius:10, padding:10 }}
+      data-category-id={product.categoryId?._id}
+      style={{ 
+        border:'1px solid #eee', 
+        borderRadius:10, 
+        padding:10,
+        backgroundColor: '#fff'
+      }}
     >
       {product.image && (
         <img 
