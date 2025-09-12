@@ -41,7 +41,6 @@ export default function App() {
   // Load categories
   React.useEffect(() => {
     if (!telegramId) return;
-    setLoading(true);
     setError(null);
     
     const apiUrl = `${API_BASE}/public/categories?telegramId=${telegramId}`;
@@ -54,7 +53,31 @@ export default function App() {
       })
       .then(r => {
         console.log('🔍 Categories response data:', r);
-        const list: Category[] = (Array.isArray(r?.data) ? r.data : r?.data?.items) || [];
+        console.log('🔍 Categories data structure:', {
+          hasData: !!r?.data,
+          dataType: typeof r?.data,
+          isArray: Array.isArray(r?.data),
+          hasItems: !!r?.data?.items,
+          itemsType: typeof r?.data?.items,
+          itemsIsArray: Array.isArray(r?.data?.items)
+        });
+        
+        let list: Category[] = [];
+        
+        if (Array.isArray(r?.data)) {
+          list = r.data;
+        } else if (r?.data?.items && Array.isArray(r.data.items)) {
+          list = r.data.items;
+        } else if (r?.data && typeof r.data === 'object') {
+          const possibleArrays = Object.values(r.data).filter(val => Array.isArray(val));
+          if (possibleArrays.length > 0) {
+            list = possibleArrays[0] as Category[];
+          }
+        }
+        
+        console.log('🔍 Parsed categories:', list.length, 'items');
+        console.log('🔍 First category sample:', list[0]);
+        
         setCategories(list);
         if (list.length === 0) {
           setError('Kategoriyalar topilmadi');
@@ -64,8 +87,7 @@ export default function App() {
         console.error('❌ Categories API error:', error);
         setError('Kategoriyalarni yuklashda xatolik');
         setCategories([]);
-      })
-      .finally(() => setLoading(false));
+      });
   }, [telegramId]);
 
   // Load branches
@@ -81,7 +103,31 @@ export default function App() {
       })
       .then(r => {
         console.log('🔍 Branches response data:', r);
-        const list: Branch[] = (Array.isArray(r?.data) ? r.data : r?.data?.items) || [];
+        console.log('🔍 Branches data structure:', {
+          hasData: !!r?.data,
+          dataType: typeof r?.data,
+          isArray: Array.isArray(r?.data),
+          hasItems: !!r?.data?.items,
+          itemsType: typeof r?.data?.items,
+          itemsIsArray: Array.isArray(r?.data?.items)
+        });
+        
+        let list: Branch[] = [];
+        
+        if (Array.isArray(r?.data)) {
+          list = r.data;
+        } else if (r?.data?.items && Array.isArray(r.data.items)) {
+          list = r.data.items;
+        } else if (r?.data && typeof r.data === 'object') {
+          const possibleArrays = Object.values(r.data).filter(val => Array.isArray(val));
+          if (possibleArrays.length > 0) {
+            list = possibleArrays[0] as Branch[];
+          }
+        }
+        
+        console.log('🔍 Parsed branches:', list.length, 'items');
+        console.log('🔍 First branch sample:', list[0]);
+        
         setBranches(list);
         if (list.length > 0 && !branch) {
           setBranch(list[0]._id);
@@ -97,6 +143,9 @@ export default function App() {
   React.useEffect(() => {
     if (!telegramId) return;
     
+    setLoading(true);
+    setError(null);
+    
     // Barcha mahsulotlarni yuklash, kategoriya filter emas
     const url = `${API_BASE}/public/products?telegramId=${telegramId}`;
     console.log('🔍 Loading products from:', url);
@@ -108,8 +157,35 @@ export default function App() {
       })
       .then(r => {
         console.log('🔍 Products response data:', r);
-        const items: Product[] = r?.data?.items || r?.data || [];
-        setProducts(items); // Barcha mahsulotlarni saqlash
+        console.log('🔍 Products data structure:', {
+          hasData: !!r?.data,
+          dataType: typeof r?.data,
+          isArray: Array.isArray(r?.data),
+          hasItems: !!r?.data?.items,
+          itemsType: typeof r?.data?.items,
+          itemsIsArray: Array.isArray(r?.data?.items)
+        });
+        
+        let items: Product[] = [];
+        
+        if (Array.isArray(r?.data)) {
+          // Agar data to'g'ridan-to'g'ri array bo'lsa
+          items = r.data;
+        } else if (r?.data?.items && Array.isArray(r.data.items)) {
+          // Agar data.items array bo'lsa
+          items = r.data.items;
+        } else if (r?.data && typeof r.data === 'object') {
+          // Agar data object bo'lsa, uning ichidan array qidirish
+          const possibleArrays = Object.values(r.data).filter(val => Array.isArray(val));
+          if (possibleArrays.length > 0) {
+            items = possibleArrays[0] as Product[];
+          }
+        }
+        
+        console.log('🔍 Parsed products:', items.length, 'items');
+        console.log('🔍 First product sample:', items[0]);
+        
+        setProducts(items);
         if (items.length === 0) {
           setError('Mahsulotlar topilmadi');
         }
@@ -118,7 +194,8 @@ export default function App() {
         console.error('❌ Products API error:', error);
         setError('Mahsulotlarni yuklashda xatolik');
         setProducts([]);
-      });
+      })
+      .finally(() => setLoading(false));
   }, [telegramId]);
 
   // Filter products based on active category and search - PROFESSIONAL YECHIM
