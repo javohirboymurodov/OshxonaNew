@@ -49,28 +49,36 @@ async function handleWebAppData(ctx) {
     console.log('🛒 Processing cart items:', items);
 
     // User ni topish
+    console.log('🔍 Looking for user with telegramId:', telegramId);
     const user = await User.findOne({ telegramId });
     if (!user) {
       console.error('❌ User not found:', telegramId);
       return await ctx.reply('❌ Foydalanuvchi topilmadi!');
     }
+    console.log('✅ User found:', { userId: user._id, telegramId: user.telegramId });
 
     // Mavjud savatni topish yoki yangi yaratish
+    console.log('🔍 Looking for existing cart for user:', user._id);
     let cart = await Cart.findOne({ user: user._id, isActive: true });
     if (!cart) {
+      console.log('🆕 Creating new cart for user:', user._id);
       cart = new Cart({
         user: user._id,
         items: [],
         isActive: true
       });
+    } else {
+      console.log('✅ Found existing cart:', { cartId: cart._id, itemsCount: cart.items.length });
     }
 
     // Savatni yangilash - WebApp'dan kelgan mahsulotlarni qo'shish
     let addedCount = 0;
     let updatedCount = 0;
 
+    console.log('🔄 Processing items:', items.length, 'items');
     for (const item of items) {
       const { productId, quantity } = item;
+      console.log('🔍 Processing item:', { productId, quantity });
 
       // Mahsulot mavjudligini tekshirish
       const product = await Product.findById(productId);
@@ -78,6 +86,7 @@ async function handleWebAppData(ctx) {
         console.warn('⚠️ Product not found or inactive:', productId);
         continue;
       }
+      console.log('✅ Product found:', { productId, name: product.name, price: product.price });
 
       // Savatda mavjud elementni topish
       const existingItemIndex = cart.items.findIndex(

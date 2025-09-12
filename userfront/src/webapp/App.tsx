@@ -255,86 +255,66 @@ export default function App() {
     return filtered;
   }, [products, activeCat, searchQuery]);
 
-  // Scroll qilganda kategoriya highlight o'zgarishi - PROFESSIONAL YECHIM
+  // Products grouped by category for "all" view
+  const productsByCategory = React.useMemo(() => {
+    const map: Record<string, Product[]> = {};
+    for (const p of products) {
+      const cid = p.categoryId?._id;
+      if (!cid) continue;
+      if (!map[cid]) map[cid] = [];
+      map[cid].push(p);
+    }
+    return map;
+  }, [products]);
+
+  // Refs for category sections (used in All view)
+  const sectionRefs = React.useRef<Record<string, HTMLElement | null>>({});
+
+  const handleCategoryChange = (categoryId: string) => {
+    setActiveCat(categoryId);
+    // If switching while on ALL view, scroll to that category section
+    if (categoryId !== 'all') {
+      const target = sectionRefs.current[categoryId];
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  // Sync top category tabs (x-scroll) with visible category sections using IntersectionObserver
   React.useEffect(() => {
-    let isScrolling = false;
-    let scrollTimeout: number;
+    if (activeCat !== 'all') return; // Only when showing all categories
 
-    const handleScroll = () => {
-      if (isScrolling) return;
-      
-      isScrolling = true;
-      clearTimeout(scrollTimeout);
-      
-      scrollTimeout = setTimeout(() => {
-        const categoryContainer = document.querySelector('[data-category-container]') as HTMLElement;
-        if (!categoryContainer) {
-          isScrolling = false;
-          return;
+    const container = document.querySelector('[data-category-container]') as HTMLElement | null;
+    if (!container) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // Pick the section that is most visible / closest to top
+        const visible = entries
+          .filter(e => e.isIntersecting)
+          .sort((a, b) => (a.boundingClientRect.top) - (b.boundingClientRect.top));
+        const topMost = visible[0];
+        const id = topMost?.target.getAttribute('data-category-section-id');
+        if (id && id !== activeCat) {
+          setActiveCat(id);
+          const btn = container.querySelector(`[data-category-id="${id}"]`) as HTMLElement | null;
+          btn?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
         }
+      },
+      { root: null, rootMargin: '0px 0px -70% 0px', threshold: [0.25, 0.5, 0.75] }
+    );
 
-        const productCards = document.querySelectorAll('[data-product-card]');
-        if (productCards.length === 0) {
-          isScrolling = false;
-          return;
-        }
+    // Observe each category section that has products
+    categories.forEach(c => {
+      const el = sectionRefs.current[c._id];
+      if (el) observer.observe(el);
+    });
 
-        // Faqat "all" kategoriyada scroll qilganda ishlaydi
-        if (activeCat !== 'all') {
-          isScrolling = false;
-          return;
-        }
-
-        // Ko'rinadigan mahsulotlarni topish
-        const visibleProducts = Array.from(productCards).filter(card => {
-          const rect = card.getBoundingClientRect();
-          return rect.top >= 0 && rect.top <= window.innerHeight * 0.6; // 60% ko'rinish
-        });
-
-        if (visibleProducts.length === 0) {
-          isScrolling = false;
-          return;
-        }
-
-        // Ko'rinadigan mahsulotlarning kategoriyalarini hisoblash
-        const categoryCounts: Record<string, number> = {};
-        visibleProducts.forEach(card => {
-          const categoryId = card.getAttribute('data-category-id');
-          if (categoryId) {
-            categoryCounts[categoryId] = (categoryCounts[categoryId] || 0) + 1;
-          }
-        });
-
-        // Eng ko'p ko'rinadigan kategoriyani topish
-        const mostVisibleCategory = Object.keys(categoryCounts).reduce((a, b) => 
-          categoryCounts[a] > categoryCounts[b] ? a : b
-        );
-
-        // Kategoriya highlight o'zgarishi
-        if (mostVisibleCategory && mostVisibleCategory !== activeCat) {
-          setActiveCat(mostVisibleCategory);
-          
-          // Kategoriya tugmasini ko'rinadigan qilish
-          const activeButton = categoryContainer.querySelector(`[data-category-id="${mostVisibleCategory}"]`) as HTMLElement;
-          if (activeButton) {
-            activeButton.scrollIntoView({ 
-              behavior: 'smooth', 
-              block: 'nearest', 
-              inline: 'center' 
-            });
-          }
-        }
-
-        isScrolling = false;
-      }, 200);
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      clearTimeout(scrollTimeout);
-    };
-  }, [filteredProducts, activeCat]);
+    return () => observer.disconnect();
+  }, [activeCat, categories]);
 
   // Calculate totals
   const total = Object.entries(cart).reduce((sum,[pid,qty])=>{
@@ -528,16 +508,44 @@ export default function App() {
         <CategoryFilter 
           categories={categories}
           activeCategory={activeCat}
-          onCategoryChange={setActiveCat}
+          onCategoryChange={handleCategoryChange}
         />
       </div>
 
-      <ProductGrid
-        products={filteredProducts}
-        cart={cart}
-        onIncrement={incrementProduct}
-        onDecrement={decrementProduct}
-      />
+      {/* Content */}
+      {activeCat === 'all' ? (
+        // All categories view: render sections by category
+        <div>
+          {categories.map(cat => {
+            const list = productsByCategory[cat._id] || [];
+            if (list.length === 0) return null;
+            return (
+              <section
+                key={cat._id}
+                ref={el => { sectionRefs.current[cat._id] = el; }}
+                data-category-section-id={cat._id}
+                style={{ marginBottom: 16 }}
+             >
+                <h4 style={{ margin: '8px 4px', color: '#555', fontWeight: 700 }}>{cat.name}</h4>
+                <ProductGrid
+                  products={list}
+                  cart={cart}
+                  onIncrement={incrementProduct}
+                  onDecrement={decrementProduct}
+                />
+              </section>
+            );
+          })}
+        </div>
+      ) : (
+        // Single category view
+        <ProductGrid
+          products={filteredProducts}
+          cart={cart}
+          onIncrement={incrementProduct}
+          onDecrement={decrementProduct}
+        />
+      )}
       
       {/* Debug info */}
       {(import.meta as any).env?.DEV && (
