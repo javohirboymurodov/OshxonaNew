@@ -17,7 +17,10 @@ export default function App() {
   const { telegramId, isValidTelegram } = useInitData();
   const [categories, setCategories] = React.useState<Category[]>([]);
   const [branches, setBranches] = React.useState<Branch[]>([]);
-  const [activeCat, setActiveCat] = React.useState<string>('all');
+  // selectedCategory: actual filter mode; keep 'all' to show all sections
+  const [selectedCat, setSelectedCat] = React.useState<string>('all');
+  // highlightCat: only for top tabs highlight while scrolling
+  const [highlightCat, setHighlightCat] = React.useState<string>('all');
   const [products, setProducts] = React.useState<Product[]>([]);
   const [cart, setCart] = React.useState<Record<string, number>>({});
   const [branch, setBranch] = React.useState<string>('');
@@ -202,7 +205,7 @@ export default function App() {
   const filteredProducts = React.useMemo(() => {
     console.log('🔍 Filtering products:', {
       totalProducts: products.length,
-      activeCat,
+      activeCat: selectedCat,
       searchQuery,
       firstProduct: products[0]
     });
@@ -210,15 +213,15 @@ export default function App() {
     let filtered = products;
 
     // Kategoriya filter
-    if (activeCat !== 'all') {
-      console.log('🔍 Filtering by category:', activeCat);
+    if (selectedCat !== 'all') {
+      console.log('🔍 Filtering by category:', selectedCat);
       filtered = filtered.filter(p => {
-        const matches = p.categoryId?._id === activeCat;
+        const matches = p.categoryId?._id === selectedCat;
         console.log('🔍 Product category check:', {
           productId: p._id,
           productName: p.name,
           productCategoryId: p.categoryId?._id,
-          activeCat,
+          activeCat: selectedCat,
           matches
         });
         return matches;
@@ -253,7 +256,7 @@ export default function App() {
     });
 
     return filtered;
-  }, [products, activeCat, searchQuery]);
+  }, [products, selectedCat, searchQuery]);
 
   // Products grouped by category for "all" view
   const productsByCategory = React.useMemo(() => {
@@ -271,21 +274,26 @@ export default function App() {
   const sectionRefs = React.useRef<Record<string, HTMLElement | null>>({});
 
   const handleCategoryChange = (categoryId: string) => {
-    setActiveCat(categoryId);
-    // If switching while on ALL view, scroll to that category section
-    if (categoryId !== 'all') {
-      const target = sectionRefs.current[categoryId];
-      if (target) {
-        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // In "All" mode: do NOT filter, only scroll and highlight
+    if (selectedCat === 'all') {
+      if (categoryId === 'all') {
+        setHighlightCat('all');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        setHighlightCat(categoryId);
+        const target = sectionRefs.current[categoryId];
+        target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
-    } else {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
     }
+    // If one day we enable filtering, we would set selectedCat here
+    setSelectedCat(categoryId);
+    setHighlightCat(categoryId);
   };
 
   // Sync top category tabs (x-scroll) with visible category sections using IntersectionObserver
   React.useEffect(() => {
-    if (activeCat !== 'all') return; // Only when showing all categories
+    if (selectedCat !== 'all') return; // Only when showing all categories
 
     const container = document.querySelector('[data-category-container]') as HTMLElement | null;
     if (!container) return;
@@ -298,8 +306,8 @@ export default function App() {
           .sort((a, b) => (a.boundingClientRect.top) - (b.boundingClientRect.top));
         const topMost = visible[0];
         const id = topMost?.target.getAttribute('data-category-section-id');
-        if (id && id !== activeCat) {
-          setActiveCat(id);
+        if (id && id !== highlightCat) {
+          setHighlightCat(id);
           const btn = container.querySelector(`[data-category-id="${id}"]`) as HTMLElement | null;
           btn?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
         }
@@ -314,15 +322,15 @@ export default function App() {
     });
 
     return () => observer.disconnect();
-  }, [activeCat, categories, productsByCategory]);
+  }, [selectedCat, highlightCat, categories, productsByCategory]);
 
   // Always keep active category button centered when activeCat changes
   React.useEffect(() => {
     const container = document.querySelector('[data-category-container]') as HTMLElement | null;
     if (!container) return;
-    const btn = container.querySelector(`[data-category-id="${activeCat}"]`) as HTMLElement | null;
+    const btn = container.querySelector(`[data-category-id="${highlightCat}"]`) as HTMLElement | null;
     btn?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-  }, [activeCat]);
+  }, [highlightCat]);
 
   // Calculate totals
   const total = Object.entries(cart).reduce((sum,[pid,qty])=>{
@@ -515,13 +523,13 @@ export default function App() {
       }}>
         <CategoryFilter 
           categories={categories}
-          activeCategory={activeCat}
+          activeCategory={highlightCat}
           onCategoryChange={handleCategoryChange}
         />
       </div>
 
       {/* Content */}
-      {activeCat === 'all' ? (
+      {selectedCat === 'all' ? (
         // All categories view: render sections by category
         <div>
           {categories.map(cat => {
@@ -570,7 +578,8 @@ export default function App() {
         }}>
           <div>Products: {products.length}</div>
           <div>Filtered: {filteredProducts.length}</div>
-          <div>ActiveCat: {activeCat}</div>
+          <div>Selected: {selectedCat}</div>
+          <div>Highlight: {highlightCat}</div>
           <div>Search: {searchQuery}</div>
         </div>
       )}
