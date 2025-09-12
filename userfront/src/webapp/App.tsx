@@ -14,7 +14,7 @@ import BottomBar from '../components/BottomBar';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 export default function App() {
-  const telegramId = useInitData();
+  const { telegramId, isValidTelegram } = useInitData();
   const [categories, setCategories] = React.useState<Category[]>([]);
   const [branches, setBranches] = React.useState<Branch[]>([]);
   const [activeCat, setActiveCat] = React.useState<string>('all');
@@ -99,14 +99,109 @@ export default function App() {
     }
 
     // Search filter
-    if (searchQuery) {
+        if (searchQuery) {
       filtered = filtered.filter(p => 
-        p.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+            p.name.toLowerCase().includes(searchQuery.toLowerCase())
+          );
     }
+
+    // Kategoriya ketma-ketligida tartiblash
+    filtered.sort((a, b) => {
+      const categoryA = a.categoryId?._id || '';
+      const categoryB = b.categoryId?._id || '';
+      
+      // Kategoriya ID bo'yicha tartiblash
+      if (categoryA !== categoryB) {
+        return categoryA.localeCompare(categoryB);
+      }
+      
+      // Xuddi shu kategoriyada nom bo'yicha tartiblash
+      return a.name.localeCompare(b.name);
+    });
 
     return filtered;
   }, [products, activeCat, searchQuery]);
+
+  // Scroll qilganda kategoriya highlight o'zgarishi - PROFESSIONAL YECHIM
+  React.useEffect(() => {
+    let isScrolling = false;
+    let scrollTimeout: number;
+
+    const handleScroll = () => {
+      if (isScrolling) return;
+      
+      isScrolling = true;
+      clearTimeout(scrollTimeout);
+      
+      scrollTimeout = setTimeout(() => {
+        const categoryContainer = document.querySelector('[data-category-container]') as HTMLElement;
+        if (!categoryContainer) {
+          isScrolling = false;
+          return;
+        }
+
+        const productCards = document.querySelectorAll('[data-product-card]');
+        if (productCards.length === 0) {
+          isScrolling = false;
+          return;
+        }
+
+        // Faqat "all" kategoriyada scroll qilganda ishlaydi
+        if (activeCat !== 'all') {
+          isScrolling = false;
+          return;
+        }
+
+        // Ko'rinadigan mahsulotlarni topish
+        const visibleProducts = Array.from(productCards).filter(card => {
+          const rect = card.getBoundingClientRect();
+          return rect.top >= 0 && rect.top <= window.innerHeight * 0.6; // 60% ko'rinish
+        });
+
+        if (visibleProducts.length === 0) {
+          isScrolling = false;
+          return;
+        }
+
+        // Ko'rinadigan mahsulotlarning kategoriyalarini hisoblash
+        const categoryCounts: Record<string, number> = {};
+        visibleProducts.forEach(card => {
+          const categoryId = card.getAttribute('data-category-id');
+          if (categoryId) {
+            categoryCounts[categoryId] = (categoryCounts[categoryId] || 0) + 1;
+          }
+        });
+
+        // Eng ko'p ko'rinadigan kategoriyani topish
+        const mostVisibleCategory = Object.keys(categoryCounts).reduce((a, b) => 
+          categoryCounts[a] > categoryCounts[b] ? a : b
+        );
+
+        // Kategoriya highlight o'zgarishi
+        if (mostVisibleCategory && mostVisibleCategory !== activeCat) {
+          setActiveCat(mostVisibleCategory);
+          
+          // Kategoriya tugmasini ko'rinadigan qilish
+          const activeButton = categoryContainer.querySelector(`[data-category-id="${mostVisibleCategory}"]`) as HTMLElement;
+          if (activeButton) {
+            activeButton.scrollIntoView({ 
+              behavior: 'smooth', 
+              block: 'nearest', 
+              inline: 'center' 
+            });
+          }
+        }
+
+        isScrolling = false;
+      }, 200);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      clearTimeout(scrollTimeout);
+    };
+  }, [filteredProducts, activeCat]);
 
   // Calculate totals
   const total = Object.entries(cart).reduce((sum,[pid,qty])=>{
@@ -175,6 +270,29 @@ export default function App() {
       alert('❌ Xatolik yuz berdi. Qaytadan urinib ko\'ring.');
     }
   };
+
+  // Telegram WebApp tekshirish
+  if (!isValidTelegram) {
+    return (
+      <div style={{ fontFamily:'system-ui, sans-serif', padding:12 }}>
+        <AppHeader />
+        <div style={{ 
+          textAlign: 'center', 
+          padding: 40, 
+          color: '#ff4d4f',
+          backgroundColor: '#fff2f0',
+          borderRadius: 8,
+          border: '1px solid #ffccc7'
+        }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
+          <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>Telegram WebApp kerak</div>
+          <div style={{ fontSize: 14, color: '#666' }}>
+            Bu ilovani faqat Telegram orqali ochish mumkin
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

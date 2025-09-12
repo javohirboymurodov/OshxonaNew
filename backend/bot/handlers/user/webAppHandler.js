@@ -124,7 +124,13 @@ async function handleWebAppData(ctx) {
       userId: user._id,
       totalItems: cart.items.length,
       addedCount,
-      updatedCount
+      updatedCount,
+      cartItems: cart.items.map(item => ({
+        productId: item.product,
+        name: item.productName,
+        quantity: item.quantity,
+        price: item.price
+      }))
     });
 
     // Muvaffaqiyat xabari
