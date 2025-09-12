@@ -12,11 +12,24 @@ export function useInitData() {
     try {
       const tg = window.Telegram?.WebApp;
       
+      console.log('🔍 Telegram WebApp Debug:', {
+        hasTelegram: !!window.Telegram,
+        hasWebApp: !!tg,
+        initDataUnsafe: tg?.initDataUnsafe,
+        user: tg?.initDataUnsafe?.user
+      });
+      
       if (tg) {
         // Telegram WebApp mavjud
         tg.ready();
         const initDataUnsafe = tg.initDataUnsafe;
         const id = initDataUnsafe?.user?.id ? String(initDataUnsafe.user.id) : null;
+        
+        console.log('🔍 Telegram WebApp Data:', {
+          initDataUnsafe,
+          userId: id,
+          hasUser: !!initDataUnsafe?.user
+        });
         
         if (id) {
           setTelegramId(id);
@@ -24,7 +37,17 @@ export function useInitData() {
           console.log('✅ Valid Telegram WebApp detected, ID:', id);
         } else {
           console.warn('⚠️ Telegram WebApp detected but no user ID');
-          setIsValidTelegram(false);
+          // Test mode uchun fallback
+          const url = new URL(window.location.href);
+          const qpId = url.searchParams.get('telegramId') || url.searchParams.get('tgId');
+          
+          if (qpId) {
+            setTelegramId(qpId);
+            setIsValidTelegram(true); // Test mode lekin ishlaydi
+            console.log('🧪 Test mode with ID:', qpId);
+          } else {
+            setIsValidTelegram(false);
+          }
         }
       } else {
         // Telegram WebApp yo'q - faqat test uchun
@@ -33,7 +56,7 @@ export function useInitData() {
         
         if (qpId) {
           setTelegramId(qpId);
-          setIsValidTelegram(false); // Test mode
+          setIsValidTelegram(true); // Test mode lekin ishlaydi
           console.log('🧪 Test mode with ID:', qpId);
         } else {
           console.warn('❌ Not in Telegram WebApp and no test ID provided');

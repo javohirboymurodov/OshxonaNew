@@ -26,22 +26,41 @@ export default function App() {
   const [searchQuery, setSearchQuery] = React.useState<string>('');
   const [error, setError] = React.useState<string | null>(null);
 
+  // Debug logging
+  React.useEffect(() => {
+    console.log('🔍 App Debug Info:', {
+      telegramId,
+      isValidTelegram,
+      windowTelegram: !!window.Telegram?.WebApp,
+      initDataUnsafe: window.Telegram?.WebApp?.initDataUnsafe,
+      userAgent: navigator.userAgent,
+      location: window.location.href
+    });
+  }, [telegramId, isValidTelegram]);
+
   // Load categories
   React.useEffect(() => {
     if (!telegramId) return;
     setLoading(true);
     setError(null);
     
-    fetch(`${API_BASE}/public/categories?telegramId=${telegramId}`)
-      .then(r=>r.json())
-      .then(r=>{
+    const apiUrl = `${API_BASE}/public/categories?telegramId=${telegramId}`;
+    console.log('🔍 Loading categories from:', apiUrl);
+    
+    fetch(apiUrl)
+      .then(r => {
+        console.log('🔍 Categories response status:', r.status);
+        return r.json();
+      })
+      .then(r => {
+        console.log('🔍 Categories response data:', r);
         const list: Category[] = (Array.isArray(r?.data) ? r.data : r?.data?.items) || [];
         setCategories(list);
         if (list.length === 0) {
           setError('Kategoriyalar topilmadi');
         }
       })
-      .catch((error)=>{
+      .catch((error) => {
         console.error('❌ Categories API error:', error);
         setError('Kategoriyalarni yuklashda xatolik');
         setCategories([]);
@@ -52,16 +71,23 @@ export default function App() {
   // Load branches
   React.useEffect(() => {
     if (!telegramId) return;
-    fetch(`${API_BASE}/public/branches?telegramId=${telegramId}`)
-      .then(r=>r.json())
-      .then(r=>{
+    const apiUrl = `${API_BASE}/public/branches?telegramId=${telegramId}`;
+    console.log('🔍 Loading branches from:', apiUrl);
+    
+    fetch(apiUrl)
+      .then(r => {
+        console.log('🔍 Branches response status:', r.status);
+        return r.json();
+      })
+      .then(r => {
+        console.log('🔍 Branches response data:', r);
         const list: Branch[] = (Array.isArray(r?.data) ? r.data : r?.data?.items) || [];
         setBranches(list);
         if (list.length > 0 && !branch) {
           setBranch(list[0]._id);
         }
       })
-      .catch((error)=>{
+      .catch((error) => {
         console.error('❌ Branches API error:', error);
         setBranches([]);
       });
@@ -73,16 +99,22 @@ export default function App() {
     
     // Barcha mahsulotlarni yuklash, kategoriya filter emas
     const url = `${API_BASE}/public/products?telegramId=${telegramId}`;
+    console.log('🔍 Loading products from:', url);
+    
     fetch(url)
-      .then(r=>r.json())
-      .then(r=>{
+      .then(r => {
+        console.log('🔍 Products response status:', r.status);
+        return r.json();
+      })
+      .then(r => {
+        console.log('🔍 Products response data:', r);
         const items: Product[] = r?.data?.items || r?.data || [];
         setProducts(items); // Barcha mahsulotlarni saqlash
         if (items.length === 0) {
           setError('Mahsulotlar topilmadi');
         }
       })
-      .catch((error)=>{
+      .catch((error) => {
         console.error('❌ Products API error:', error);
         setError('Mahsulotlarni yuklashda xatolik');
         setProducts([]);
@@ -271,8 +303,8 @@ export default function App() {
     }
   };
 
-  // Telegram WebApp tekshirish
-  if (!isValidTelegram) {
+  // Telegram WebApp tekshirish - yumshoq yechim
+  if (!telegramId) {
     return (
       <div style={{ fontFamily:'system-ui, sans-serif', padding:12 }}>
         <AppHeader />
@@ -284,14 +316,19 @@ export default function App() {
           borderRadius: 8,
           border: '1px solid #ffccc7'
         }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
-          <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>Telegram WebApp kerak</div>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>⏳</div>
+          <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>Yuklanmoqda...</div>
           <div style={{ fontSize: 14, color: '#666' }}>
-            Bu ilovani faqat Telegram orqali ochish mumkin
+            Telegram ma'lumotlari yuklanmoqda
           </div>
         </div>
       </div>
     );
+  }
+
+  // Agar Telegram WebApp bo'lmasa, lekin telegramId bo'lsa, ishlaydi
+  if (!isValidTelegram && !window.Telegram?.WebApp) {
+    console.warn('⚠️ Not in Telegram WebApp, but continuing with test mode');
   }
 
   if (loading) {
