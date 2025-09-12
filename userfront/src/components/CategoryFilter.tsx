@@ -10,8 +10,12 @@ interface CategoryFilterProps {
 
 export default function CategoryFilter({ categories, activeCategory, onCategoryChange }: CategoryFilterProps) {
   return (
-    <div style={{ display:'flex', gap:8, overflowX:'auto', marginBottom:16, paddingBottom: 4 }}>
+    <div 
+      data-category-container
+      style={{ display:'flex', gap:8, overflowX:'auto', marginBottom:16, paddingBottom: 4 }}
+    >
       <button 
+        data-category-id="all"
         onClick={()=>onCategoryChange('all')} 
         style={{ 
           padding:'8px 12px', 
@@ -29,6 +33,7 @@ export default function CategoryFilter({ categories, activeCategory, onCategoryC
       {categories.map(c=> (
         <button 
           key={c._id} 
+          data-category-id={c._id}
           onClick={()=>onCategoryChange(c._id)} 
           style={{ 
             padding:'8px 12px', 

@@ -11,7 +11,11 @@ interface ProductCardProps {
 
 export default function ProductCard({ product, quantity, onIncrement, onDecrement }: ProductCardProps) {
   return (
-    <div style={{ border:'1px solid #eee', borderRadius:10, padding:10 }}>
+    <div 
+      data-product-card
+      data-product-id={product._id}
+      style={{ border:'1px solid #eee', borderRadius:10, padding:10 }}
+    >
       {product.image && (
         <img 
           src={`https://oshxonanew.onrender.com${product.image}`} 

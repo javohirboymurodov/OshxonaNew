@@ -155,6 +155,66 @@ export default function App() {
       });
   }, [activeCat, searchQuery, telegramId]);
 
+  // Savatni tozalash kategoriya o'zgarganida
+  React.useEffect(() => {
+    // Kategoriya o'zgarganida savatni tozalash
+    setCart({});
+  }, [activeCat]);
+
+  // Auto-scroll category based on visible products
+  React.useEffect(() => {
+    const handleScroll = () => {
+      const categoryContainer = document.querySelector('[data-category-container]') as HTMLElement;
+      if (!categoryContainer) return;
+
+      const productCards = document.querySelectorAll('[data-product-card]');
+      if (productCards.length === 0) return;
+
+      // Find the first visible product card
+      let firstVisibleProduct = null;
+      for (const card of productCards) {
+        const rect = card.getBoundingClientRect();
+        if (rect.top >= 0 && rect.top <= window.innerHeight) {
+          firstVisibleProduct = card;
+          break;
+        }
+      }
+
+      if (firstVisibleProduct) {
+        const productId = firstVisibleProduct.getAttribute('data-product-id');
+        if (productId) {
+          const product = products.find(p => p._id === productId);
+          if (product && product.categoryId?._id && product.categoryId._id !== activeCat) {
+            setActiveCat(product.categoryId._id);
+            
+            // Scroll to the active category button
+            const activeButton = categoryContainer.querySelector(`[data-category-id="${product.categoryId._id}"]`) as HTMLElement;
+            if (activeButton) {
+              activeButton.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'nearest', 
+                inline: 'center' 
+              });
+            }
+          }
+        }
+      }
+    };
+
+    // Throttle scroll events for better performance
+    let scrollTimeout: NodeJS.Timeout;
+    const throttledScroll = () => {
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(handleScroll, 100);
+    };
+
+    window.addEventListener('scroll', throttledScroll);
+    return () => {
+      window.removeEventListener('scroll', throttledScroll);
+      clearTimeout(scrollTimeout);
+    };
+  }, [products, activeCat]);
+
   // Calculate totals
   const total = Object.entries(cart).reduce((sum,[pid,qty])=>{
     const p = products.find(x=>x._id===pid); return sum + (p? p.price*qty:0)
@@ -174,9 +234,11 @@ export default function App() {
     const newQuantity = (cart[productId] || 0) + 1;
     updateCartQuantity(productId, newQuantity);
     
-    // Agar mahsulot qo'shilganda korzinka modalini ochish
+    // Modal faqat birinchi marta mahsulot qo'shilganda ochiladi
+    // Keyingi safar + bosilganda modal ochilmaydi
     if (newQuantity === 1) {
-      setCartModalOpen(true);
+      // Modal ochishni faqat birinchi marta qilamiz
+      // setCartModalOpen(true); // Bu qatorni o'chirib tashladik
     }
   };
 
@@ -212,22 +274,29 @@ export default function App() {
         
         // Close cart modal
         setCartModalOpen(false);
+        
+        // Show success message instead of JSON
+        alert('✅ Buyurtma muvaffaqiyatli yuborildi! Bot orqali davom eting.');
+        
+        // Close WebApp after a short delay
         setTimeout(() => {
           if (tg?.close) {
             tg.close();
           } else if (tg?.MainButton?.hide) {
             tg.MainButton.hide();
           }
-        }, 100);
+        }, 1000);
       } else {
         // Fallback for testing outside Telegram
         console.log('📤 Not in Telegram, showing fallback');
         console.log('📤 Would send to bot:', payload);
-        alert('Test mode: Buyurtma ma\'lumotlari bot\'ga yuborildi!\n\n' + JSON.stringify(payload, null, 2));
+        
+        // Show user-friendly message instead of JSON
+        alert('✅ Test rejimi: Buyurtma ma\'lumotlari bot\'ga yuborildi!\n\nBot orqali buyurtmani davom ettiring.');
       }
     } catch (error) {
       console.error('❌ Error sending data:', error);
-      alert('Xatolik yuz berdi. Qaytadan urinib ko\'ring.');
+      alert('❌ Xatolik yuz berdi. Qaytadan urinib ko\'ring.');
     }
   };
 
