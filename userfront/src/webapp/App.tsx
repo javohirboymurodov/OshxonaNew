@@ -9,11 +9,11 @@ declare global {
   interface Window { Telegram?: any }
 }
 
-type Product = { _id: string; name: string; price: number; image?: string; categoryId?: { _id: string; name?: string } };
+type Product = { _id: string; name: string; price: number; originalPrice?: number; image?: string; categoryId?: { _id: string; name?: string } };
 type Category = { _id: string; name: string };
 type Branch = { _id: string; name: string; title?: string };
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://oshxonanew.onrender.com/api';
+const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || 'https://oshxonanew.onrender.com/api';
 
 // Mock data for testing when backend is not available
 const MOCK_CATEGORIES: Category[] = [
@@ -155,11 +155,7 @@ export default function App() {
       });
   }, [activeCat, searchQuery, telegramId]);
 
-  // Savatni tozalash kategoriya o'zgarganida
-  React.useEffect(() => {
-    // Kategoriya o'zgarganida savatni tozalash
-    setCart({});
-  }, [activeCat]);
+
 
   // Auto-scroll category based on visible products
   React.useEffect(() => {
@@ -185,27 +181,18 @@ export default function App() {
         if (productId) {
           const product = products.find(p => p._id === productId);
           if (product && product.categoryId?._id && product.categoryId._id !== activeCat) {
+            // Faqat kategoriyani o'zgartirish, scroll qilmaslik
             setActiveCat(product.categoryId._id);
-            
-            // Scroll to the active category button
-            const activeButton = categoryContainer.querySelector(`[data-category-id="${product.categoryId._id}"]`) as HTMLElement;
-            if (activeButton) {
-              activeButton.scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'nearest', 
-                inline: 'center' 
-              });
-            }
           }
         }
       }
     };
 
     // Throttle scroll events for better performance
-    let scrollTimeout: NodeJS.Timeout;
+    let scrollTimeout: number;
     const throttledScroll = () => {
       clearTimeout(scrollTimeout);
-      scrollTimeout = setTimeout(handleScroll, 100);
+      scrollTimeout = setTimeout(handleScroll, 200);
     };
 
     window.addEventListener('scroll', throttledScroll);
@@ -266,6 +253,8 @@ export default function App() {
 
       console.log('📤 Telegram WebApp object:', tg);
       console.log('📤 Sending data to bot:', payload);
+      console.log('📤 Cart items count:', Object.keys(cart).length);
+      console.log('📤 Cart details:', cart);
       
       if (tg?.sendData) {
         // Send data to bot

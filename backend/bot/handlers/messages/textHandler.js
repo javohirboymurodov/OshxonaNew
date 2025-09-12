@@ -294,7 +294,13 @@ async function handleWebAppData(ctx) {
     
     const { telegramId, items } = cartData;
     
+    console.log('🔍 WebApp data details:');
+    console.log('📱 Telegram ID:', telegramId);
+    console.log('📦 Items:', items);
+    console.log('📦 Items length:', items?.length);
+    
     if (!items || !Array.isArray(items) || items.length === 0) {
+      console.log('❌ No items in WebApp data');
       return ctx.reply('🛒 Savat bo\'sh! Iltimos, mahsulot tanlang.');
     }
     
@@ -334,19 +340,23 @@ async function handleWebAppData(ctx) {
     }
     
     // Savatni yaratish yoki yangilash (branch'siz)
-    let cart = await Cart.findOne({ user: user._id });
+    let cart = await Cart.findOne({ user: user._id, isActive: true });
     if (!cart) {
       cart = new Cart({
         user: user._id,
         items: cartItems,
-        total: totalAmount
+        total: totalAmount,
+        isActive: true
       });
     } else {
+      // Mavjud savatni to'liq yangilash
       cart.items = cartItems;
       cart.total = totalAmount;
+      cart.isActive = true;
     }
     
     await cart.save();
+    console.log('✅ Cart saved with items:', cartItems.length);
     
     // Buyurtma turini tanlash
     const orderTypeMessage = `🛒 <b>Savat yangilandi!</b>\n\n` +
