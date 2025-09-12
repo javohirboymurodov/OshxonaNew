@@ -316,6 +316,14 @@ export default function App() {
     return () => observer.disconnect();
   }, [activeCat, categories]);
 
+  // Always keep active category button centered when activeCat changes
+  React.useEffect(() => {
+    const container = document.querySelector('[data-category-container]') as HTMLElement | null;
+    if (!container) return;
+    const btn = container.querySelector(`[data-category-id="${activeCat}"]`) as HTMLElement | null;
+    btn?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }, [activeCat]);
+
   // Calculate totals
   const total = Object.entries(cart).reduce((sum,[pid,qty])=>{
     const p = products.find(x=>x._id===pid); 
