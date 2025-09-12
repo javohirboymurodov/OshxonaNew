@@ -1,10 +1,18 @@
+
 import React from 'react';
 
 declare global {
   interface Window { Telegram?: any }
 }
 
-type Product = { _id: string; name: string; price: number; originalPrice?: number; image?: string; categoryId?: { _id: string; name?: string } };
+type Product = { 
+  _id: string; 
+  name: string; 
+  price: number; 
+  originalPrice?: number; 
+  image?: string; 
+  categoryId?: { _id: string; name?: string } 
+};
 type Category = { _id: string; name: string };
 type Branch = { _id: string; name: string; title?: string };
 
@@ -124,17 +132,18 @@ function ProductCard({ product, quantity, onIncrement, onDecrement }: {
   );
 }
 
-// Category Filter Component
-function CategoryFilter({ categories, activeCategory, onCategoryChange }: {
+// Category Filter Component - FIXED: No auto-scroll interference
+function CategoryFilter({ categories, activeCategory, onCategoryChange, isManualChange }: {
   categories: Category[];
   activeCategory: string;
-  onCategoryChange: (categoryId: string) => void;
+  onCategoryChange: (categoryId: string, isManual?: boolean) => void;
+  isManualChange?: boolean;
 }) {
   const categoryContainerRef = React.useRef<HTMLDivElement>(null);
 
-  // Auto-scroll active category into view
+  // Only auto-scroll when manual change, not when scroll-triggered
   React.useEffect(() => {
-    if (categoryContainerRef.current) {
+    if (isManualChange && categoryContainerRef.current) {
       const activeButton = categoryContainerRef.current.querySelector(`[data-category-id="${activeCategory}"]`) as HTMLElement;
       if (activeButton) {
         activeButton.scrollIntoView({ 
@@ -144,7 +153,7 @@ function CategoryFilter({ categories, activeCategory, onCategoryChange }: {
         });
       }
     }
-  }, [activeCategory]);
+  }, [activeCategory, isManualChange]);
 
   return (
     <div 
@@ -161,7 +170,7 @@ function CategoryFilter({ categories, activeCategory, onCategoryChange }: {
     >
       <button 
         data-category-id="all"
-        onClick={() => onCategoryChange('all')} 
+        onClick={() => onCategoryChange('all', true)} 
         style={{ 
           padding:'8px 12px', 
           borderRadius:20, 
@@ -180,7 +189,7 @@ function CategoryFilter({ categories, activeCategory, onCategoryChange }: {
         <button 
           key={c._id} 
           data-category-id={c._id}
-          onClick={() => onCategoryChange(c._id)} 
+          onClick={() => onCategoryChange(c._id, true)} 
           style={{ 
             padding:'8px 12px', 
             borderRadius:20, 
@@ -201,24 +210,32 @@ function CategoryFilter({ categories, activeCategory, onCategoryChange }: {
 }
 
 // Cart Modal Component
-function CartModal({ isOpen, onClose, cart, products, onUpdateQuantity, onPlaceOrder, total }: {
+function CartModal({ isOpen, onClose, cart, allProducts, onUpdateQuantity, onPlaceOrder, total }: {
   isOpen: boolean;
   onClose: () => void;
   cart: Record<string, number>;
-  products: Product[];
+  allProducts: Product[]; // All products from all categories
   onUpdateQuantity: (productId: string, quantity: number) => void;
   onPlaceOrder: () => void;
   total: number;
 }) {
   if (!isOpen) return null;
 
+  // FIXED: Use allProducts instead of filtered products
   const cartItems = Object.entries(cart)
     .filter(([_, quantity]) => quantity > 0)
     .map(([productId, quantity]) => ({
-      product: products.find(p => p._id === productId)!,
+      product: allProducts.find(p => p._id === productId)!,
       quantity
     }))
     .filter(item => item.product);
+
+  console.log('🛒 Cart Modal Debug:', {
+    cart,
+    allProductsCount: allProducts.length,
+    cartItemsCount: cartItems.length,
+    cartEntries: Object.entries(cart).filter(([_, qty]) => qty > 0)
+  });
 
   return (
     <div style={{
@@ -282,6 +299,9 @@ function CartModal({ isOpen, onClose, cart, products, onUpdateQuantity, onPlaceO
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 600, fontSize: 14 }}>{product.name}</div>
                   <div style={{ color: '#666', fontSize: 12 }}>{product.price.toLocaleString()} so'm</div>
+                  <div style={{ color: '#999', fontSize: 10 }}>
+                    {product.categoryId?.name || 'Kategoriya'}
+                  </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <button
@@ -480,7 +500,6 @@ function useInitData() {
       tg?.ready?.();
       const initDataUnsafe = tg?.initDataUnsafe;
       const id = initDataUnsafe?.user?.id ? String(initDataUnsafe.user.id) : null;
-      // Fallback: allow testing via query param if not inside Telegram
       const url = new URL(window.location.href);
       const qpId = url.searchParams.get('telegramId') || url.searchParams.get('tgId');
       setTelegramId(id || qpId || 'test_user_123');
@@ -502,7 +521,8 @@ export default function App() {
   const [categories, setCategories] = React.useState<Category[]>([]);
   const [branches, setBranches] = React.useState<Branch[]>([]);
   const [activeCat, setActiveCat] = React.useState<string>('all');
-  const [products, setProducts] = React.useState<Product[]>([]);
+  const [allProducts, setAllProducts] = React.useState<Product[]>([]); // FIXED: Store all products
+  const [filteredProducts, setFilteredProducts] = React.useState<Product[]>([]);
   const [cart, setCart] = React.useState<Record<string, number>>({});
   const [branch, setBranch] = React.useState<string>('');
   const [loading, setLoading] = React.useState(true);
@@ -510,6 +530,7 @@ export default function App() {
   const [searchQuery, setSearchQuery] = React.useState<string>('');
   const [scrollTimeout, setScrollTimeout] = React.useState<number | null>(null);
   const [error, setError] = React.useState<string>('');
+  const [isManualCategoryChange, setIsManualCategoryChange] = React.useState(false);
 
   // Load categories
   React.useEffect(() => {
@@ -574,23 +595,22 @@ export default function App() {
         console.log('✅ Branches loaded:', list.length);
       } catch (error) {
         console.error('❌ Branches load error:', error);
-        // Don't show error for branches as it's not critical
       }
     };
 
     loadBranches();
   }, [telegramId, branch]);
 
-  // Load products
+  // Load ALL products (not filtered by category) - FIXED
   React.useEffect(() => {
     if (!telegramId) return;
     
-    const loadProducts = async () => {
+    const loadAllProducts = async () => {
       try {
         const qp: string[] = [];
-        if (activeCat !== 'all') qp.push(`category=${encodeURIComponent(activeCat)}`);
         if (searchQuery) qp.push(`search=${encodeURIComponent(searchQuery)}`);
         
+        // FIXED: Don't filter by category in API call, get ALL products
         const url = `${API_BASE}/public/products?telegramId=${telegramId}${qp.length ? `&${qp.join('&')}` : ''}`;
         
         const response = await fetch(url);
@@ -606,59 +626,72 @@ export default function App() {
         }
         
         const items: Product[] = data.data?.items || data.data || [];
-        setProducts(items);
+        setAllProducts(items); // Store ALL products
         
-        console.log('✅ Products loaded:', {
+        console.log('✅ All products loaded:', {
           total: items.length,
-          category: activeCat,
           search: searchQuery
         });
       } catch (error) {
         console.error('❌ Products load error:', error);
-        setProducts([]);
+        setAllProducts([]);
       }
     };
 
-    loadProducts();
-  }, [activeCat, searchQuery, telegramId]);
+    loadAllProducts();
+  }, [searchQuery, telegramId]);
 
-  // Improved auto-scroll category based on visible products
+  // Filter products based on active category - FIXED
   React.useEffect(() => {
-    if (activeCat !== 'all') return; // Only auto-scroll when showing all products
+    let filtered = allProducts;
+    
+    if (activeCat !== 'all') {
+      filtered = allProducts.filter(p => p.categoryId?._id === activeCat);
+    }
+    
+    setFilteredProducts(filtered);
+    
+    console.log('🔍 Products filtered:', {
+      activeCategory: activeCat,
+      totalProducts: allProducts.length,
+      filteredProducts: filtered.length
+    });
+  }, [allProducts, activeCat]);
+
+  // Improved auto-scroll category detection - FIXED
+  React.useEffect(() => {
+    if (activeCat !== 'all' || isManualCategoryChange) return; // Skip if manually selected or not showing all
 
     const handleScroll = () => {
-      // Clear existing timeout
       if (scrollTimeout) {
         clearTimeout(scrollTimeout);
       }
 
-      // Set new timeout for debouncing
       const newTimeout = setTimeout(() => {
-        const productCards = document.querySelectorAll('[data-product-card]');
-        if (productCards.length === 0) return;
+        const categoryHeaders = document.querySelectorAll('[data-category-header]');
+        if (categoryHeaders.length === 0) return;
 
-        // Find the first visible product card in viewport
-        let firstVisibleProduct = null;
         const viewportTop = window.scrollY;
-        const viewportCenter = viewportTop + window.innerHeight / 3; // Use upper third for better UX
+        const viewportCenter = viewportTop + 200; // Header offset consideration
 
-        for (const card of productCards) {
-          const rect = card.getBoundingClientRect();
-          const cardTop = rect.top + viewportTop;
+        let activeCategory = 'all';
+
+        for (const header of categoryHeaders) {
+          const rect = header.getBoundingClientRect();
+          const headerTop = rect.top + viewportTop;
           
-          if (cardTop <= viewportCenter && (cardTop + rect.height) > viewportTop) {
-            firstVisibleProduct = card;
-            break;
+          if (headerTop <= viewportCenter) {
+            const categoryId = header.getAttribute('data-category-id');
+            if (categoryId) {
+              activeCategory = categoryId;
+            }
           }
         }
 
-        if (firstVisibleProduct) {
-          const categoryId = firstVisibleProduct.getAttribute('data-category-id');
-          if (categoryId && categoryId !== activeCat) {
-            setActiveCat(categoryId);
-          }
+        if (activeCategory !== activeCat) {
+          setActiveCat(activeCategory);
         }
-      }, 150); // Debounce for 150ms
+      }, 100);
 
       setScrollTimeout(newTimeout);
     };
@@ -670,17 +703,17 @@ export default function App() {
         clearTimeout(scrollTimeout);
       }
     };
-  }, [activeCat, scrollTimeout]);
+  }, [activeCat, scrollTimeout, isManualCategoryChange]);
 
-  // Calculate totals
+  // Calculate totals using ALL products - FIXED
   const total = Object.entries(cart).reduce((sum, [pid, qty]) => {
-    const p = products.find(x => x._id === pid); 
+    const p = allProducts.find(x => x._id === pid); 
     return sum + (p ? p.price * qty : 0);
   }, 0);
 
   const itemCount = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
 
-  // Cart functions - FIXED: Never clear cart, always accumulate
+  // Cart functions - FIXED
   const updateCartQuantity = (productId: string, quantity: number) => {
     setCart(prev => {
       const newCart = { ...prev };
@@ -689,15 +722,20 @@ export default function App() {
       } else {
         newCart[productId] = quantity;
       }
+      console.log('🛒 Cart updated:', newCart);
       return newCart;
     });
   };
 
   const incrementProduct = (productId: string) => {
-    setCart(prev => ({
-      ...prev,
-      [productId]: (prev[productId] || 0) + 1
-    }));
+    setCart(prev => {
+      const newCart = {
+        ...prev,
+        [productId]: (prev[productId] || 0) + 1
+      };
+      console.log('🛒 Product incremented:', productId, newCart[productId]);
+      return newCart;
+    });
   };
 
   const decrementProduct = (productId: string) => {
@@ -706,16 +744,39 @@ export default function App() {
       if (newQuantity <= 0) {
         const newCart = { ...prev };
         delete newCart[productId];
+        console.log('🛒 Product removed:', productId);
         return newCart;
       }
-      return {
+      const newCart = {
         ...prev,
         [productId]: newQuantity
       };
+      console.log('🛒 Product decremented:', productId, newQuantity);
+      return newCart;
     });
   };
 
-  // Order placement - FIXED: Don't clear cart unless order is successful
+  // Category change handler - FIXED
+  const handleCategoryChange = (categoryId: string, isManual: boolean = false) => {
+    console.log('📂 Category changed:', categoryId, 'isManual:', isManual);
+    setIsManualCategoryChange(isManual);
+    setActiveCat(categoryId);
+    
+    if (isManual && categoryId !== 'all') {
+      // Scroll to category section
+      const categoryHeader = document.querySelector(`[data-category-id="${categoryId}"]`);
+      if (categoryHeader) {
+        categoryHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+    
+    // Reset manual flag after a delay
+    if (isManual) {
+      setTimeout(() => setIsManualCategoryChange(false), 1000);
+    }
+  };
+
+  // Order placement - FIXED
   const placeOrder = () => {
     const cartEntries = Object.entries(cart).filter(([_, quantity]) => quantity > 0);
     
@@ -732,50 +793,35 @@ export default function App() {
     try {
       const tg = window.Telegram?.WebApp;
 
-      console.log('📤 Sending data to bot:', payload);
-      console.log('📤 Cart items:', cartEntries);
+      console.log('📤 Sending order to bot:', payload);
       
       if (tg?.sendData) {
-        // Send data to bot
         tg.sendData(JSON.stringify(payload));
-        console.log('✅ Data sent successfully to Telegram bot');
+        console.log('✅ Order sent successfully to Telegram bot');
         
-        // Close cart modal
         setCartModalOpen(false);
-        
-        // Show success message
         alert('✅ Buyurtma muvaffaqiyatli botga yuborildi! Bot orqali davom eting.');
+        setCart({}); // Clear cart only after successful send
         
-        // Only clear cart after successful send
-        setCart({});
-        
-        // Close WebApp after a short delay
         setTimeout(() => {
           if (tg?.close) {
             tg.close();
-          } else if (tg?.MainButton?.hide) {
-            tg.MainButton.hide();
           }
         }, 1000);
       } else {
-        // Fallback for testing outside Telegram
-        console.log('📤 Not in Telegram, showing fallback');
-        console.log('📤 Would send to bot:', payload);
-        
-        // In test mode, show data but don't clear cart
-        alert(`✅ Test rejimi: Buyurtma ma'lumotlari:\n\nMahsulotlar: ${cartEntries.length} ta\nJami: ${total.toLocaleString()} so'm\n\nBot orqali buyurtmani davom ettiring.`);
+        console.log('📤 Test mode - would send:', payload);
+        alert(`✅ Test rejimi:\n\nMahsulotlar: ${cartEntries.length} ta\nJami: ${total.toLocaleString()} so'm`);
       }
     } catch (error) {
-      console.error('❌ Error sending data:', error);
+      console.error('❌ Order send error:', error);
       alert('❌ Xatolik yuz berdi. Qaytadan urinib ko\'ring.');
     }
   };
 
-  // Retry function for error cases
+  // Retry function
   const retryLoad = () => {
     setError('');
     setLoading(true);
-    // Trigger reload by changing telegramId state
     const currentId = telegramId;
     setTelegramId(null);
     setTimeout(() => setTelegramId(currentId), 100);
