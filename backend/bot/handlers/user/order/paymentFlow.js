@@ -38,7 +38,8 @@ class PaymentFlow extends BaseHandler {
         return await UserOrderHandlers.askForPhone(ctx);
       }
 
-      const cart = await Cart.findOne({ user: user._id, isActive: true })
+      const QueryOptimizer = require('../../../../utils/QueryOptimizer');
+      const cart = await QueryOptimizer.findActiveCartByUser(user._id)
         .populate('items.product', 'name price');
 
       if (!cart || cart.items.length === 0) {
@@ -124,7 +125,8 @@ class PaymentFlow extends BaseHandler {
   static async showOrderSummary(ctx, paymentMethodName) {
     try {
       const user = await User.findOne({ telegramId: ctx.from.id });
-      const cart = await Cart.findOne({ user: user._id, isActive: true })
+      const QueryOptimizer = require('../../../../utils/QueryOptimizer');
+      const cart = await QueryOptimizer.findActiveCartByUser(user._id)
         .populate('items.product', 'name price');
 
       const orderData = ctx.session.orderData;
@@ -240,7 +242,8 @@ class PaymentFlow extends BaseHandler {
         return await ctx.answerCbQuery('Foydalanuvchi topilmadi!');
       }
 
-      const cart = await Cart.findOne({ user: user._id, isActive: true })
+      const QueryOptimizer = require('../../../../utils/QueryOptimizer');
+      const cart = await QueryOptimizer.findActiveCartByUser(user._id)
         .populate('items.product', 'name price');
 
       if (!cart || cart.items.length === 0) {

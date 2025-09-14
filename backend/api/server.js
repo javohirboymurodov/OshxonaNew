@@ -72,7 +72,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/orders', SecurityService.getOrderRateLimit());
 
 // Optimized request logging - only in development
-if (process.env.NODE_ENV === 'development' || process.env.API_DEBUG === 'true') {
+const isDebug = process.env.NODE_ENV === 'development' || process.env.API_DEBUG === 'true';
+if (isDebug) {
   app.use((req, res, next) => {
     const timestamp = new Date().toISOString();
     console.log(`[${timestamp}] ${req.method} ${req.url}`);
@@ -92,15 +93,16 @@ app.use('/uploads', (req, res, next) => {
 
 // 🌐 API ROUTES
 
-// Debug: Route'lar yuklanganini tekshirish
-console.log('🔍 Loading API routes...');
+// Debug: Route'lar yuklanganini tekshirish (only in debug mode)
+if (isDebug) console.log('🔍 Loading API routes...');
 
 // Bot webhook endpoint
 app.post('/webhook', (req, res) => {
-  console.log('📥 Webhook received:', req.body);
+  if (isDebug) console.log('📥 Webhook received:', req.body);
   // Bot update'ni qayta ishlash
   try {
-    const bot = global.botInstance;
+    const SingletonManager = require('../utils/SingletonManager');
+    const bot = SingletonManager.getBotInstance();
     if (bot && bot.handleUpdate) {
       bot.handleUpdate(req.body, res);
     } else {

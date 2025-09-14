@@ -39,7 +39,10 @@ const initializeApp = async () => {
     // ========================================
     
     bot = new Telegraf(process.env.BOT_TOKEN);
-    global.botInstance = bot;
+    
+    // Use singleton instead of global
+    const SingletonManager = require('./utils/SingletonManager');
+    SingletonManager.setBotInstance(bot);
     
     // Session middleware
     bot.use(session({

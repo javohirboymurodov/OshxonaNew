@@ -24,9 +24,10 @@ class RealTimeTrackingManager {
         integratedWith: 'OrderTrackingService'
       };
 
-      // Store enhanced session data
-      global.activeTrackingSessions = global.activeTrackingSessions || new Map();
-      global.activeTrackingSessions.set(`${orderId}:${userId}`, trackingSession);
+      // Store enhanced session data using singleton
+      const SingletonManager = require('../utils/SingletonManager');
+      const trackingSessions = SingletonManager.getTrackingSessions();
+      trackingSessions.set(`${orderId}:${userId}`, trackingSession);
 
       console.log('✅ Enhanced tracking started (integrated):', { orderId, userId, source });
 
@@ -59,11 +60,12 @@ class RealTimeTrackingManager {
         console.log('✅ Cleaned up from OrderTrackingService active orders');
       }
 
-      global.activeTrackingSessions = global.activeTrackingSessions || new Map();
+      const SingletonManager = require('../utils/SingletonManager');
+      const trackingSessions = SingletonManager.getTrackingSessions();
       const sessionsToStop = [];
 
       // Find all sessions for this order
-      for (const [key, session] of global.activeTrackingSessions.entries()) {
+      for (const [key, session] of trackingSessions.entries()) {
         if (session.orderId === orderId) {
           sessionsToStop.push({ key, session });
         }
@@ -72,7 +74,7 @@ class RealTimeTrackingManager {
       // Stop each session
       for (const { key, session } of sessionsToStop) {
         await this.stopTrackingSession(session, reason);
-        global.activeTrackingSessions.delete(key);
+        trackingSessions.delete(key);
       }
 
       console.log(`✅ Stopped ${sessionsToStop.length} enhanced tracking sessions for order ${orderId}`);
