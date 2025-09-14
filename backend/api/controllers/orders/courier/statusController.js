@@ -273,7 +273,7 @@ async function courierCancelledOrder(req, res) {
     
     // Status yangilash
     await updateOrderStatus(order._id, 'cancelled', {
-      message: `Kuryer bekor qildi: ${reason || 'Sabab ko'rsatilmagan'}`,
+      message: 'Kuryer bekor qildi: ' + (reason || 'Sabab ko\'rsatilmagan'),
       updatedBy: req.user.id,
       cancelledAt: new Date(),
       cancelledBy: 'courier',
