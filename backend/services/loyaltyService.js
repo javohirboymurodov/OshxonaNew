@@ -2,12 +2,13 @@ const User = require('../models/User');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const mongoose = require('mongoose');
+const { QueryOptimizer } = require('../utils/QueryOptimizer');
 
 // Loyalty va Rewards tizimi
 class LoyaltyService {
-  // Loyalty points hisoblash
+  // Loyalty points hisoblash - OPTIMIZED
   static async calculatePoints(orderAmount, userId) {
-    const user = await User.findById(userId);
+    const user = await QueryOptimizer.findUserById(userId);
     if (!user) return 0;
     
     const basePoints = Math.floor(orderAmount / 1000); // Har 1000 so'm uchun 1 ball
@@ -15,9 +16,9 @@ class LoyaltyService {
     let multiplier = 1;
     
     // VIP status bo'yicha multiplier
-    if (user.stats.totalOrders >= 50) multiplier = 1.5;
-    else if (user.stats.totalOrders >= 20) multiplier = 1.3;
-    else if (user.stats.totalOrders >= 10) multiplier = 1.2;
+    if (user.stats?.totalOrders >= 50) multiplier = 1.5;
+    else if (user.stats?.totalOrders >= 20) multiplier = 1.3;
+    else if (user.stats?.totalOrders >= 10) multiplier = 1.2;
     
     // Maxsus kunlar uchun bonus
     const today = new Date();
