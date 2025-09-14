@@ -12,6 +12,14 @@ const logger = require('../utils/logger');
 const requestLogger = require('../middlewares/requestLogger');
 const SecurityService = require('../middlewares/security');
 const authRoutes = require('./routes/auth');
+const {
+  notFoundHandler,
+  validationErrorHandler,
+  jwtErrorHandler,
+  mongoErrorHandler,
+  rateLimitErrorHandler,
+  finalErrorHandler
+} = require('../middlewares/errorMiddleware');
 
 // Express app yaratish
 const app = express();
@@ -250,44 +258,23 @@ app.get('/api/db/status', (req, res) => {
 
 // 🚫 ERROR HANDLING
 
+// 404 handler will be handled by notFoundHandler middleware
+
+// ===============================
+// 🚨 ERROR HANDLING MIDDLEWARES
+// ===============================
+
 // 404 handler
-app.use('*', (req, res) => {
-  console.log('❌ 404 Not Found:', {
-    path: req.originalUrl,
-    method: req.method,
-    timestamp: new Date().toISOString()
-  });
-  
-  res.status(404).json({
-    success: false,
-    message: 'API endpoint topilmadi',
-    path: req.originalUrl,
-    method: req.method
-  });
-});
+app.use(notFoundHandler);
 
-// Global error handler
-app.use((err, req, res, next) => {
-  console.error('🚨 API Error:', {
-    message: err.message,
-    stack: err.stack,
-    url: req.url,
-    method: req.method,
-    timestamp: new Date().toISOString()
-  });
+// Specific error handlers
+app.use(validationErrorHandler);
+app.use(jwtErrorHandler);
+app.use(mongoErrorHandler);
+app.use(rateLimitErrorHandler);
 
-  // Production da stack trace ko'rsatmaslik
-  const isDev = process.env.NODE_ENV !== 'production';
-  
-  res.status(err.status || 500).json({
-    success: false,
-    message: err.message || 'Serverda xatolik yuz berdi!',
-    ...(isDev && { 
-      stack: err.stack,
-      details: err 
-    })
-  });
-});
+// Final error handler
+app.use(finalErrorHandler);
 
 // 🚀 SERVER INITIALIZATION
 

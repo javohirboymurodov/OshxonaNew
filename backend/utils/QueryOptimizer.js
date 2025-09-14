@@ -185,6 +185,197 @@ class QueryOptimizer {
   }
 
   /**
+   * Optimized branch lookup with caching
+   */
+  static async findBranchById(branchId, useCache = true) {
+    const cacheKey = `branch:${branchId}`;
+    
+    if (useCache) {
+      const cached = memoryCache.get(cacheKey);
+      if (cached) {
+        logger.debug('Branch cache hit', { branchId });
+        return cached;
+      }
+    }
+
+    try {
+      const { Branch } = require('../models');
+      const branch = await Branch.findById(branchId).lean();
+      
+      if (branch && useCache) {
+        memoryCache.set(cacheKey, branch, CacheTTL.USER_DATA);
+      }
+      
+      return branch;
+    } catch (error) {
+      logger.error('Branch lookup error', { branchId, error: error.message });
+      return null;
+    }
+  }
+
+  /**
+   * Optimized courier lookup with caching
+   */
+  static async findCourierById(courierId, useCache = true) {
+    const cacheKey = `courier:${courierId}`;
+    
+    if (useCache) {
+      const cached = memoryCache.get(cacheKey);
+      if (cached) {
+        logger.debug('Courier cache hit', { courierId });
+        return cached;
+      }
+    }
+
+    try {
+      const { User } = require('../models');
+      const courier = await User.findOne({ 
+        _id: courierId, 
+        role: 'courier' 
+      }).select('firstName lastName phone courierInfo telegramId').lean();
+      
+      if (courier && useCache) {
+        memoryCache.set(cacheKey, courier, CacheTTL.USER_DATA);
+      }
+      
+      return courier;
+    } catch (error) {
+      logger.error('Courier lookup error', { courierId, error: error.message });
+      return null;
+    }
+  }
+
+  /**
+   * Optimized category lookup with caching
+   */
+  static async findCategoriesByBranch(branchId, useCache = true) {
+    const cacheKey = `categories:${branchId}`;
+    
+    if (useCache) {
+      const cached = memoryCache.get(cacheKey);
+      if (cached) {
+        logger.debug('Categories cache hit', { branchId });
+        return cached;
+      }
+    }
+
+    try {
+      const { Category } = require('../models');
+      const categories = await Category.find({ 
+        branch: branchId, 
+        isActive: true 
+      }).select('name description image').lean();
+      
+      if (categories && useCache) {
+        memoryCache.set(cacheKey, categories, CacheTTL.PRODUCTS);
+      }
+      
+      return categories;
+    } catch (error) {
+      logger.error('Categories lookup error', { branchId, error: error.message });
+      return [];
+    }
+  }
+
+  /**
+   * Batch operations for better performance
+   */
+  static async batchFindUsers(telegramIds, useCache = true) {
+    const results = {};
+    const uncachedIds = [];
+    
+    if (useCache) {
+      for (const telegramId of telegramIds) {
+        const cached = memoryCache.get(CacheKeys.USER_PROFILE(telegramId));
+        if (cached) {
+          results[telegramId] = cached;
+        } else {
+          uncachedIds.push(telegramId);
+        }
+      }
+    } else {
+      uncachedIds.push(...telegramIds);
+    }
+
+    if (uncachedIds.length > 0) {
+      try {
+        const { User } = require('../models');
+        const users = await User.find({ 
+          telegramId: { $in: uncachedIds } 
+        }).lean();
+        
+        users.forEach(user => {
+          results[user.telegramId] = user;
+          if (useCache) {
+            memoryCache.set(CacheKeys.USER_PROFILE(user.telegramId), user, CacheTTL.USER_DATA);
+          }
+        });
+      } catch (error) {
+        logger.error('Batch users lookup error', { telegramIds: uncachedIds, error: error.message });
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Optimized search with pagination
+   */
+  static async searchProducts(query, branchId, page = 1, limit = 20, useCache = true) {
+    const cacheKey = `search:products:${query}:${branchId}:${page}:${limit}`;
+    
+    if (useCache) {
+      const cached = memoryCache.get(cacheKey);
+      if (cached) {
+        logger.debug('Search cache hit', { query, branchId, page });
+        return cached;
+      }
+    }
+
+    try {
+      const { Product } = require('../models');
+      const searchQuery = {
+        isActive: true,
+        $or: [
+          { name: { $regex: query, $options: 'i' } },
+          { description: { $regex: query, $options: 'i' } }
+        ]
+      };
+
+      const skip = (page - 1) * limit;
+      
+      const [products, total] = await Promise.all([
+        Product.find(searchQuery)
+          .populate('categoryId', 'name')
+          .lean()
+          .skip(skip)
+          .limit(limit)
+          .sort({ name: 1 }),
+        Product.countDocuments(searchQuery)
+      ]);
+
+      const result = {
+        products,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      };
+
+      if (useCache) {
+        memoryCache.set(cacheKey, result, CacheTTL.SHORT);
+      }
+      
+      return result;
+    } catch (error) {
+      logger.error('Search products error', { query, branchId, error: error.message });
+      return { products: [], pagination: { page, limit, total: 0, pages: 0 } };
+    }
+  }
+
+  /**
    * Get cache statistics
    */
   static getCacheStats() {
@@ -193,6 +384,37 @@ class QueryOptimizer {
       cacheKeys: Object.keys(CacheKeys).length,
       cacheTTL: Object.keys(CacheTTL).length
     };
+  }
+
+  /**
+   * Clear all cache
+   */
+  static clearAllCache() {
+    memoryCache.clear();
+    logger.info('All cache cleared');
+  }
+
+  /**
+   * Warm up cache with frequently used data
+   */
+  static async warmUpCache() {
+    try {
+      logger.info('Starting cache warm-up...');
+      
+      // Warm up active products
+      const { Product } = require('../models');
+      const products = await Product.find({ isActive: true })
+        .select('name price categoryId')
+        .lean()
+        .limit(100);
+      
+      const productCacheKey = 'products:warmup';
+      memoryCache.set(productCacheKey, products, CacheTTL.PRODUCTS);
+      
+      logger.info(`Cache warm-up completed. Cached ${products.length} products.`);
+    } catch (error) {
+      logger.error('Cache warm-up error', { error: error.message });
+    }
   }
 }
 

@@ -1,34 +1,25 @@
 /**
- * Courier Operations Module - Central Export
- * Kuryer operatsiyalari moduli - markaziy export
- * 
- * Bu fayl barcha kuryer operatsiyalarini bitta joydan export qiladi
+ * Courier Controllers Index
+ * Barcha kuryer controller'larini birlashtirish
  */
 
-const assignmentController = require('./assignmentController');
-const deliveryController = require('./deliveryController');
 const locationController = require('./locationController');
+const assignmentController = require('./assignmentController');
+const statusController = require('./statusController');
 
 module.exports = {
-  // Assignment operations - tayinlash operatsiyalari
-  assignCourier: assignmentController.assignCourier,
-  courierAcceptOrder: assignmentController.courierAcceptOrder,
-  
-  // Delivery operations - yetkazish operatsiyalari
-  courierPickedUpOrder: deliveryController.courierPickedUpOrder,
-  courierOnWay: deliveryController.courierOnWay,
-  courierDeliveredOrder: deliveryController.courierDeliveredOrder,
-  courierCancelledOrder: deliveryController.courierCancelledOrder,
-  
-  // Location operations - joylashuv operatsiyalari
+  // Location & Distance
+  calculateDistance: locationController.calculateDistance,
   updateCourierLocation: locationController.updateCourierLocation,
   checkCourierDistance: locationController.checkCourierDistance,
   
-  // Utility functions - yordamchi funksiyalar
-  calculateDistance: locationController.calculateDistance,
+  // Assignment
+  assignCourier: assignmentController.assignCourier,
   
-  // Direct access to controllers - to'g'ridan-to'g'ri kirish
-  assignment: assignmentController,
-  delivery: deliveryController,
-  location: locationController
+  // Status Updates
+  courierAcceptOrder: statusController.courierAcceptOrder,
+  courierPickedUpOrder: statusController.courierPickedUpOrder,
+  courierOnWay: statusController.courierOnWay,
+  courierDeliveredOrder: statusController.courierDeliveredOrder,
+  courierCancelledOrder: statusController.courierCancelledOrder
 };
