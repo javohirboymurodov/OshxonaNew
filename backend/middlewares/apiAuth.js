@@ -3,16 +3,20 @@ const { User } = require('../models');
 
 const auth = async (req, res, next) => {
   try {
-    console.log('🔍 AUTH DEBUG - Request:', {
-      url: req.url,
-      method: req.method,
-      hasAuthHeader: !!req.header('Authorization')
-    });
+    const isDebug = process.env.NODE_ENV === 'development' || process.env.API_DEBUG === 'true';
+    
+    if (isDebug) {
+      console.log('🔍 AUTH DEBUG - Request:', {
+        url: req.url,
+        method: req.method,
+        hasAuthHeader: !!req.header('Authorization')
+      });
+    }
 
     const token = req.header('Authorization')?.replace('Bearer ', '');
 
     if (!token) {
-      console.log('❌ AUTH DEBUG - No token provided');
+      if (isDebug) console.log('❌ AUTH DEBUG - No token provided');
       return res.status(401).json({
         success: false,
         message: 'Token topilmadi, ruxsat berilmadi!'
@@ -21,30 +25,34 @@ const auth = async (req, res, next) => {
 
     // FIXED: Fallback JWT_SECRET - eng yaxshi variant!
     const JWT_SECRET = process.env.JWT_SECRET || 'oshxona_jwt_secret_key_2025_development_only';
-    console.log('🔍 JWT_SECRET status:', JWT_SECRET ? 'LOADED' : 'MISSING');
-    console.log('🔍 Token length:', token.length);
+    if (isDebug) {
+      console.log('🔍 JWT_SECRET status:', JWT_SECRET ? 'LOADED' : 'MISSING');
+      console.log('🔍 Token length:', token.length);
+    }
     
     const decoded = jwt.verify(token, JWT_SECRET);
-    console.log('✅ AUTH DEBUG - JWT decoded successfully:', {
-      userId: decoded.userId || decoded.id,
-      role: decoded.role,
-      email: decoded.email
-    });
+    if (isDebug) {
+      console.log('✅ AUTH DEBUG - JWT decoded successfully:', {
+        userId: decoded.userId || decoded.id,
+        role: decoded.role,
+        email: decoded.email
+      });
+    }
     
     // Try to get user from database, fallback to JWT data
     let user;
     try {
       user = await User.findById(decoded.userId || decoded.id).select('-password');
-      if (user) {
+      if (user && isDebug) {
         console.log('✅ User found in database:', user.email);
       }
     } catch (dbError) {
-      console.warn('⚠️ Database not available, using JWT data:', dbError.message);
+      if (isDebug) console.warn('⚠️ Database not available, using JWT data:', dbError.message);
     }
     
     if (!user) {
       // Fallback: use data from JWT token
-      console.log('🔄 Using JWT fallback data');
+      if (isDebug) console.log('🔄 Using JWT fallback data');
       user = {
         _id: decoded.userId || decoded.id,
         firstName: decoded.firstName || 'User',
@@ -64,7 +72,7 @@ const auth = async (req, res, next) => {
     }
 
     req.user = user;
-    console.log('✅ Auth successful for:', user.email);
+    if (isDebug) console.log('✅ Auth successful for:', user.email);
     next();
   } catch (error) {
     console.error('❌ Auth middleware error:', error.name, error.message);
