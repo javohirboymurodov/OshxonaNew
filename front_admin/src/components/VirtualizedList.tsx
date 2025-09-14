@@ -1,6 +1,7 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, memo, useCallback } from 'react';
 import { List } from 'antd';
 import { FixedSizeList as ReactWindowList } from 'react-window';
+import { performanceMonitor, measurePerformance } from '@/utils/performance';
 
 interface VirtualizedListProps<T> {
   data: T[];
@@ -17,9 +18,9 @@ interface VirtualizedListProps<T> {
 }
 
 /**
- * Virtualized list component for better performance with large datasets
+ * Optimized Virtualized list component for better performance with large datasets
  */
-function VirtualizedList<T>({
+const VirtualizedList = memo(function VirtualizedList<T>({
   data,
   renderItem,
   itemHeight = 80,
@@ -29,11 +30,22 @@ function VirtualizedList<T>({
 }: VirtualizedListProps<T>) {
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: 0 });
 
-  const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => (
-    <div style={style}>
-      {renderItem(data[index], index)}
-    </div>
-  );
+  // Memoized Row component to prevent unnecessary re-renders
+  const Row = useCallback(({ index, style }: { index: number; style: React.CSSProperties }) => {
+    performanceMonitor.mark(`virtual-row-${index}-render`);
+    
+    const item = data[index];
+    const renderedItem = renderItem(item, index);
+    
+    performanceMonitor.mark(`virtual-row-${index}-render-end`);
+    performanceMonitor.measureCustom(`virtual-row-${index}-render`, `virtual-row-${index}-render`);
+    
+    return (
+      <div style={style}>
+        {renderedItem}
+      </div>
+    );
+  }, [data, renderItem]);
 
   // Calculate visible items for performance optimization
   const visibleData = useMemo(() => {
@@ -47,7 +59,7 @@ function VirtualizedList<T>({
     return data.slice(start, end);
   }, [data, visibleRange]);
 
-  const handleItemsRendered = ({
+  const handleItemsRendered = useCallback(({
     visibleStartIndex,
     visibleStopIndex,
   }: {
@@ -58,7 +70,7 @@ function VirtualizedList<T>({
       start: visibleStartIndex,
       end: visibleStopIndex,
     });
-  };
+  }, []);
 
   if (data.length < 100) {
     // Use regular Ant Design List for small datasets

@@ -1,0 +1,1 @@
+export { default as OptimizedImage, imageOptimization } from './OptimizedImage';
