@@ -66,13 +66,15 @@ async function addProductToCart(cart, product, quantity) {
   if (existingItemIndex >= 0) {
     // Mavjud mahsulot miqdorini oshirish
     cart.items[existingItemIndex].quantity += quantity;
+    cart.items[existingItemIndex].totalPrice = cart.items[existingItemIndex].quantity * cart.items[existingItemIndex].price;
   } else {
     // Yangi mahsulot qo'shish
     cart.items.push({
       product: product._id,
+      productName: product.name,
       quantity: quantity,
       price: product.price,
-      name: product.name
+      totalPrice: product.price * quantity
     });
   }
 
@@ -105,6 +107,7 @@ async function updateProductQuantity(cart, productId, newQuantity) {
       return await removeProductFromCart(cart, productId);
     } else {
       item.quantity = newQuantity;
+      item.totalPrice = item.quantity * item.price;
       await cart.save();
     }
   }
