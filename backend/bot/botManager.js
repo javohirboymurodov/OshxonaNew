@@ -4,7 +4,9 @@
  * @param {Telegraf} bot - Telegraf bot instance
  */
 function initializeBot(bot) {
-  console.log('🤖 Bot handlerlarini ulash...');
+  const isDebug = process.env.NODE_ENV === 'development' || process.env.BOT_DEBUG === 'true';
+  
+  if (isDebug) console.log('🤖 Bot handlerlarini ulash...');
 
   // ========================================
   // 🌐 WEBAPP DATA HANDLER (PRIORITY)
@@ -16,21 +18,21 @@ function initializeBot(bot) {
     
     // WebApp data handler - bu eng yuqori prioritetga ega
     bot.on('web_app_data', async (ctx) => {
-      console.log('🌐 WebApp data update received');
+      if (isDebug) console.log('🌐 WebApp data update received');
       await handleWebAppData(ctx);
     });
     
     // Fallback: message.web_app_data uchun ham handler
     bot.on('message', async (ctx, next) => {
       if (ctx.message?.web_app_data) {
-        console.log('🌐 WebApp data in message received');
+        if (isDebug) console.log('🌐 WebApp data in message received');
         await handleWebAppData(ctx);
         return; // Don't pass to next middleware
       }
       return next();
     });
     
-    console.log('✅ WebApp data handlers loaded');
+    if (isDebug) console.log('✅ WebApp data handlers loaded');
   } catch (error) {
     console.warn('⚠️ WebApp data handlers load failed:', error.message);
   }
@@ -43,7 +45,7 @@ function initializeBot(bot) {
   try {
     const { registerUserModule } = require('./user/commands');
     registerUserModule(bot);
-    console.log('✅ User commands loaded');
+    if (isDebug) console.log('✅ User commands loaded');
   } catch (error) {
     console.warn('⚠️ User commands load failed:', error.message);
   }
@@ -52,10 +54,10 @@ function initializeBot(bot) {
   try {
     const { registerUserCallbacks } = require('./user/callbacks');
     registerUserCallbacks(bot);
-    console.log('✅ User callbacks loaded');
+    if (isDebug) console.log('✅ User callbacks loaded');
   } catch (error) {
     console.warn('⚠️ User callbacks load failed:', error.message);
-    console.error('⚠️ Full error:', error);
+    if (isDebug) console.error('⚠️ Full error:', error);
   }
 
   // ========================================
@@ -66,7 +68,7 @@ function initializeBot(bot) {
   try {
     const { registerCourierModule } = require('./courier/commands');
     registerCourierModule(bot);
-    console.log('✅ Courier commands loaded');
+    if (isDebug) console.log('✅ Courier commands loaded');
   } catch (error) {
     console.warn('⚠️ Courier commands load failed:', error.message);
   }
@@ -75,22 +77,24 @@ function initializeBot(bot) {
   try {
     const { registerCourierCallbacks } = require('./courier/callbacks');
     registerCourierCallbacks(bot);
-    console.log('✅ Courier callbacks loaded');
+    if (isDebug) console.log('✅ Courier callbacks loaded');
     
-    // Debug: Log all courier-related callback queries
-    bot.use((ctx, next) => {
-      if (ctx.updateType === 'callback_query') {
-        const data = ctx.callbackQuery?.data;
-        if (data && (data.startsWith('courier_') || data.includes('courier'))) {
-          console.log(`🔥 COURIER CALLBACK DETECTED:`, {
-            from: ctx.from?.id,
-            data: data,
-            timestamp: new Date().toISOString()
-          });
+    // Debug: Log all courier-related callback queries (only in debug mode)
+    if (isDebug) {
+      bot.use((ctx, next) => {
+        if (ctx.updateType === 'callback_query') {
+          const data = ctx.callbackQuery?.data;
+          if (data && (data.startsWith('courier_') || data.includes('courier'))) {
+            console.log(`🔥 COURIER CALLBACK DETECTED:`, {
+              from: ctx.from?.id,
+              data: data,
+              timestamp: new Date().toISOString()
+            });
+          }
         }
-      }
-      return next();
-    });
+        return next();
+      });
+    }
   } catch (error) {
     console.warn('⚠️ Courier callbacks load failed:', error.message);
   }
@@ -103,7 +107,7 @@ function initializeBot(bot) {
   try {
     const { registerMessageHandlers } = require('./handlers/messageHandlers');
     registerMessageHandlers(bot);
-    console.log('✅ Message handlers loaded');
+    if (isDebug) console.log('✅ Message handlers loaded');
   } catch (error) {
     console.warn('⚠️ Message handlers load failed:', error.message);
   }
@@ -112,7 +116,7 @@ function initializeBot(bot) {
   try {
     const { registerProfileCallbacks } = require('./user/callbacks/profile');
     registerProfileCallbacks(bot);
-    console.log('✅ User profile loaded');
+    if (isDebug) console.log('✅ User profile loaded');
   } catch (error) {
     console.warn('⚠️ User profile load failed:', error.message);
   }
@@ -132,7 +136,7 @@ function initializeBot(bot) {
     }
   });
 
-  console.log('✅ Bot handlarlari muvaffaqiyatli ulandi');
+  if (isDebug) console.log('✅ Bot handlarlari muvaffaqiyatli ulandi');
 }
 
 // Bot instance ni global saqlash

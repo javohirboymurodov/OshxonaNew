@@ -14,15 +14,14 @@ class Database {
         }
 
         try {
-            // MongoDB connection with timeout
-            const db='mongodb+srv://javohir:javohir99@cluster0.jjsllqm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0'
-            const connectionString = process.env.MONGODB_URI || db;
+            // MongoDB connection with timeout - ONLY use environment variable
+            const connectionString = process.env.MONGODB_URI;
             const inProduction = process.env.NODE_ENV === 'production';
 
-            // Productionda majburiy env var tekshiruvi
-            if (inProduction && (!process.env.MONGODB_URI || !process.env.MONGODB_URI.trim())) {
-                logger.error('❌ MONGODB_URI env variable topilmadi. Productionda majburiy.');
-                throw new Error('MONGODB_URI is required in production');
+            // MONGODB_URI majburiy
+            if (!connectionString || !connectionString.trim()) {
+                logger.error('❌ MONGODB_URI env variable topilmadi. Majburiy.');
+                throw new Error('MONGODB_URI is required');
             }
             
             logger.info(`🔌 Attempting to connect to MongoDB: ${connectionString}`);

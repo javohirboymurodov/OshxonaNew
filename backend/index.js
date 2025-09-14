@@ -92,7 +92,8 @@ const initializeApp = async () => {
     });
     
     // Optimized debug middleware - only in development or when needed
-    if (process.env.NODE_ENV === 'development' || process.env.BOT_DEBUG === 'true') {
+    const isDebug = process.env.NODE_ENV === 'development' || process.env.BOT_DEBUG === 'true';
+    if (isDebug) {
       bot.use((ctx, next) => {
         console.log('📥 Bot update received:', {
           type: ctx.updateType,
