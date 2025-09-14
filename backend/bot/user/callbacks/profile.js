@@ -1,9 +1,9 @@
 // 📋 PROFILE CALLBACKS - OPTIMIZED MODULAR STRUCTURE
-const { registerProfileCallbacks } = require('./profile');
+const { registerProfileCallbacks: registerModularProfileCallbacks } = require('./profile');
 
 function registerProfileCallbacks(bot) {
   // Use modular structure
-  registerProfileCallbacks(bot);
+  registerModularProfileCallbacks(bot);
 }
 
 module.exports = { registerProfileCallbacks };
