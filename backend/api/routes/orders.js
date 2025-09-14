@@ -1,6 +1,6 @@
 const express = require('express');
 const { authenticateToken, requireAdmin } = require('../../middlewares/apiAuth');
-const OrdersController = require('../controllers/ordersController.js.backup');
+const OrdersController = require('../controllers/ordersController');
 const CourierController = require('../controllers/orders/courier');
 const SecurityService = require('../../middlewares/security');
 
